@@ -1,5 +1,6 @@
 package heartsync.view;
 
+import heartsync.controller.UserProfileController;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Cursor;
@@ -17,7 +18,6 @@ import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
-
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -33,8 +33,6 @@ import javax.swing.JSlider;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
-
-import usersetup.controller.UserProfileController;
 
 public class ProfileSetupView extends JFrame {
     private UserProfileController controller;

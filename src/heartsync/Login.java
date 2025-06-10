@@ -51,7 +51,7 @@ public class Login extends javax.swing.JFrame {
     /**
      * Creates new form Login
      */
-    public LoginFinal() {
+    public Login() {
         initComponents();
         setupTextFields();
         setupActionListeners();
@@ -576,7 +576,7 @@ lblForgotPassword.addMouseListener(new java.awt.event.MouseAdapter() {
 
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(() -> {
-            new LoginFinal().setVisible(true);
+            new Login().setVisible(true);
         });
     }
 

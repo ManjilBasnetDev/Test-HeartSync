@@ -1,7 +1,7 @@
 package heartsync.view;
 
-import heart_sync.dao.UserDAO;
-import heart_sync.model.User;
+import heartsync.dao.UserDAO;
+import heartsync.model.User;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.RoundRectangle2D;

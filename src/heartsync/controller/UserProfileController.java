@@ -1,12 +1,13 @@
 package heartsync.controller;
 
+import heartsync.model.UserProfile;
+import heartsync.view.MoreInfoView;
 import java.util.List;
-import usersetup.model.UserProfile;
-import usersetup.view.MoreInfoView;
 
 public class UserProfileController {
     private UserProfile model;
     private MoreInfoView moreInfoView;
+    private int userId;
 
     public UserProfileController(UserProfile model) {
         this.model = model;
@@ -14,6 +15,14 @@ public class UserProfileController {
 
     public UserProfile getModel() {
         return model;
+    }
+
+    public void setUserId(int userId) {
+        this.userId = userId;
+    }
+
+    public int getUserId() {
+        return userId;
     }
 
     public void setFullName(String fullName) {
@@ -87,7 +96,7 @@ public class UserProfileController {
 
     public void showMoreInfoView() {
         if (moreInfoView == null) {
-            moreInfoView = new MoreInfoView(this);
+            moreInfoView = new MoreInfoView(this, userId);
         }
         moreInfoView.setVisible(true);
     }

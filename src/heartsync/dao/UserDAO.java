@@ -7,17 +7,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class UserDAO {
-    private Connection connection;
+    private final Connection connection;
     
     public UserDAO() {
-        this.connection = DatabaseConnection.getConnection();
+        DatabaseConnection dbConnection = DatabaseConnection.getInstance();
+        this.connection = dbConnection.getConnection();
     }
     
-    public boolean createUser(User user) {
+    public int createUser(User user) {
         String sql = "INSERT INTO users (username, password, user_type, email, phone_number, " +
                     "date_of_birth, gender, interests, bio) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (PreparedStatement stmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             stmt.setString(1, user.getUsername());
             stmt.setString(2, user.getPassword());
             stmt.setString(3, user.getUserType());
@@ -28,10 +29,21 @@ public class UserDAO {
             stmt.setString(8, user.getInterests());
             stmt.setString(9, user.getBio());
             
-            return stmt.executeUpdate() > 0;
+            int affectedRows = stmt.executeUpdate();
+            if (affectedRows == 0) {
+                throw new SQLException("Creating user failed, no rows affected.");
+            }
+
+            try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
+                if (generatedKeys.next()) {
+                    return generatedKeys.getInt(1);
+                } else {
+                    throw new SQLException("Creating user failed, no ID obtained.");
+                }
+            }
         } catch (SQLException e) {
             System.out.println("Error creating user: " + e.getMessage());
-            return false;
+            return -1;
         }
     }
     

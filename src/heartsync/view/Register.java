@@ -1,7 +1,9 @@
 package heartsync.view;
 
+import heartsync.controller.UserProfileController;
 import heartsync.dao.UserDAO;
 import heartsync.model.User;
+import heartsync.model.UserProfile;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.RoundRectangle2D;
@@ -392,12 +394,20 @@ public class Register extends JFrame {
                 User newUser = new User(username, password, userType);
                 UserDAO userDAO = new UserDAO();
                 
-                if (userDAO.createUser(newUser)) {
+                int userId = userDAO.createUser(newUser);
+                if (userId != -1) {
                     JOptionPane.showMessageDialog(this, 
                         "Registration successful!\nUsername: " + username,
                         "Success", 
                         JOptionPane.INFORMATION_MESSAGE);
-                    dispose();
+                    
+                    // Create and show the profile setup view
+                    UserProfile userProfile = new UserProfile();
+                    UserProfileController controller = new UserProfileController(userProfile);
+                    controller.setUserId(userId); // Set the user ID
+                    ProfileSetupView profileSetup = new ProfileSetupView(controller);
+                    profileSetup.setVisible(true);
+                    dispose(); // Close the registration window
                 } else {
                     JOptionPane.showMessageDialog(this,
                         "Registration failed. Please try again.",

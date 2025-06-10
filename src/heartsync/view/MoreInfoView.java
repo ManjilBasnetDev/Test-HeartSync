@@ -1,5 +1,8 @@
 package heartsync.view;
 
+import heartsync.controller.UserProfileController;
+import heartsync.database.DatabaseManager;
+import heartsync.model.UserProfile;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Cursor;
@@ -18,7 +21,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.swing.AbstractButton;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -35,10 +37,7 @@ import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
-
-import usersetup.controller.UserProfileController;
-import usersetup.database.DatabaseManager;
-import usersetup.model.UserProfile;
+import javax.swing.SwingUtilities;
 
 public class MoreInfoView extends JFrame {
     private UserProfileController controller;
@@ -47,9 +46,11 @@ public class MoreInfoView extends JFrame {
     private JButton hobbiesButton;
     private ButtonGroup relationButtonGroup;
     private JLabel selectedHobbiesLabel;
+    private final int userId;
 
-    public MoreInfoView(UserProfileController controller) {
+    public MoreInfoView(UserProfileController controller, int userId) {
         this.controller = controller;
+        this.userId = userId;
         this.hobbyCategories = new HashMap<>();
         initializeHobbyCategories();
         initializeUI();
@@ -456,7 +457,8 @@ public class MoreInfoView extends JFrame {
         try {
             UserProfile profile = controller.getModel();
             DatabaseManager dbManager = DatabaseManager.getInstance();
-            int userId = dbManager.saveUserProfile(
+            int profileId = dbManager.saveUserProfile(
+                userId,  // Pass the user ID from registration
                 profile.getFullName(),
                 profile.getHeight(),
                 profile.getWeight(),
@@ -472,12 +474,18 @@ public class MoreInfoView extends JFrame {
                 selectedHobbies
             );
 
-            if (userId != -1) {
-                JOptionPane.showMessageDialog(this,
-                    "Profile created successfully!\nYour User ID is: " + userId,
-                    "Success",
+            if (profileId != -1) {
+                JOptionPane.showMessageDialog(this, 
+                    "Profile created successfully!",
+                    "Success", 
                     JOptionPane.INFORMATION_MESSAGE);
-                System.exit(0);
+                    
+                // Open the Swipe view
+                SwingUtilities.invokeLater(() -> {
+                    Swipe swipeView = new Swipe();
+                    swipeView.setVisible(true);
+                    dispose();
+                });
             } else {
                 JOptionPane.showMessageDialog(this,
                     "Failed to save profile. Please try again.",

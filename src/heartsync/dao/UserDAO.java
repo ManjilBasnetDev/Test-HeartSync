@@ -1,7 +1,7 @@
 package heartsync.dao;
 
-import heart_sync.database.DatabaseConnection;
-import heart_sync.model.User;
+import heartsync.database.DatabaseConnection;
+import heartsync.model.User;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;

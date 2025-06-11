@@ -36,7 +36,7 @@ public class Login extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel lblForgotPassword;
     private javax.swing.JTextArea txtUsername;
-    private javax.swing.JTextArea txtPassword;
+    private javax.swing.JPasswordField txtPassword;
     private ShowHideController showHideController;
     private Window previousWindow;
 
@@ -78,49 +78,19 @@ public class Login extends javax.swing.JFrame {
         txtUsername.setForeground(Color.GRAY);
         
         // Password field setup
-        txtPassword.setLineWrap(true);
-        txtPassword.setWrapStyleWord(true);
+        txtPassword = new javax.swing.JPasswordField();
+        txtPassword.setFont(new java.awt.Font("Segoe UI", 0, 14));
+        txtPassword.setBackground(Color.WHITE);
+        txtPassword.setOpaque(true);
+        txtPassword.setForeground(Color.GRAY);
         txtPassword.setBorder(BorderFactory.createCompoundBorder(
             new LineBorder(new Color(200, 200, 200)),
             new EmptyBorder(10, 15, 10, 15)));
-        txtPassword.setRows(1);
+        txtPassword.setEchoChar((char)0); // Initially show placeholder text
+        txtPassword.setText("Enter password");
         txtPassword.setMaximumSize(new Dimension(400, 45));
         txtPassword.setPreferredSize(new Dimension(400, 45));
-        txtPassword.setText("Enter password");
-        txtPassword.setForeground(Color.GRAY);
-    }
 
-    // This method ensures the JTextArea displays either bullets or actual password
-    private void updatePasswordField() {
-        selfEdit = true; // Prevent listener from firing during this update
-        if (isPasswordVisible) {
-            txtPassword.setText(actualPassword);
-        } else {
-            StringBuilder hidden = new StringBuilder();
-            for (int i = 0; i < actualPassword.length(); i++) {
-                hidden.append("•");
-            }
-            txtPassword.setText(hidden.toString());
-        }
-        // Try to restore caret position, usually to the end after a programmatic change
-        txtPassword.setCaretPosition(txtPassword.getText().length());
-        selfEdit = false;
-    }
-
-    private void togglePasswordVisibility() {
-        if (txtPassword.getText().equals("Enter password") && actualPassword.isEmpty()) {
-            return; // Don't toggle if it's just a placeholder
-        }
-        isPasswordVisible = !isPasswordVisible;
-        if (isPasswordVisible) {
-            btnTogglePassword.setText("Hide");
-        } else {
-            btnTogglePassword.setText("Show");
-        }
-        updatePasswordField(); // Update text based on new visibility state
-    }
-
-    private void setupActionListeners() {
         // Username focus listener
         txtUsername.addFocusListener(new java.awt.event.FocusAdapter() {
             @Override
@@ -142,47 +112,54 @@ public class Login extends javax.swing.JFrame {
 
         // Password focus listener
         txtPassword.addFocusListener(new java.awt.event.FocusAdapter() {
+            private boolean isFirstFocus = true;
+
             @Override
             public void focusGained(java.awt.event.FocusEvent evt) {
-                if (txtPassword.getText().equals("Enter password")) {
+                String currentPassword = String.valueOf(txtPassword.getPassword());
+                if (currentPassword.equals("Enter password")) {
                     txtPassword.setText("");
                     txtPassword.setForeground(Color.BLACK);
+                    txtPassword.setEchoChar('•');
                     showHideController.setActualPassword("");
                 }
             }
 
             @Override
             public void focusLost(java.awt.event.FocusEvent evt) {
-                if (txtPassword.getText().trim().isEmpty()) {
+                String currentPassword = String.valueOf(txtPassword.getPassword());
+                if (currentPassword.isEmpty()) {
                     txtPassword.setForeground(Color.GRAY);
                     txtPassword.setText("Enter password");
+                    txtPassword.setEchoChar((char)0);
                     showHideController.reset();
-                } else {
-                    showHideController.setActualPassword(txtPassword.getText());
                 }
             }
         });
 
-        // Password text change listener
+        // Password document listener
         txtPassword.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
             @Override
             public void insertUpdate(javax.swing.event.DocumentEvent e) {
-                if (!txtPassword.getText().equals("Enter password")) {
-                    showHideController.setActualPassword(txtPassword.getText());
+                String currentPassword = String.valueOf(txtPassword.getPassword());
+                if (!currentPassword.equals("Enter password")) {
+                    showHideController.setActualPassword(currentPassword);
                 }
             }
 
             @Override
             public void removeUpdate(javax.swing.event.DocumentEvent e) {
-                if (!txtPassword.getText().equals("Enter password")) {
-                    showHideController.setActualPassword(txtPassword.getText());
+                String currentPassword = String.valueOf(txtPassword.getPassword());
+                if (!currentPassword.equals("Enter password")) {
+                    showHideController.setActualPassword(currentPassword);
                 }
             }
 
             @Override
             public void changedUpdate(javax.swing.event.DocumentEvent e) {
-                if (!txtPassword.getText().equals("Enter password")) {
-                    showHideController.setActualPassword(txtPassword.getText());
+                String currentPassword = String.valueOf(txtPassword.getPassword());
+                if (!currentPassword.equals("Enter password")) {
+                    showHideController.setActualPassword(currentPassword);
                 }
             }
         });
@@ -213,7 +190,7 @@ public class Login extends javax.swing.JFrame {
 
     private void performLogin() {
         String username = txtUsername.getText().trim();
-        String password = showHideController.getActualPassword();
+        String password = showHideController.getActualPassword().trim();
         UserDAO userDAO = null;
         
         try {
@@ -253,6 +230,7 @@ public class Login extends javax.swing.JFrame {
                     JOptionPane.ERROR_MESSAGE);
                 txtPassword.setText("Enter password");
                 txtPassword.setForeground(Color.GRAY);
+                txtPassword.setEchoChar((char)0);
                 showHideController.reset();
                 txtPassword.requestFocus();
             }
@@ -276,6 +254,108 @@ public class Login extends javax.swing.JFrame {
         }
     }
 
+    private void setupActionListeners() {
+        // Username focus listener
+        txtUsername.addFocusListener(new java.awt.event.FocusAdapter() {
+            @Override
+            public void focusGained(java.awt.event.FocusEvent evt) {
+                if (txtUsername.getText().equals("USERNAME")) {
+                    txtUsername.setText("");
+                    txtUsername.setForeground(Color.BLACK);
+                }
+            }
+
+            @Override
+            public void focusLost(java.awt.event.FocusEvent evt) {
+                if (txtUsername.getText().trim().isEmpty()) {
+                    txtUsername.setForeground(Color.GRAY);
+                    txtUsername.setText("USERNAME");
+                }
+            }
+        });
+
+        // Password focus listener
+        txtPassword.addFocusListener(new java.awt.event.FocusAdapter() {
+            private boolean isFirstFocus = true;
+
+            @Override
+            public void focusGained(java.awt.event.FocusEvent evt) {
+                String currentPassword = String.valueOf(txtPassword.getPassword());
+                if (currentPassword.equals("Enter password")) {
+                    txtPassword.setText("");
+                    txtPassword.setForeground(Color.BLACK);
+                    txtPassword.setEchoChar('•');
+                    showHideController.setActualPassword("");
+                }
+            }
+
+            @Override
+            public void focusLost(java.awt.event.FocusEvent evt) {
+                String currentPassword = String.valueOf(txtPassword.getPassword());
+                if (currentPassword.isEmpty()) {
+                    txtPassword.setForeground(Color.GRAY);
+                    txtPassword.setText("Enter password");
+                    txtPassword.setEchoChar((char)0);
+                    showHideController.reset();
+                }
+            }
+        });
+
+        // Password document listener
+        txtPassword.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                String currentPassword = String.valueOf(txtPassword.getPassword());
+                if (!currentPassword.equals("Enter password")) {
+                    showHideController.setActualPassword(currentPassword);
+                }
+            }
+
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                String currentPassword = String.valueOf(txtPassword.getPassword());
+                if (!currentPassword.equals("Enter password")) {
+                    showHideController.setActualPassword(currentPassword);
+                }
+            }
+
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                String currentPassword = String.valueOf(txtPassword.getPassword());
+                if (!currentPassword.equals("Enter password")) {
+                    showHideController.setActualPassword(currentPassword);
+                }
+            }
+        });
+
+        // Back button action
+        btnBack.addActionListener(e -> {
+            if (previousWindow != null) {
+                previousWindow.setVisible(true);
+            }
+            dispose();
+        });
+
+        // Login button action
+        btnLogin.addActionListener(e -> performLogin());
+
+        // Forgot password link
+        lblForgotPassword.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        lblForgotPassword.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                // TODO: Implement forgot password functionality
+                JOptionPane.showMessageDialog(Login.this,
+                    "Forgot password functionality will be implemented soon.",
+                    "Coming Soon",
+                    JOptionPane.INFORMATION_MESSAGE);
+            }
+        });
+    }
+
+    private void togglePasswordVisibility() {
+        showHideController.togglePasswordVisibility();
+    }
+
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -294,12 +374,22 @@ public class Login extends javax.swing.JFrame {
         // Create text areas instead of text fields
         txtUsername = new javax.swing.JTextArea();
         
-        // Create password field instead of text area
-        txtPassword = new javax.swing.JTextArea();
+        // Create password field and show/hide button
+        txtPassword = new javax.swing.JPasswordField();
+        btnTogglePassword = new javax.swing.JButton();
+        btnTogglePassword.setText("Show");
+        btnTogglePassword.setFont(new java.awt.Font("Segoe UI", 0, 14));
+        btnTogglePassword.setBackground(new java.awt.Color(240, 240, 240));
+        btnTogglePassword.setForeground(new java.awt.Color(108, 117, 125));
+        btnTogglePassword.setBorderPainted(false);
+        btnTogglePassword.setFocusPainted(false);
+        btnTogglePassword.setOpaque(true);
+        btnTogglePassword.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnTogglePassword.setPreferredSize(new Dimension(70, 45));
+        btnTogglePassword.setMaximumSize(new Dimension(70, 45));
         
         btnLogin = new javax.swing.JButton();
         btnBack = new javax.swing.JButton();
-        btnTogglePassword = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("HeartSync Dating App - Login");
@@ -349,6 +439,7 @@ public class Login extends javax.swing.JFrame {
         txtUsername.setRows(1);
         txtUsername.setMaximumSize(new Dimension(400, 45));
         txtUsername.setPreferredSize(new Dimension(400, 45));
+        txtUsername.setText("USERNAME");
 
         // Add username to its panel with same spacing as password panel
         usernamePanel.add(txtUsername);
@@ -367,126 +458,78 @@ public class Login extends javax.swing.JFrame {
         txtPassword.setBackground(Color.WHITE);
         txtPassword.setOpaque(true);
         txtPassword.setForeground(Color.GRAY);
-        txtPassword.setLineWrap(true);
-        txtPassword.setWrapStyleWord(true);
         txtPassword.setBorder(BorderFactory.createCompoundBorder(
             new LineBorder(new Color(200, 200, 200)),
             new EmptyBorder(10, 15, 10, 15)));
-        txtPassword.setRows(1);
+        txtPassword.setEchoChar((char)0); // Initially show placeholder text
+        txtPassword.setText("Enter password");
         txtPassword.setMaximumSize(new Dimension(400, 45));
         txtPassword.setPreferredSize(new Dimension(400, 45));
-
-        // Show/Hide button
-        btnTogglePassword.setFont(new java.awt.Font("Segoe UI", 0, 14));
-        btnTogglePassword.setText("Show");
-        btnTogglePassword.setBackground(new java.awt.Color(240, 240, 240));
-        btnTogglePassword.setForeground(new java.awt.Color(108, 117, 125));
-        btnTogglePassword.setBorderPainted(false);
-        btnTogglePassword.setFocusPainted(false);
-        btnTogglePassword.setOpaque(true);
-        btnTogglePassword.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        btnTogglePassword.setPreferredSize(new Dimension(70, 45));
-        btnTogglePassword.setMaximumSize(new Dimension(70, 45));
-        btnTogglePassword.addActionListener(e -> togglePasswordVisibility());
 
         // Add components to password panel with spacing
         passwordPanel.add(txtPassword);
         passwordPanel.add(Box.createRigidArea(new Dimension(10, 0)));
         passwordPanel.add(btnTogglePassword);
 
+        // Initialize ShowHideController
+        showHideController = new ShowHideController(txtPassword, btnTogglePassword);
+
+        // Add components to form panel
+        formPanel.add(jLabel3);
+        formPanel.add(Box.createRigidArea(new Dimension(0, 20)));
+        formPanel.add(jLabel2);
+        formPanel.add(Box.createRigidArea(new Dimension(0, 30)));
+        formPanel.add(usernamePanel);
+        formPanel.add(Box.createRigidArea(new Dimension(0, 20)));
+        formPanel.add(passwordPanel);
+        formPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+
         // Forgot password link
         lblForgotPassword.setFont(new java.awt.Font("Segoe UI", 0, 14));
         lblForgotPassword.setForeground(new java.awt.Color(51, 51, 255));
         lblForgotPassword.setText("Forgot Password?");
-        lblForgotPassword.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        lblForgotPassword.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                // TODO: Implement forgot password functionality
-                JOptionPane.showMessageDialog(Login.this,
-                    "Forgot password functionality will be implemented soon.",
-                    "Coming Soon",
-                    JOptionPane.INFORMATION_MESSAGE);
-            }
-        });
         lblForgotPassword.setAlignmentX(Component.CENTER_ALIGNMENT);
+        formPanel.add(lblForgotPassword);
+        formPanel.add(Box.createRigidArea(new Dimension(0, 20)));
 
-        // Button panel
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.X_AXIS));
-        buttonPanel.setBackground(Color.WHITE);
-        buttonPanel.setMaximumSize(new Dimension(400, 45));
-        buttonPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        // Login button with orange background like homepage
-        btnLogin.setFont(new java.awt.Font("Segoe UI", 0, 16));
-        btnLogin.setText("Log in");
-        btnLogin.setBackground(new java.awt.Color(229, 89, 36));
+        // Login button
+        btnLogin.setFont(new java.awt.Font("Segoe UI", 1, 14));
+        btnLogin.setText("Login");
+        btnLogin.setBackground(new java.awt.Color(239, 83, 80));
         btnLogin.setForeground(Color.WHITE);
         btnLogin.setBorderPainted(false);
         btnLogin.setFocusPainted(false);
         btnLogin.setOpaque(true);
         btnLogin.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        btnLogin.setPreferredSize(new Dimension(190, 45));
-        btnLogin.setMaximumSize(new Dimension(190, 45));
+        btnLogin.setMaximumSize(new Dimension(400, 45));
+        btnLogin.setPreferredSize(new Dimension(400, 45));
+        btnLogin.setAlignmentX(Component.CENTER_ALIGNMENT);
+        formPanel.add(btnLogin);
+        formPanel.add(Box.createRigidArea(new Dimension(0, 10)));
 
-        // Back button with gray background
-        btnBack.setFont(new java.awt.Font("Segoe UI", 0, 16));
+        // Back button
+        btnBack.setFont(new java.awt.Font("Segoe UI", 0, 14));
         btnBack.setText("Back");
-        btnBack.setBackground(new java.awt.Color(108, 117, 125));
-        btnBack.setForeground(Color.WHITE);
+        btnBack.setBackground(new java.awt.Color(240, 240, 240));
+        btnBack.setForeground(new java.awt.Color(108, 117, 125));
         btnBack.setBorderPainted(false);
         btnBack.setFocusPainted(false);
         btnBack.setOpaque(true);
         btnBack.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        btnBack.setPreferredSize(new Dimension(190, 45));
-        btnBack.setMaximumSize(new Dimension(190, 45));
+        btnBack.setMaximumSize(new Dimension(400, 45));
+        btnBack.setPreferredSize(new Dimension(400, 45));
+        btnBack.setAlignmentX(Component.CENTER_ALIGNMENT);
+        formPanel.add(btnBack);
 
-        // Add buttons to button panel
-        buttonPanel.add(btnBack);
-        buttonPanel.add(Box.createRigidArea(new Dimension(20, 0)));
-        buttonPanel.add(btnLogin);
+        // Add form panel to main panel
+        jPanel1.add(formPanel);
+        getContentPane().add(jPanel1);
 
-        // Update form panel components
-        formPanel.add(Box.createVerticalStrut(20));
-        formPanel.add(jLabel3); // HeartSync
-        formPanel.add(Box.createVerticalStrut(15));
-        formPanel.add(jLabel2); // Welcome Back
-        formPanel.add(Box.createVerticalStrut(30));
-        formPanel.add(usernamePanel); // Use the new username panel
-        formPanel.add(Box.createVerticalStrut(20));
-        formPanel.add(passwordPanel);
-        formPanel.add(Box.createVerticalStrut(15));
-        formPanel.add(lblForgotPassword);
-        formPanel.add(Box.createVerticalStrut(30));
-        formPanel.add(buttonPanel);
-        formPanel.add(Box.createVerticalGlue()); // Add glue to push content up
-        formPanel.add(Box.createVerticalStrut(20));
-
-        // Update the layout to make the white panel fill the space
-        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
-        jPanel1.setLayout(jPanel1Layout);
-        jPanel1Layout.setHorizontalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.CENTER)
-            .addComponent(formPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-        );
-        jPanel1Layout.setVerticalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.CENTER)
-            .addComponent(formPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-        );
-
-        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
-        getContentPane().setLayout(layout);
-        layout.setHorizontalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-        );
-        layout.setVerticalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-        );
-
-        setLocationRelativeTo(null);
         pack();
+        setLocationRelativeTo(null);
+        
+        // Set up action listeners
+        setupActionListeners();
     }// </editor-fold>//GEN-END:initComponents
 
     private void txtUsernameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtUsernameActionPerformed
@@ -495,7 +538,7 @@ public class Login extends javax.swing.JFrame {
 
     private void btnLoginActionPerformed(java.awt.event.ActionEvent evt) {
         String username = txtUsername.getText().trim();
-        String password = txtPassword.getText().trim();
+        String password = showHideController.getActualPassword();
         
         // Check if either field is empty or contains placeholder text
         if (username.isEmpty() || username.equals("USERNAME") || 

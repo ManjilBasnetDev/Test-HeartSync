@@ -1,5 +1,7 @@
 package heartsync.model;
 
+import java.time.LocalDate;
+
 public class User {
     private int id;
     private String username;
@@ -7,13 +9,14 @@ public class User {
     private String userType;
     private String email;
     private String phoneNumber;
-    private String dateOfBirth;
+    private LocalDate dateOfBirth;
     private String gender;
     private String interests;
     private String bio;
     
     // Default constructor
-    public User() {}
+    public User() {
+    }
     
     // Constructor for basic user creation
     public User(String username, String password, String userType) {
@@ -23,9 +26,8 @@ public class User {
     }
     
     // Full constructor
-    public User(int id, String username, String password, String userType, 
-                String email, String phoneNumber, String dateOfBirth, 
-                String gender, String interests, String bio) {
+    public User(int id, String username, String password, String userType, String email,
+               String phoneNumber, LocalDate dateOfBirth, String gender, String interests, String bio) {
         this.id = id;
         this.username = username;
         this.password = password;
@@ -38,7 +40,7 @@ public class User {
         this.bio = bio;
     }
     
-    // Getters and Setters
+    // Getters and setters
     public int getId() {
         return id;
     }
@@ -87,11 +89,11 @@ public class User {
         this.phoneNumber = phoneNumber;
     }
     
-    public String getDateOfBirth() {
+    public LocalDate getDateOfBirth() {
         return dateOfBirth;
     }
     
-    public void setDateOfBirth(String dateOfBirth) {
+    public void setDateOfBirth(LocalDate dateOfBirth) {
         this.dateOfBirth = dateOfBirth;
     }
     

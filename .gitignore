@@ -1,3 +1,11 @@
+# Ignore build output
 build/
 *.class
+
+# Ignore NetBeans private config
 nbproject/private/
+
+# Ignore OS/system files
+.DS_Store
+Thumbs.db
+

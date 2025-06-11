@@ -48,7 +48,7 @@ public class ContactDAO {
         if (contact == null) {
             throw new IllegalArgumentException("Contact cannot be null");
         }
-
+        
         String sql = "INSERT INTO contacts (full_name, email, message) VALUES (?, ?, ?)";
         
         try (Connection conn = MySqlConnection.getConnection();

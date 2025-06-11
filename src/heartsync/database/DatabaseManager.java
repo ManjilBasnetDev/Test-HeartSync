@@ -6,8 +6,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class DatabaseManager {
+    private static final Logger LOGGER = Logger.getLogger(DatabaseManager.class.getName());
     private static DatabaseManager instance;
     private final DatabaseConnection dbConnection;
 
@@ -87,79 +90,62 @@ public class DatabaseManager {
                              String gender, String preferences, String aboutMe, 
                              String profilePicPath, String relationChoice, 
                              List<String> hobbies) throws SQLException {
-        Connection conn = null;
-        try {
-            conn = dbConnection.getConnection();
-            conn.setAutoCommit(false);
-
-            // Insert user profile
-            String insertProfileSQL = """
-                INSERT INTO user_profiles (user_id, full_name, height, weight, country, 
-                                        address, phone, qualification, gender, preferences, 
-                                        about_me, profile_pic_path, relation_choice)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """;
-
+        String sql = """
+            INSERT INTO user_profiles (user_id, full_name, height, weight, country, address,
+                                     phone, qualification, gender, preferences, about_me,
+                                     profile_pic_path, relation_choice)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """;
+        
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            
+            stmt.setInt(1, userId);
+            stmt.setString(2, fullName);
+            stmt.setInt(3, height);
+            stmt.setInt(4, weight);
+            stmt.setString(5, country);
+            stmt.setString(6, address);
+            stmt.setString(7, phone);
+            stmt.setString(8, qualification);
+            stmt.setString(9, gender);
+            stmt.setString(10, preferences);
+            stmt.setString(11, aboutMe);
+            stmt.setString(12, profilePicPath);
+            stmt.setString(13, relationChoice);
+            
+            int affectedRows = stmt.executeUpdate();
+            if (affectedRows == 0) {
+                throw new SQLException("Creating user profile failed, no rows affected.");
+            }
+            
             int profileId;
-            try (PreparedStatement pstmt = conn.prepareStatement(insertProfileSQL, Statement.RETURN_GENERATED_KEYS)) {
-                pstmt.setInt(1, userId);
-                pstmt.setString(2, fullName);
-                pstmt.setInt(3, height);
-                pstmt.setInt(4, weight);
-                pstmt.setString(5, country);
-                pstmt.setString(6, address);
-                pstmt.setString(7, phone);
-                pstmt.setString(8, qualification);
-                pstmt.setString(9, gender);
-                pstmt.setString(10, preferences);
-                pstmt.setString(11, aboutMe);
-                pstmt.setString(12, profilePicPath);
-                pstmt.setString(13, relationChoice);
-
-                pstmt.executeUpdate();
-
-                // Get the generated profile ID
-                try (ResultSet rs = pstmt.getGeneratedKeys()) {
-                    if (rs.next()) {
-                        profileId = rs.getInt(1);
-                    } else {
-                        throw new SQLException("Failed to get profile ID");
-                    }
+            try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
+                if (generatedKeys.next()) {
+                    profileId = generatedKeys.getInt(1);
+                } else {
+                    throw new SQLException("Creating user profile failed, no ID obtained.");
                 }
             }
-
-            // Insert hobbies
+            
+            // Save hobbies
             if (hobbies != null && !hobbies.isEmpty()) {
-                String insertHobbySQL = "INSERT INTO user_hobbies (user_id, hobby) VALUES (?, ?)";
-                try (PreparedStatement pstmt = conn.prepareStatement(insertHobbySQL)) {
+                String hobbySQL = "INSERT INTO user_hobbies (user_id, hobby) VALUES (?, ?)";
+                try (PreparedStatement hobbyStmt = conn.prepareStatement(hobbySQL)) {
                     for (String hobby : hobbies) {
-                        pstmt.setInt(1, userId);
-                        pstmt.setString(2, hobby);
-                        pstmt.addBatch();
+                        hobbyStmt.setInt(1, userId);
+                        hobbyStmt.setString(2, hobby);
+                        hobbyStmt.addBatch();
                     }
-                    pstmt.executeBatch();
+                    hobbyStmt.executeBatch();
                 }
             }
-
-            conn.commit();
+            
+            LOGGER.log(Level.INFO, "Created user profile with ID: {0}", profileId);
             return profileId;
         } catch (SQLException e) {
-            if (conn != null) {
-                try {
-                    conn.rollback();
-                } catch (SQLException ex) {
-                    ex.printStackTrace();
-                }
-            }
-            throw e;
-        } finally {
-            if (conn != null) {
-                try {
-                    conn.setAutoCommit(true);
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
+            LOGGER.log(Level.SEVERE, "Error saving user profile", e);
+            throw new SQLException("Failed to save user profile: " + e.getMessage(), e);
         }
     }
 

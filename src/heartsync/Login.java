@@ -1,9 +1,6 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package heartsync;
 
+import heartsync.dao.UserDAO;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -18,11 +15,6 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
-
-import heartsyncdatingapp.HomePage;
-import heartsyncdatingapp.controller.ShowHideController;
-import heartsyncdatingapp.dao.UserDAOLogin;
-import heartsyncdatingapp.view.ForgotPassword;
 
 /*
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
@@ -46,7 +38,7 @@ public class Login extends javax.swing.JFrame {
     private javax.swing.JTextArea txtUsername;
     private javax.swing.JTextArea txtPassword;
     private ShowHideController showHideController;
-    private HomePage homePage;
+    private Window previousWindow;
 
     /**
      * Creates new form Login
@@ -59,10 +51,10 @@ public class Login extends javax.swing.JFrame {
         setSize(700, 500);
         setResizable(false);
         
-        // Store reference to HomePage
+        // Store reference to previous window
         for (Window window : Window.getWindows()) {
-            if (window instanceof HomePage) {
-                homePage = (HomePage) window;
+            if (window != this && window.isVisible()) {
+                previousWindow = window;
                 break;
             }
         }
@@ -73,19 +65,29 @@ public class Login extends javax.swing.JFrame {
     private boolean selfEdit = false; // Class-level flag to prevent listener loops
 
     private void setupTextFields() {
-        // Username setup
+        // Username field setup
+        txtUsername.setLineWrap(true);
+        txtUsername.setWrapStyleWord(true);
+        txtUsername.setBorder(BorderFactory.createCompoundBorder(
+            new LineBorder(new Color(200, 200, 200)),
+            new EmptyBorder(10, 15, 10, 15)));
+        txtUsername.setRows(1);
+        txtUsername.setMaximumSize(new Dimension(400, 45));
+        txtUsername.setPreferredSize(new Dimension(400, 45));
         txtUsername.setText("USERNAME");
         txtUsername.setForeground(Color.GRAY);
-        txtUsername.setBackground(Color.WHITE);
-        txtUsername.setOpaque(true);
-
-        // Password setup
+        
+        // Password field setup
+        txtPassword.setLineWrap(true);
+        txtPassword.setWrapStyleWord(true);
+        txtPassword.setBorder(BorderFactory.createCompoundBorder(
+            new LineBorder(new Color(200, 200, 200)),
+            new EmptyBorder(10, 15, 10, 15)));
+        txtPassword.setRows(1);
+        txtPassword.setMaximumSize(new Dimension(400, 45));
+        txtPassword.setPreferredSize(new Dimension(400, 45));
         txtPassword.setText("Enter password");
         txtPassword.setForeground(Color.GRAY);
-        txtPassword.setBackground(Color.WHITE);
-        txtPassword.setOpaque(true);
-        txtPassword.setWrapStyleWord(true);
-        txtPassword.setLineWrap(true);
     }
 
     // This method ensures the JTextArea displays either bullets or actual password
@@ -120,47 +122,75 @@ public class Login extends javax.swing.JFrame {
 
     private void setupActionListeners() {
         // Username focus listener
-txtUsername.addFocusListener(new java.awt.event.FocusAdapter() {
-    @Override
-    public void focusGained(java.awt.event.FocusEvent evt) {
-        if (txtUsername.getText().equals("USERNAME")) {
-            txtUsername.setText("");
-            txtUsername.setForeground(Color.BLACK);
-        }
-    }
-
-    @Override
-    public void focusLost(java.awt.event.FocusEvent evt) {
-                if (txtUsername.getText().trim().isEmpty()) {
-            txtUsername.setForeground(Color.GRAY);
-            txtUsername.setText("USERNAME");
-        }
-    }
-});
-
-        // Password focus listener
-txtPassword.addFocusListener(new java.awt.event.FocusAdapter() {
-    @Override
-    public void focusGained(java.awt.event.FocusEvent evt) {
-                if (txtPassword.getText().equals("Enter password")) {
-            txtPassword.setText("");
-            txtPassword.setForeground(Color.BLACK);
-        }
-    }
+        txtUsername.addFocusListener(new java.awt.event.FocusAdapter() {
+            @Override
+            public void focusGained(java.awt.event.FocusEvent evt) {
+                if (txtUsername.getText().equals("USERNAME")) {
+                    txtUsername.setText("");
+                    txtUsername.setForeground(Color.BLACK);
+                }
+            }
 
             @Override
-    public void focusLost(java.awt.event.FocusEvent evt) {
+            public void focusLost(java.awt.event.FocusEvent evt) {
+                if (txtUsername.getText().trim().isEmpty()) {
+                    txtUsername.setForeground(Color.GRAY);
+                    txtUsername.setText("USERNAME");
+                }
+            }
+        });
+
+        // Password focus listener
+        txtPassword.addFocusListener(new java.awt.event.FocusAdapter() {
+            @Override
+            public void focusGained(java.awt.event.FocusEvent evt) {
+                if (txtPassword.getText().equals("Enter password")) {
+                    txtPassword.setText("");
+                    txtPassword.setForeground(Color.BLACK);
+                    showHideController.setActualPassword("");
+                }
+            }
+
+            @Override
+            public void focusLost(java.awt.event.FocusEvent evt) {
                 if (txtPassword.getText().trim().isEmpty()) {
-            txtPassword.setForeground(Color.GRAY);
-            txtPassword.setText("Enter password");
-        }
-    }
-});
+                    txtPassword.setForeground(Color.GRAY);
+                    txtPassword.setText("Enter password");
+                    showHideController.reset();
+                } else {
+                    showHideController.setActualPassword(txtPassword.getText());
+                }
+            }
+        });
+
+        // Password text change listener
+        txtPassword.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                if (!txtPassword.getText().equals("Enter password")) {
+                    showHideController.setActualPassword(txtPassword.getText());
+                }
+            }
+
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                if (!txtPassword.getText().equals("Enter password")) {
+                    showHideController.setActualPassword(txtPassword.getText());
+                }
+            }
+
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                if (!txtPassword.getText().equals("Enter password")) {
+                    showHideController.setActualPassword(txtPassword.getText());
+                }
+            }
+        });
 
         // Back button action
         btnBack.addActionListener(e -> {
-            if (homePage != null) {
-                homePage.setVisible(true);
+            if (previousWindow != null) {
+                previousWindow.setVisible(true);
             }
             dispose();
         });
@@ -168,20 +198,15 @@ txtPassword.addFocusListener(new java.awt.event.FocusAdapter() {
         // Login button action
         btnLogin.addActionListener(e -> performLogin());
 
-lblForgotPassword.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-
-lblForgotPassword.addMouseListener(new java.awt.event.MouseAdapter() {
-    public void mouseClicked(java.awt.event.MouseEvent evt) {
-        ForgotPassword forgotPasswordView = new ForgotPassword();
-        forgotPasswordView.setVisible(true);
-        dispose(); // Close login window
-    }
-});
-
-        // Ensure initial state of password field
-        SwingUtilities.invokeLater(() -> {
-            if (!txtPassword.getText().equals("Enter password")) {
-                showHideController.setActualPassword(txtPassword.getText());
+        // Forgot password link
+        lblForgotPassword.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        lblForgotPassword.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                // TODO: Implement forgot password functionality
+                JOptionPane.showMessageDialog(Login.this,
+                    "Forgot password functionality will be implemented soon.",
+                    "Coming Soon",
+                    JOptionPane.INFORMATION_MESSAGE);
             }
         });
     }
@@ -189,37 +214,31 @@ lblForgotPassword.addMouseListener(new java.awt.event.MouseAdapter() {
     private void performLogin() {
         String username = txtUsername.getText().trim();
         String password = showHideController.getActualPassword();
+        UserDAO userDAO = null;
         
-        // Validation
-        if (username.isEmpty() || username.equals("USERNAME") || 
-            password.isEmpty() || password.equals("Enter password")) {
-            
-            StringBuilder message = new StringBuilder("Please enter ");
-            
-            if (username.isEmpty() || username.equals("USERNAME")) {
-                message.append("username");
-                if (password.isEmpty() || password.equals("Enter password")) {
-                    message.append(" and password");
-                }
-            } else if (password.isEmpty() || password.equals("Enter password")) {
-                message.append("password");
-            }
-            
-            JOptionPane.showMessageDialog(this,
-                message.toString(),
-                "Required Fields",
-                JOptionPane.WARNING_MESSAGE);
-                
-            if (username.isEmpty() || username.equals("USERNAME")) {
-                txtUsername.requestFocus();
-    } else {
-                txtPassword.requestFocus();
-            }
-            return;
-        }
-
         try {
-            UserDAOLogin userDAO = new UserDAOLogin();
+            // Validation
+            if (username.isEmpty() || username.equals("USERNAME")) {
+                throw new IllegalArgumentException("Please enter a username");
+            }
+            if (password.isEmpty() || password.equals("Enter password")) {
+                throw new IllegalArgumentException("Please enter a password");
+            }
+            
+            // Username validation
+            if (username.length() < 3) {
+                throw new IllegalArgumentException("Username must be at least 3 characters long");
+            }
+            if (!username.matches("^[a-zA-Z0-9_]+$")) {
+                throw new IllegalArgumentException("Username can only contain letters, numbers, and underscores");
+            }
+            
+            // Password validation
+            if (password.length() < 6) {
+                throw new IllegalArgumentException("Password must be at least 6 characters long");
+            }
+
+            userDAO = new UserDAO();
             if (userDAO.authenticate(username, password)) {
                 JOptionPane.showMessageDialog(this, 
                     "Welcome back, " + username + "!", 
@@ -232,13 +251,26 @@ lblForgotPassword.addMouseListener(new java.awt.event.MouseAdapter() {
                     "Invalid username or password. Please try again.", 
                     "Login Failed", 
                     JOptionPane.ERROR_MESSAGE);
-                txtPassword.setText("");
+                txtPassword.setText("Enter password");
+                txtPassword.setForeground(Color.GRAY);
                 showHideController.reset();
                 txtPassword.requestFocus();
-    }
-        } catch (SQLException ex) {
+            }
+        } catch (IllegalArgumentException e) {
+            JOptionPane.showMessageDialog(this,
+                e.getMessage(),
+                "Invalid Input",
+                JOptionPane.WARNING_MESSAGE);
+            
+            // Focus the appropriate field based on the error
+            if (e.getMessage().toLowerCase().contains("username")) {
+                txtUsername.requestFocus();
+            } else {
+                txtPassword.requestFocus();
+            }
+        } catch (SQLException e) {
             JOptionPane.showMessageDialog(this, 
-                "Database error: " + ex.getMessage(), 
+                "Database error: " + e.getMessage(), 
                 "Error", 
                 JOptionPane.ERROR_MESSAGE);
         }
@@ -369,9 +401,11 @@ lblForgotPassword.addMouseListener(new java.awt.event.MouseAdapter() {
         lblForgotPassword.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         lblForgotPassword.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
-                ForgotPassword forgotPasswordView = new ForgotPassword();
-                forgotPasswordView.setVisible(true);
-                dispose(); // Close login window
+                // TODO: Implement forgot password functionality
+                JOptionPane.showMessageDialog(Login.this,
+                    "Forgot password functionality will be implemented soon.",
+                    "Coming Soon",
+                    JOptionPane.INFORMATION_MESSAGE);
             }
         });
         lblForgotPassword.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -522,7 +556,7 @@ lblForgotPassword.addMouseListener(new java.awt.event.MouseAdapter() {
         }
         
         try {
-            UserDAOLogin userDAO = new UserDAOLogin();
+            UserDAO userDAO = new UserDAO();
             if (userDAO.authenticate(username, password)) {
                 JOptionPane.showMessageDialog(this, 
                     "Welcome back, " + username + "!", 
@@ -564,13 +598,13 @@ lblForgotPassword.addMouseListener(new java.awt.event.MouseAdapter() {
                 }
             }
         } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(LoginFinal.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(Login.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(LoginFinal.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(Login.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(LoginFinal.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(Login.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(LoginFinal.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(Login.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
         //</editor-fold>
 

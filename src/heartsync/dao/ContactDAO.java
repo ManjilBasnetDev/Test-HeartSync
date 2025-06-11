@@ -1,16 +1,24 @@
 package heartsync.dao;
 
-import heartsync.database.MySqlConnection;
+import heartsync.database.DatabaseConnection;
 import heartsync.model.Contact;
 import java.sql.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Data Access Object for handling Contact-related database operations.
  * Implements CRUD operations for Contact entities.
  */
 public class ContactDAO {
+    private static final Logger LOGGER = Logger.getLogger(ContactDAO.class.getName());
+    private final Connection connection;
     
-    public ContactDAO() {
+    public ContactDAO() throws SQLException {
+        this.connection = DatabaseConnection.getConnection();
+        if (this.connection == null) {
+            throw new SQLException("Could not establish database connection");
+        }
         createContactTable();
     }
     
@@ -18,7 +26,7 @@ public class ContactDAO {
      * Creates the contacts table if it doesn't exist.
      * @throws SQLException if there's an error executing the SQL
      */
-    private void createContactTable() {
+    private void createContactTable() throws SQLException {
         String sql = """
             CREATE TABLE IF NOT EXISTS contacts (
                 id INT PRIMARY KEY AUTO_INCREMENT,
@@ -29,12 +37,12 @@ public class ContactDAO {
             )
         """;
         
-        try (Connection conn = MySqlConnection.getConnection();
-             Statement stmt = conn.createStatement()) {
+        try (Statement stmt = connection.createStatement()) {
             stmt.execute(sql);
+            LOGGER.info("Contacts table created or verified");
         } catch (SQLException e) {
-            System.err.println("Error creating contacts table: " + e.getMessage());
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "Error creating contacts table", e);
+            throw e;
         }
     }
     
@@ -43,6 +51,7 @@ public class ContactDAO {
      * @param contact The contact to save
      * @return true if the save was successful, false otherwise
      * @throws SQLException if there's an error executing the SQL
+     * @throws IllegalArgumentException if contact is null or contains invalid data
      */
     public boolean saveContact(Contact contact) throws SQLException {
         if (contact == null) {
@@ -51,9 +60,7 @@ public class ContactDAO {
 
         String sql = "INSERT INTO contacts (full_name, email, message) VALUES (?, ?, ?)";
         
-        try (Connection conn = MySqlConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            
+        try (PreparedStatement pstmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             pstmt.setString(1, contact.getFullName());
             pstmt.setString(2, contact.getEmail());
             pstmt.setString(3, contact.getMessage());
@@ -64,7 +71,8 @@ public class ContactDAO {
                 try (ResultSet generatedKeys = pstmt.getGeneratedKeys()) {
                     if (generatedKeys.next()) {
                         contact.setId(generatedKeys.getInt(1));
-                        System.out.println("Contact saved successfully with ID: " + contact.getId());
+                        contact.setCreatedAt(new Timestamp(System.currentTimeMillis()));
+                        LOGGER.info("Contact saved successfully with ID: " + contact.getId());
                         return true;
                     }
                 }
@@ -72,8 +80,21 @@ public class ContactDAO {
             
             return false;
         } catch (SQLException e) {
-            System.err.println("Error saving contact: " + e.getMessage());
+            LOGGER.log(Level.SEVERE, "Error saving contact", e);
             throw e;
         }
     }
-} 
+    
+    /**
+     * Closes the database connection.
+     */
+    public void close() {
+        try {
+            if (connection != null && !connection.isClosed()) {
+                connection.close();
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.WARNING, "Error closing database connection", e);
+        }
+    }
+}

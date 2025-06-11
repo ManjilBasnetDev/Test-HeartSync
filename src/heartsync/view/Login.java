@@ -1,32 +1,36 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
-package heartsync;
+package heartsync.view;
 
-import heartsync.controller.ShowHideController;
-import heartsync.dao.UserDAO;
-import heartsync.view.ForgotPassword;
-import heartsync.view.HomePage;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Window;
 import java.sql.SQLException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 
+import heartsync.dao.UserDAO;
+import heartsync.controller.ShowHideController;
+import heartsync.view.HomePage;
+import heartsync.view.ForgotPassword;
+
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
+ */
+
+/**
+ *
+ * @author Edsha
+ */
 public class Login extends javax.swing.JFrame {
-    private static final Logger LOGGER = Logger.getLogger(Login.class.getName());
-    
+
     private javax.swing.JButton btnBack;
     private javax.swing.JButton btnLogin;
     private javax.swing.JButton btnTogglePassword;
-    private javax.swing.JPanel jPanel1;
+    private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
+    private javax.swing.JPanel jPanel1;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel lblForgotPassword;
     private javax.swing.JTextArea txtUsername;
@@ -44,10 +48,11 @@ public class Login extends javax.swing.JFrame {
         showHideController = new ShowHideController(txtPassword, btnTogglePassword);
         setSize(700, 500);
         setResizable(false);
+        
         // Store reference to HomePage
         for (Window window : Window.getWindows()) {
-            if (window instanceof HomePage hp) {
-                homePage = hp;
+            if (window instanceof HomePage) {
+                homePage = (HomePage) window;
                 break;
             }
         }
@@ -55,6 +60,7 @@ public class Login extends javax.swing.JFrame {
 
     private String actualPassword = "";
     private boolean isPasswordVisible = false;
+    private boolean selfEdit = false; // Class-level flag to prevent listener loops
 
     private void setupTextFields() {
         // Username setup
@@ -74,6 +80,7 @@ public class Login extends javax.swing.JFrame {
 
     // This method ensures the JTextArea displays either bullets or actual password
     private void updatePasswordField() {
+        selfEdit = true; // Prevent listener from firing during this update
         if (isPasswordVisible) {
             txtPassword.setText(actualPassword);
         } else {
@@ -85,6 +92,7 @@ public class Login extends javax.swing.JFrame {
         }
         // Try to restore caret position, usually to the end after a programmatic change
         txtPassword.setCaretPosition(txtPassword.getText().length());
+        selfEdit = false;
     }
 
     private void togglePasswordVisibility() {
@@ -102,42 +110,42 @@ public class Login extends javax.swing.JFrame {
 
     private void setupActionListeners() {
         // Username focus listener
-        txtUsername.addFocusListener(new java.awt.event.FocusAdapter() {
-            @Override
-            public void focusGained(java.awt.event.FocusEvent evt) {
-                if (txtUsername.getText().equals("USERNAME")) {
-                    txtUsername.setText("");
-                    txtUsername.setForeground(Color.BLACK);
-                }
-            }
+txtUsername.addFocusListener(new java.awt.event.FocusAdapter() {
+    @Override
+    public void focusGained(java.awt.event.FocusEvent evt) {
+        if (txtUsername.getText().equals("USERNAME")) {
+            txtUsername.setText("");
+            txtUsername.setForeground(Color.BLACK);
+        }
+    }
 
-            @Override
-            public void focusLost(java.awt.event.FocusEvent evt) {
+    @Override
+    public void focusLost(java.awt.event.FocusEvent evt) {
                 if (txtUsername.getText().trim().isEmpty()) {
-                    txtUsername.setForeground(Color.GRAY);
-                    txtUsername.setText("USERNAME");
-                }
-            }
-        });
+            txtUsername.setForeground(Color.GRAY);
+            txtUsername.setText("USERNAME");
+        }
+    }
+});
 
         // Password focus listener
-        txtPassword.addFocusListener(new java.awt.event.FocusAdapter() {
-            @Override
-            public void focusGained(java.awt.event.FocusEvent evt) {
+txtPassword.addFocusListener(new java.awt.event.FocusAdapter() {
+    @Override
+    public void focusGained(java.awt.event.FocusEvent evt) {
                 if (txtPassword.getText().equals("Enter password")) {
-                    txtPassword.setText("");
-                    txtPassword.setForeground(Color.BLACK);
-                }
-            }
+            txtPassword.setText("");
+            txtPassword.setForeground(Color.BLACK);
+        }
+    }
 
             @Override
-            public void focusLost(java.awt.event.FocusEvent evt) {
+    public void focusLost(java.awt.event.FocusEvent evt) {
                 if (txtPassword.getText().trim().isEmpty()) {
-                    txtPassword.setForeground(Color.GRAY);
-                    txtPassword.setText("Enter password");
-                }
-            }
-        });
+            txtPassword.setForeground(Color.GRAY);
+            txtPassword.setText("Enter password");
+        }
+    }
+});
 
         // Back button action
         btnBack.addActionListener(e -> {
@@ -150,16 +158,15 @@ public class Login extends javax.swing.JFrame {
         // Login button action
         btnLogin.addActionListener(e -> performLogin());
 
-        lblForgotPassword.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+lblForgotPassword.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
 
-        lblForgotPassword.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                ForgotPassword forgotPasswordView = new ForgotPassword();
-                forgotPasswordView.setVisible(true);
-                dispose(); // Close login window
-            }
-        });
+lblForgotPassword.addMouseListener(new java.awt.event.MouseAdapter() {
+    public void mouseClicked(java.awt.event.MouseEvent evt) {
+        ForgotPassword forgotPasswordView = new ForgotPassword();
+        forgotPasswordView.setVisible(true);
+        dispose(); // Close login window
+    }
+});
 
         // Ensure initial state of password field
         SwingUtilities.invokeLater(() -> {
@@ -176,7 +183,9 @@ public class Login extends javax.swing.JFrame {
         // Validation
         if (username.isEmpty() || username.equals("USERNAME") || 
             password.isEmpty() || password.equals("Enter password")) {
+            
             StringBuilder message = new StringBuilder("Please enter ");
+            
             if (username.isEmpty() || username.equals("USERNAME")) {
                 message.append("username");
                 if (password.isEmpty() || password.equals("Enter password")) {
@@ -190,10 +199,10 @@ public class Login extends javax.swing.JFrame {
                 message.toString(),
                 "Required Fields",
                 JOptionPane.WARNING_MESSAGE);
-            
+                
             if (username.isEmpty() || username.equals("USERNAME")) {
                 txtUsername.requestFocus();
-            } else {
+    } else {
                 txtPassword.requestFocus();
             }
             return;
@@ -216,11 +225,10 @@ public class Login extends javax.swing.JFrame {
                 txtPassword.setText("");
                 showHideController.reset();
                 txtPassword.requestFocus();
-            }
+    }
         } catch (SQLException ex) {
-            LOGGER.log(Level.SEVERE, "Database error during login attempt", ex);
             JOptionPane.showMessageDialog(this, 
-                "Unable to connect to the database. Please try again later.", 
+                "Database error: " + ex.getMessage(), 
                 "Error", 
                 JOptionPane.ERROR_MESSAGE);
         }
@@ -236,8 +244,9 @@ public class Login extends javax.swing.JFrame {
     private void initComponents() {
         jPanel1 = new javax.swing.JPanel();
         JPanel formPanel = new javax.swing.JPanel();
-        jLabel3 = new javax.swing.JLabel();
+        jLabel1 = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
+        jLabel3 = new javax.swing.JLabel();
         lblForgotPassword = new javax.swing.JLabel();
         
         // Create text areas instead of text fields
@@ -349,7 +358,6 @@ public class Login extends javax.swing.JFrame {
         lblForgotPassword.setText("Forgot Password?");
         lblForgotPassword.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         lblForgotPassword.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 ForgotPassword forgotPasswordView = new ForgotPassword();
                 forgotPasswordView.setVisible(true);
@@ -437,6 +445,97 @@ public class Login extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
+    private void txtUsernameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtUsernameActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txtUsernameActionPerformed
+
+    private void btnLoginActionPerformed(java.awt.event.ActionEvent evt) {
+        String username = txtUsername.getText().trim();
+        String password = txtPassword.getText().trim();
+        
+        // Check if either field is empty or contains placeholder text
+        if (username.isEmpty() || username.equals("USERNAME") || 
+            password.isEmpty() || password.equals("Enter password")) {
+            
+            StringBuilder message = new StringBuilder("Please enter ");
+            
+            if (username.isEmpty() || username.equals("USERNAME")) {
+                message.append("username");
+                if (password.isEmpty() || password.equals("Enter password")) {
+                    message.append(" and password");
+                }
+            } else if (password.isEmpty() || password.equals("Enter password")) {
+                message.append("password");
+            }
+            
+            JOptionPane.showMessageDialog(this,
+                message.toString(),
+                "Required Fields",
+                JOptionPane.WARNING_MESSAGE);
+                
+            // Focus the empty field
+            if (username.isEmpty() || username.equals("USERNAME")) {
+                txtUsername.requestFocus();
+            } else {
+                txtPassword.requestFocus();
+            }
+            return;
+        }
+
+        // Username validation
+        if (username.length() < 3) {
+            JOptionPane.showMessageDialog(this,
+                "Username must be at least 3 characters long",
+                "Invalid Username",
+                JOptionPane.WARNING_MESSAGE);
+            txtUsername.requestFocus();
+            return;
+        }
+
+        if (!username.matches("^[a-zA-Z0-9_]+$")) {
+            JOptionPane.showMessageDialog(this,
+                "Username can only contain letters, numbers, and underscores",
+                "Invalid Username",
+                JOptionPane.WARNING_MESSAGE);
+            txtUsername.requestFocus();
+            return;
+        }
+        
+        // Password validation
+        if (password.length() < 6) {
+            JOptionPane.showMessageDialog(this,
+                "Password must be at least 6 characters long",
+                "Invalid Password",
+                JOptionPane.WARNING_MESSAGE);
+            txtPassword.requestFocus();
+            return;
+        }
+        
+        try {
+            UserDAO userDAO = new UserDAO();
+            if (userDAO.authenticate(username, password)) {
+                JOptionPane.showMessageDialog(this, 
+                    "Welcome back, " + username + "!", 
+                    "Login Successful", 
+                    JOptionPane.INFORMATION_MESSAGE);
+                dispose(); // Close login window
+                // TODO: Add code to open main application window
+            } else {
+                JOptionPane.showMessageDialog(this, 
+                    "Invalid username or password. Please try again.", 
+                    "Login Failed", 
+                    JOptionPane.ERROR_MESSAGE);
+                txtPassword.setText("");
+                txtPassword.requestFocus();
+            }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, 
+                "Unable to connect to the database. Please try again later.\nError: " + e.getMessage(), 
+                "Database Error", 
+                JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
+        }
+    }
 
     /**
      * @param args the command line arguments
@@ -454,7 +553,13 @@ public class Login extends javax.swing.JFrame {
                     break;
                 }
             }
-        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | javax.swing.UnsupportedLookAndFeelException ex) {
+        } catch (ClassNotFoundException ex) {
+            java.util.logging.Logger.getLogger(Login.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (InstantiationException ex) {
+            java.util.logging.Logger.getLogger(Login.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (IllegalAccessException ex) {
+            java.util.logging.Logger.getLogger(Login.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
             java.util.logging.Logger.getLogger(Login.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
         //</editor-fold>

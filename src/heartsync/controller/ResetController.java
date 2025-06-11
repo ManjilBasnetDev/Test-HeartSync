@@ -4,20 +4,29 @@
  */
 package heartsync.controller;
 
-import heartsync.dao.ResetDAO;
+import heartsync.dao.UserDAO;
 import heartsync.model.User;
 import heartsync.view.ResetPassword;
+import java.sql.SQLException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
  * @author manjil-basnet
  */
 public class ResetController {
+    private static final Logger LOGGER = Logger.getLogger(ResetController.class.getName());
     private int userId;
-    private final ResetDAO resetDAO;
+    private final UserDAO userDAO;
 
     public ResetController() {
-        resetDAO = new ResetDAO();
+        try {
+            userDAO = new UserDAO();
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Failed to initialize UserDAO", e);
+            throw new RuntimeException("Failed to initialize database connection", e);
+        }
     }
 
     public void setUserId(int userId) {
@@ -33,36 +42,41 @@ public class ResetController {
         try {
             // Input validation
             if (newPassword == null || newPassword.trim().isEmpty()) {
-                throw new IllegalArgumentException("Password cannot be empty");
+                LOGGER.warning("Attempt to update password with empty value");
+                return false;
             }
 
-            User user = resetDAO.getUserById(userId);
+            User user = userDAO.getUserById(userId);
             if (user != null) {
                 user.setPassword(newPassword);
-                return resetDAO.updateUser(user);
+                return userDAO.updateUser(user);
             }
+            LOGGER.warning("No user found with ID: " + userId);
             return false;
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Database error while updating password", e);
+            return false;
+        } catch (RuntimeException e) {
+            LOGGER.log(Level.SEVERE, "Unexpected error while updating password", e);
             return false;
         }
     }
 
     public boolean verifySecurityAnswers(String username, String favoriteColor, String firstSchool) {
         try {
-            User user = resetDAO.getUserByUsername(username);
-            if (user != null) {
-                return favoriteColor.equals(user.getFavoriteColor())
-                        && firstSchool.equals(user.getFirstSchool());
-            }
-            return false;
-        } catch (Exception e) {
-            e.printStackTrace();
+            return userDAO.verifySecurityQuestions(username, favoriteColor, firstSchool);
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error verifying security answers", e);
             return false;
         }
     }
 
     public User getUserByUsername(String username) {
-        return resetDAO.getUserByUsername(username);
+        try {
+            return userDAO.getUserByUsername(username);
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error getting user by username", e);
+            return null;
+        }
     }
 }

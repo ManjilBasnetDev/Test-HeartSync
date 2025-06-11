@@ -1,41 +1,27 @@
 package heartsync.database;
 
 public class DatabaseConfig {
-    // Database connection constants
-    public static final String DB_URL = "jdbc:mysql://localhost:3306/heartsync";
-    public static final String USER = "root";
-    public static final String PASS = "Rohit@56";
+    // Database connection settings
     public static final String DRIVER_CLASS = "com.mysql.cj.jdbc.Driver";
+    public static final String DB_URL = "jdbc:mysql://localhost:3306/datingapp";
+    public static final String USER = "manjil";
+    public static final String PASS = "3023";
     
-    // Database table names
+    // Table names
     public static final String USERS_TABLE = "users";
-    public static final String HOBBIES_TABLE = "user_hobbies";
+    public static final String PROFILES_TABLE = "user_profiles";
+    public static final String MATCHES_TABLE = "matches";
+    public static final String MESSAGES_TABLE = "messages";
+    public static final String NOTIFICATIONS_TABLE = "notifications";
     
-    // Database creation queries
-    public static final String CREATE_USERS_TABLE = """
-        CREATE TABLE IF NOT EXISTS users (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            full_name VARCHAR(100),
-            height INT,
-            weight INT,
-            country VARCHAR(100),
-            address TEXT,
-            phone VARCHAR(20),
-            qualification VARCHAR(50),
-            gender VARCHAR(20),
-            preferences VARCHAR(20),
-            about_me TEXT,
-            profile_pic_path VARCHAR(255),
-            relation_choice VARCHAR(50)
-        )
-    """;
+    // SQL Queries
+    public static final String GET_USER_BY_USERNAME = "SELECT * FROM " + USERS_TABLE + " WHERE username = ?";
+    public static final String GET_USER_BY_ID = "SELECT * FROM " + USERS_TABLE + " WHERE id = ?";
+    public static final String UPDATE_USER_PASSWORD = "UPDATE " + USERS_TABLE + " SET password = ? WHERE id = ?";
+    public static final String VERIFY_SECURITY_QUESTIONS = "SELECT * FROM " + USERS_TABLE + 
+            " WHERE username = ? AND favorite_color = ? AND first_school = ?";
     
-    public static final String CREATE_HOBBIES_TABLE = """
-        CREATE TABLE IF NOT EXISTS user_hobbies (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            user_id INT,
-            hobby VARCHAR(100),
-            FOREIGN KEY (user_id) REFERENCES users(id)
-        )
-    """;
-} 
+    private DatabaseConfig() {
+        // Private constructor to prevent instantiation
+    }
+}

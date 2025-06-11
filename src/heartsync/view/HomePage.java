@@ -337,9 +337,10 @@ public class HomePage extends JFrame {
         });
         
         createAccountButton.addActionListener(e -> {
-            Register register = new Register();
-            register.setVisible(true);
-            dispose(); // Close the home page when register page opens
+            JOptionPane.showMessageDialog(this,
+                "Registration functionality coming soon!",
+                "Coming Soon",
+                JOptionPane.INFORMATION_MESSAGE);
         });
         
         // Load and add images

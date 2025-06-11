@@ -10,6 +10,7 @@ import java.awt.geom.RoundRectangle2D;
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import java.sql.SQLException;
 
 public class Register extends JFrame {
     private static final int WINDOW_RADIUS = 35;
@@ -394,8 +395,8 @@ public class Register extends JFrame {
                 User newUser = new User(username, password, userType);
                 UserDAO userDAO = new UserDAO();
                 
-                int userId = userDAO.createUser(newUser);
-                if (userId != -1) {
+                try {
+                    int userId = userDAO.createUser(newUser);
                     JOptionPane.showMessageDialog(this, 
                         "Registration successful!\nUsername: " + username,
                         "Success", 
@@ -408,11 +409,20 @@ public class Register extends JFrame {
                     ProfileSetupView profileSetup = new ProfileSetupView(controller);
                     profileSetup.setVisible(true);
                     dispose(); // Close the registration window
-                } else {
-                    JOptionPane.showMessageDialog(this,
-                        "Registration failed. Please try again.",
-                        "Error",
-                        JOptionPane.ERROR_MESSAGE);
+                } catch (SQLException ex) {
+                    String errorMessage = ex.getMessage();
+                    if (errorMessage.contains("Duplicate entry") && errorMessage.contains("username")) {
+                        JOptionPane.showMessageDialog(this,
+                            "Username already exists. Please choose a different username.",
+                            "Registration Failed",
+                            JOptionPane.ERROR_MESSAGE);
+                        usernameField.requestFocus();
+                    } else {
+                        JOptionPane.showMessageDialog(this,
+                            "Registration failed. Please try again.\nError: " + ex.getMessage(),
+                            "Error",
+                            JOptionPane.ERROR_MESSAGE);
+                    }
                 }
             }
         });

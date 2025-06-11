@@ -90,7 +90,9 @@ public class Login extends javax.swing.JFrame {
         txtPassword.setText("Enter password");
         txtPassword.setMaximumSize(new Dimension(400, 45));
         txtPassword.setPreferredSize(new Dimension(400, 45));
+    }
 
+    private void setupActionListeners() {
         // Username focus listener
         txtUsername.addFocusListener(new java.awt.event.FocusAdapter() {
             @Override
@@ -112,27 +114,25 @@ public class Login extends javax.swing.JFrame {
 
         // Password focus listener
         txtPassword.addFocusListener(new java.awt.event.FocusAdapter() {
-            private boolean isFirstFocus = true;
-
             @Override
             public void focusGained(java.awt.event.FocusEvent evt) {
-                String currentPassword = String.valueOf(txtPassword.getPassword());
-                if (currentPassword.equals("Enter password")) {
-                    txtPassword.setText("");
-                    txtPassword.setForeground(Color.BLACK);
-                    txtPassword.setEchoChar('•');
-                    showHideController.setActualPassword("");
+                String pass = String.valueOf(txtPassword.getPassword());
+                if (pass.equals("Enter password")) {
+                    SwingUtilities.invokeLater(() -> {
+                        txtPassword.setText("");
+                        txtPassword.setForeground(Color.BLACK);
+                        txtPassword.setEchoChar('•');
+                    });
                 }
             }
 
             @Override
             public void focusLost(java.awt.event.FocusEvent evt) {
-                String currentPassword = String.valueOf(txtPassword.getPassword());
-                if (currentPassword.isEmpty()) {
+                String pass = String.valueOf(txtPassword.getPassword());
+                if (pass.isEmpty() || pass.trim().isEmpty()) {
                     txtPassword.setForeground(Color.GRAY);
                     txtPassword.setText("Enter password");
                     txtPassword.setEchoChar((char)0);
-                    showHideController.reset();
                 }
             }
         });
@@ -141,26 +141,29 @@ public class Login extends javax.swing.JFrame {
         txtPassword.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
             @Override
             public void insertUpdate(javax.swing.event.DocumentEvent e) {
-                String currentPassword = String.valueOf(txtPassword.getPassword());
-                if (!currentPassword.equals("Enter password")) {
-                    showHideController.setActualPassword(currentPassword);
-                }
+                handlePasswordChange();
             }
 
             @Override
             public void removeUpdate(javax.swing.event.DocumentEvent e) {
-                String currentPassword = String.valueOf(txtPassword.getPassword());
-                if (!currentPassword.equals("Enter password")) {
-                    showHideController.setActualPassword(currentPassword);
-                }
+                handlePasswordChange();
             }
 
             @Override
             public void changedUpdate(javax.swing.event.DocumentEvent e) {
-                String currentPassword = String.valueOf(txtPassword.getPassword());
-                if (!currentPassword.equals("Enter password")) {
-                    showHideController.setActualPassword(currentPassword);
-                }
+                handlePasswordChange();
+            }
+
+            private void handlePasswordChange() {
+                SwingUtilities.invokeLater(() -> {
+                    String pass = String.valueOf(txtPassword.getPassword());
+                    if (!pass.equals("Enter password")) {
+                        txtPassword.setForeground(Color.BLACK);
+                        if (txtPassword.getEchoChar() == (char)0) {
+                            txtPassword.setEchoChar('•');
+                        }
+                    }
+                });
             }
         });
 
@@ -190,7 +193,13 @@ public class Login extends javax.swing.JFrame {
 
     private void performLogin() {
         String username = txtUsername.getText().trim();
-        String password = showHideController.getActualPassword().trim();
+        String password = String.valueOf(txtPassword.getPassword()).trim();
+        
+        // Check for placeholder text
+        if (password.equals("Enter password")) {
+            password = "";
+        }
+        
         UserDAO userDAO = null;
         
         try {
@@ -198,7 +207,7 @@ public class Login extends javax.swing.JFrame {
             if (username.isEmpty() || username.equals("USERNAME")) {
                 throw new IllegalArgumentException("Please enter a username");
             }
-            if (password.isEmpty() || password.equals("Enter password")) {
+            if (password.isEmpty()) {
                 throw new IllegalArgumentException("Please enter a password");
             }
             
@@ -252,104 +261,6 @@ public class Login extends javax.swing.JFrame {
                 "Error", 
                 JOptionPane.ERROR_MESSAGE);
         }
-    }
-
-    private void setupActionListeners() {
-        // Username focus listener
-        txtUsername.addFocusListener(new java.awt.event.FocusAdapter() {
-            @Override
-            public void focusGained(java.awt.event.FocusEvent evt) {
-                if (txtUsername.getText().equals("USERNAME")) {
-                    txtUsername.setText("");
-                    txtUsername.setForeground(Color.BLACK);
-                }
-            }
-
-            @Override
-            public void focusLost(java.awt.event.FocusEvent evt) {
-                if (txtUsername.getText().trim().isEmpty()) {
-                    txtUsername.setForeground(Color.GRAY);
-                    txtUsername.setText("USERNAME");
-                }
-            }
-        });
-
-        // Password focus listener
-        txtPassword.addFocusListener(new java.awt.event.FocusAdapter() {
-            private boolean isFirstFocus = true;
-
-            @Override
-            public void focusGained(java.awt.event.FocusEvent evt) {
-                String currentPassword = String.valueOf(txtPassword.getPassword());
-                if (currentPassword.equals("Enter password")) {
-                    txtPassword.setText("");
-                    txtPassword.setForeground(Color.BLACK);
-                    txtPassword.setEchoChar('•');
-                    showHideController.setActualPassword("");
-                }
-            }
-
-            @Override
-            public void focusLost(java.awt.event.FocusEvent evt) {
-                String currentPassword = String.valueOf(txtPassword.getPassword());
-                if (currentPassword.isEmpty()) {
-                    txtPassword.setForeground(Color.GRAY);
-                    txtPassword.setText("Enter password");
-                    txtPassword.setEchoChar((char)0);
-                    showHideController.reset();
-                }
-            }
-        });
-
-        // Password document listener
-        txtPassword.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-            @Override
-            public void insertUpdate(javax.swing.event.DocumentEvent e) {
-                String currentPassword = String.valueOf(txtPassword.getPassword());
-                if (!currentPassword.equals("Enter password")) {
-                    showHideController.setActualPassword(currentPassword);
-                }
-            }
-
-            @Override
-            public void removeUpdate(javax.swing.event.DocumentEvent e) {
-                String currentPassword = String.valueOf(txtPassword.getPassword());
-                if (!currentPassword.equals("Enter password")) {
-                    showHideController.setActualPassword(currentPassword);
-                }
-            }
-
-            @Override
-            public void changedUpdate(javax.swing.event.DocumentEvent e) {
-                String currentPassword = String.valueOf(txtPassword.getPassword());
-                if (!currentPassword.equals("Enter password")) {
-                    showHideController.setActualPassword(currentPassword);
-                }
-            }
-        });
-
-        // Back button action
-        btnBack.addActionListener(e -> {
-            if (previousWindow != null) {
-                previousWindow.setVisible(true);
-            }
-            dispose();
-        });
-
-        // Login button action
-        btnLogin.addActionListener(e -> performLogin());
-
-        // Forgot password link
-        lblForgotPassword.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        lblForgotPassword.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                // TODO: Implement forgot password functionality
-                JOptionPane.showMessageDialog(Login.this,
-                    "Forgot password functionality will be implemented soon.",
-                    "Coming Soon",
-                    JOptionPane.INFORMATION_MESSAGE);
-            }
-        });
     }
 
     private void togglePasswordVisibility() {
@@ -538,7 +449,7 @@ public class Login extends javax.swing.JFrame {
 
     private void btnLoginActionPerformed(java.awt.event.ActionEvent evt) {
         String username = txtUsername.getText().trim();
-        String password = showHideController.getActualPassword();
+        String password = showHideController.getActualPassword().trim();
         
         // Check if either field is empty or contains placeholder text
         if (username.isEmpty() || username.equals("USERNAME") || 

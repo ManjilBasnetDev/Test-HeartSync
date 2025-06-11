@@ -119,7 +119,7 @@ public class UserDAO {
             stmt.setString(1, username);
             
             try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
+            if (rs.next()) {
                     User user = extractUserFromResultSet(rs);
                     LOGGER.log(Level.INFO, "Retrieved user: {0}", username);
                     return user;

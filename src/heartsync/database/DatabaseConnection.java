@@ -14,6 +14,12 @@ public class DatabaseConnection {
     private static DatabaseConnection instance = null;
     
     private DatabaseConnection() {
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+        } catch (ClassNotFoundException e) {
+            System.err.println("Error loading MySQL JDBC driver: " + e.getMessage());
+            throw new RuntimeException("Failed to load MySQL JDBC driver", e);
+        }
         initializeDatabase();
     }
     
@@ -24,11 +30,7 @@ public class DatabaseConnection {
         return instance;
     }
     
-    static {
-        initializeDatabase();
-    }
-    
-    private static void initializeDatabase() {
+    private void initializeDatabase() {
         try {
             // First try connecting to MySQL server
             try (Connection conn = DriverManager.getConnection(URL, USERNAME, PASSWORD)) {
@@ -46,18 +48,11 @@ public class DatabaseConnection {
         }
     }
     
-    public Connection getConnection() {
+    public static Connection getConnection() {
         if (connection == null) {
             try {
-                Class.forName("com.mysql.cj.jdbc.Driver");
                 connection = DriverManager.getConnection(URL + DB_NAME, USERNAME, PASSWORD);
                 System.out.println("Database connected successfully");
-            } catch (ClassNotFoundException e) {
-                System.err.println("Database driver not found: " + e.getMessage());
-                JOptionPane.showMessageDialog(null,
-                    "Database driver not found: " + e.getMessage(),
-                    "Database Error",
-                    JOptionPane.ERROR_MESSAGE);
             } catch (SQLException e) {
                 System.err.println("Database connection failed: " + e.getMessage());
                 JOptionPane.showMessageDialog(null,
@@ -69,7 +64,7 @@ public class DatabaseConnection {
         return connection;
     }
     
-    public void closeConnection() {
+    public static void closeConnection() {
         if (connection != null) {
             try {
                 connection.close();
@@ -81,12 +76,45 @@ public class DatabaseConnection {
         }
     }
     
-    public boolean testConnection() {
+    public static String hashPassword(String password) {
+        if (password == null || password.trim().isEmpty()) {
+            throw new IllegalArgumentException("Password cannot be empty");
+        }
+        
         try {
-            getConnection();
-            return connection != null && !connection.isClosed();
-        } catch (SQLException e) {
-            return false;
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] hash = md.digest(password.getBytes("UTF-8"));
+            
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+            return hexString.toString();
+        } catch (Exception e) {
+            throw new RuntimeException("Error hashing password: " + e.getMessage(), e);
         }
     }
-} 
+    
+    public static void validatePassword(String password) {
+        if (password == null || password.trim().isEmpty()) {
+            throw new IllegalArgumentException("Password cannot be empty");
+        }
+        if (password.length() < 8) {
+            throw new IllegalArgumentException("Password must be at least 8 characters long");
+        }
+        // Add more password validation rules as needed
+    }
+    
+    public static void validateEmail(String email) {
+        if (email == null || email.trim().isEmpty()) {
+            throw new IllegalArgumentException("Email cannot be empty");
+        }
+        if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+            throw new IllegalArgumentException("Invalid email format");
+        }
+    }
+}

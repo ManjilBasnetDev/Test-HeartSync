@@ -4,6 +4,8 @@
  */
 package heartsync.dao;
 
+import heartsync.database.DatabaseConnection;
+import heartsync.model.User;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -11,14 +13,11 @@ import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import heartsyncdatingapp.database.DatabaseConnection;
-import heartsyncdatingapp.model.User;
-
-public class UserDAOLogin {
-    private static final Logger LOGGER = Logger.getLogger(UserDAOLogin.class.getName());
+public class LoginDAO {
+    private static final Logger LOGGER = Logger.getLogger(LoginDAO.class.getName());
     private Connection connection;
     
-    public UserDAOLogin() throws SQLException {
+    public LoginDAO() throws SQLException {
             this.connection = DatabaseConnection.getConnection();
             if (this.connection == null) {
                 throw new SQLException("Could not establish database connection");
@@ -78,12 +77,10 @@ public class UserDAOLogin {
                         user.setUserType(rs.getString("user_type"));
                         user.setEmail(rs.getString("email"));
                         user.setPhoneNumber(rs.getString("phone_number"));
-                        user.setDateOfBirth(rs.getDate("date_of_birth").toLocalDate());
+                        user.setDateOfBirth(rs.getDate("date_of_birth").toLocalDate().toString());
                         user.setGender(rs.getString("gender"));
                         user.setInterests(rs.getString("interests"));
                         user.setBio(rs.getString("bio"));
-                        user.setFavoriteColor(rs.getString("favorite_color"));
-                        user.setFirstSchool(rs.getString("first_school"));
                         return user;
                     }
                 }
@@ -104,7 +101,9 @@ public class UserDAOLogin {
         }
         
         // Validate password requirements
-        DatabaseConnection.validatePassword(newPassword);
+        if (newPassword.length() < 8) {
+            throw new IllegalArgumentException("Password must be at least 8 characters long");
+        }
         
         String sql = "UPDATE users SET password = ? WHERE username = ?";
         
@@ -142,7 +141,10 @@ public class UserDAOLogin {
             throw new IllegalArgumentException("Password cannot be empty");
         }
         if (user.getEmail() != null) {
-            DatabaseConnection.validateEmail(user.getEmail());
+            String email = user.getEmail();
+            if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+                throw new IllegalArgumentException("Invalid email format");
+            }
         }
         
         String sql = "INSERT INTO users (username, password, user_type, email) VALUES (?, ?, ?, ?)";

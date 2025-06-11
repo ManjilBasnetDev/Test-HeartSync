@@ -10,9 +10,9 @@ package heartsync.view;
  */
 import heartsync.controller.NotificationController;
 import heartsync.model.Notification;
+import java.awt.*;
 import java.util.List;
 import javax.swing.*;
-import java.awt.*;
 
 public class MatchNotif extends javax.swing.JFrame {
     
@@ -87,11 +87,13 @@ public class MatchNotif extends javax.swing.JFrame {
 
     public void refreshNotifications() {
         notifListModel.clear();
-        List<Notification> notifications = notificationController.getNotifications();
-        for (Notification n : notifications) {
-            String status = n.isRead() ? "(Read) " : "(New) ";
-            String type = n.getType() == Notification.Type.MATCH ? "💘 Match" : "💬 Message";
-            notifListModel.addElement(status + type + ": " + n.getContent());
+        List<?> notificationsRaw = notificationController.getNotifications();
+        for (Object obj : notificationsRaw) {
+            if (obj instanceof Notification n) {
+                String status = n.isRead() ? "(Read) " : "(New) ";
+                String type = n.getType() == Notification.Type.MATCH ? "💘 Match" : "💬 Message";
+                notifListModel.addElement(status + type + ": " + n.getContent());
+            }
         }
         if (notifListModel.isEmpty()) {
             notifListModel.addElement("No notifications yet.");

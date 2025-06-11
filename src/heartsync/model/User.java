@@ -1,5 +1,7 @@
 package heartsync.model;
 
+import java.time.LocalDate;
+
 public class User {
     private int id;
     private String username;
@@ -7,10 +9,12 @@ public class User {
     private String userType;
     private String email;
     private String phoneNumber;
-    private String dateOfBirth;
+    private LocalDate dateOfBirth;
     private String gender;
     private String interests;
     private String bio;
+    private String favoriteColor;
+    private String firstSchool;
     
     // Default constructor
     public User() {}
@@ -24,8 +28,9 @@ public class User {
     
     // Full constructor
     public User(int id, String username, String password, String userType, 
-                String email, String phoneNumber, String dateOfBirth, 
-                String gender, String interests, String bio) {
+                String email, String phoneNumber, LocalDate dateOfBirth, 
+                String gender, String interests, String bio,
+                String favoriteColor, String firstSchool) {
         this.id = id;
         this.username = username;
         this.password = password;
@@ -36,6 +41,8 @@ public class User {
         this.gender = gender;
         this.interests = interests;
         this.bio = bio;
+        this.favoriteColor = favoriteColor;
+        this.firstSchool = firstSchool;
     }
     
     // Getters and Setters
@@ -87,11 +94,11 @@ public class User {
         this.phoneNumber = phoneNumber;
     }
     
-    public String getDateOfBirth() {
+    public LocalDate getDateOfBirth() {
         return dateOfBirth;
     }
     
-    public void setDateOfBirth(String dateOfBirth) {
+    public void setDateOfBirth(LocalDate dateOfBirth) {
         this.dateOfBirth = dateOfBirth;
     }
     
@@ -119,15 +126,19 @@ public class User {
         this.bio = bio;
     }
     
-    @Override
-    public String toString() {
-        return "User{" + "id=" + id + 
-               ", username='" + username + '\'' +
-               ", userType='" + userType + '\'' +
-               ", email='" + email + '\'' +
-               ", phoneNumber='" + phoneNumber + '\'' +
-               ", dateOfBirth='" + dateOfBirth + '\'' +
-               ", gender='" + gender + '\'' +
-               '}';
+    public String getFavoriteColor() {
+        return favoriteColor;
     }
-} 
+    
+    public void setFavoriteColor(String favoriteColor) {
+        this.favoriteColor = favoriteColor;
+    }
+    
+    public String getFirstSchool() {
+        return firstSchool;
+    }
+    
+    public void setFirstSchool(String firstSchool) {
+        this.firstSchool = firstSchool;
+    }
+}

@@ -4,7 +4,7 @@
  */
 package heartsync.controller;
 
-import heartsync.dao.ResetPasswordDAO;
+import heartsync.dao.ResetDAO;
 import heartsync.model.User;
 import heartsync.view.ResetPassword;
 
@@ -14,10 +14,10 @@ import heartsync.view.ResetPassword;
  */
 public class ResetController {
     private int userId;
-    private ResetPasswordDAO resetPasswordDAO;
+    private final ResetDAO resetDAO;
 
     public ResetController() {
-        resetPasswordDAO = new ResetPasswordDAO();
+        resetDAO = new ResetDAO();
     }
 
     public void setUserId(int userId) {
@@ -31,15 +31,38 @@ public class ResetController {
 
     public boolean updatePassword(int userId, String newPassword) {
         try {
-            User user = resetPasswordDAO.getUserById(userId);
+            // Input validation
+            if (newPassword == null || newPassword.trim().isEmpty()) {
+                throw new IllegalArgumentException("Password cannot be empty");
+            }
+
+            User user = resetDAO.getUserById(userId);
             if (user != null) {
                 user.setPassword(newPassword);
-                return resetPasswordDAO.updateUser(user);
+                return resetDAO.updateUser(user);
             }
             return false;
         } catch (Exception e) {
             e.printStackTrace();
             return false;
         }
+    }
+
+    public boolean verifySecurityAnswers(String username, String favoriteColor, String firstSchool) {
+        try {
+            User user = resetDAO.getUserByUsername(username);
+            if (user != null) {
+                return favoriteColor.equals(user.getFavoriteColor())
+                        && firstSchool.equals(user.getFirstSchool());
+            }
+            return false;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public User getUserByUsername(String username) {
+        return resetDAO.getUserByUsername(username);
     }
 }

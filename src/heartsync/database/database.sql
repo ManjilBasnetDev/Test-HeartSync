@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS users (
     gender VARCHAR(10),
     interests TEXT,
     bio TEXT,
+    favorite_color VARCHAR(50),
+    first_school VARCHAR(100),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );

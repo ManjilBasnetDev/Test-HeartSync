@@ -1,7 +1,6 @@
 package heartsync.dao;
 
 import java.sql.Connection;
-import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -13,21 +12,27 @@ import heartsync.database.DatabaseConnection;
 import heartsync.model.User;
 
 public class ResetDAO {
+    private final DatabaseConnection dbConnection;
+    
+    public ResetDAO() {
+        this.dbConnection = DatabaseConnection.getInstance();
+    }
     
     public boolean createUser(User user) {
-        String sql = "INSERT INTO users (username, password, user_type, date_of_birth, favorite_color, first_school, email, phone_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO users (username, password, user_type, date_of_birth, email, phone_number, gender, interests, bio) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
-        try (Connection conn = DatabaseConnection.getConnection();
+        try (Connection conn = dbConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
             pstmt.setString(1, user.getUsername());
             pstmt.setString(2, user.getPassword());
             pstmt.setString(3, user.getUserType());
-            pstmt.setDate(4, Date.valueOf(user.getDateOfBirth()));
-            pstmt.setString(5, user.getFavoriteColor());
-            pstmt.setString(6, user.getFirstSchool());
-            pstmt.setString(7, user.getEmail());
-            pstmt.setString(8, user.getPhoneNumber());
+            pstmt.setString(4, user.getDateOfBirth());
+            pstmt.setString(5, user.getEmail());
+            pstmt.setString(6, user.getPhoneNumber());
+            pstmt.setString(7, user.getGender());
+            pstmt.setString(8, user.getInterests());
+            pstmt.setString(9, user.getBio());
             
             int rowsAffected = pstmt.executeUpdate();
             return rowsAffected > 0;
@@ -41,7 +46,7 @@ public class ResetDAO {
     public User getUserById(int id) {
         String sql = "SELECT * FROM users WHERE id = ?";
         
-        try (Connection conn = DatabaseConnection.getConnection();
+        try (Connection conn = dbConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
             pstmt.setInt(1, id);
@@ -60,7 +65,7 @@ public class ResetDAO {
     public User getUserByUsername(String username) {
         String sql = "SELECT * FROM users WHERE username = ?";
         
-        try (Connection conn = DatabaseConnection.getConnection();
+        try (Connection conn = dbConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
             pstmt.setString(1, username);
@@ -79,12 +84,10 @@ public class ResetDAO {
     public boolean updateUser(User user) {
         String sql = "UPDATE users SET password = ? WHERE id = ?";
         
-        try (Connection conn = DatabaseConnection.getConnection();
+        try (Connection conn = dbConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
-            // Hash the password before storing
-            String hashedPassword = DatabaseConnection.hashPassword(user.getPassword());
-            pstmt.setString(1, hashedPassword);
+            pstmt.setString(1, user.getPassword());
             pstmt.setInt(2, user.getId());
             
             int rowsAffected = pstmt.executeUpdate();
@@ -99,7 +102,7 @@ public class ResetDAO {
     public boolean deleteUser(int id) {
         String sql = "DELETE FROM users WHERE id = ?";
         
-        try (Connection conn = DatabaseConnection.getConnection();
+        try (Connection conn = dbConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
             pstmt.setInt(1, id);
@@ -116,7 +119,7 @@ public class ResetDAO {
         List<User> users = new ArrayList<>();
         String sql = "SELECT * FROM users";
         
-        try (Connection conn = DatabaseConnection.getConnection();
+        try (Connection conn = dbConnection.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             
@@ -133,7 +136,7 @@ public class ResetDAO {
     public boolean verifyLogin(String username, String password) {
         String sql = "SELECT * FROM users WHERE username = ? AND password = ?";
         
-        try (Connection conn = DatabaseConnection.getConnection();
+        try (Connection conn = dbConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
             pstmt.setString(1, username);
@@ -154,17 +157,12 @@ public class ResetDAO {
         user.setUsername(rs.getString("username"));
         user.setPassword(rs.getString("password"));
         user.setUserType(rs.getString("user_type"));
-        
-        // Handle date conversion
-        Date dobDate = rs.getDate("date_of_birth");
-        if (dobDate != null) {
-            user.setDateOfBirth(dobDate.toLocalDate());
-        }
-        
-        user.setFavoriteColor(rs.getString("favorite_color"));
-        user.setFirstSchool(rs.getString("first_school"));
+        user.setDateOfBirth(rs.getString("date_of_birth"));
         user.setEmail(rs.getString("email"));
         user.setPhoneNumber(rs.getString("phone_number"));
+        user.setGender(rs.getString("gender"));
+        user.setInterests(rs.getString("interests"));
+        user.setBio(rs.getString("bio"));
         
         return user;
     }

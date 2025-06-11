@@ -11,6 +11,10 @@
             <file>file:/home/manjil-basnet/HeartSyncDatingAppFinal/HeartSync/src/heartsync/model/Contact.java</file>
             <file>file:/home/manjil-basnet/HeartSyncDatingAppFinal/HeartSync/src/heartsync/database/MySqlConnection.java</file>
             <file>file:/home/manjil-basnet/HeartSyncDatingAppFinal/HeartSync/src/heartsync/dao/ContactDAO.java</file>
+            <file>file:/home/manjil-basnet/HeartSyncDatingAppFinal/HeartSync/src/heartsync/view/MatchNotif.java</file>
+            <file>file:/home/manjil-basnet/HeartSyncDatingAppFinal/HeartSync/src/heartsync/controller/NotificationController.java</file>
+            <file>file:/home/manjil-basnet/HeartSyncDatingAppFinal/HeartSync/src/heartsync/dao/NotificationDAO.java</file>
+            <file>file:/home/manjil-basnet/HeartSyncDatingAppFinal/HeartSync/src/heartsync/model/Notification.java</file>
         </group>
     </open-files>
 </project-private>

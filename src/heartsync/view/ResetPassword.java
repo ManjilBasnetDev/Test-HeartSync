@@ -4,6 +4,8 @@
  */
 package heartsync.view;
 
+import heartsync.Login;
+import heartsync.controller.ResetController;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -11,7 +13,6 @@ import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
-
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JFrame;
@@ -27,9 +28,6 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-
-import heartsyncdatingapp.controller.ResetController;
-import heartsyncdatingapp.model.LoginFinal;
 
 public class ResetPassword extends JFrame {
     private final ResetController resetController;
@@ -246,7 +244,7 @@ public class ResetPassword extends JFrame {
                     "Success",
                     JOptionPane.INFORMATION_MESSAGE);
                 dispose();
-                new LoginFinal().setVisible(true);
+                new Login().setVisible(true);
             } else {
                 JOptionPane.showMessageDialog(this,
                     "Failed to reset password. Please try again.",

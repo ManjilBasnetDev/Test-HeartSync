@@ -1,21 +1,20 @@
 package heartsync.database;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JOptionPane;
 
 public class DatabaseConnection {
     private static final Logger LOGGER = Logger.getLogger(DatabaseConnection.class.getName());
-    private static final String URL = "jdbc:mysql://localhost:3306/";
-    private static final String DB_NAME = "heartsync";
-    private static final String USERNAME = "root";
-    private static final String PASSWORD = "lokeshsingh9841@";
+    private static final String URL = "jdbc:mysql://localhost:3306/heartsync";
+    private static final String USER = "root";
+    private static final String PASSWORD = "";
     private static Connection connection;
     private static DatabaseConnection instance;
     
@@ -33,13 +32,13 @@ public class DatabaseConnection {
     private void initializeDatabase() {
         try {
             // First try connecting to MySQL server
-            try (Connection conn = DriverManager.getConnection(URL, USERNAME, PASSWORD)) {
+            try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD)) {
                 try (Statement stmt = conn.createStatement()) {
                     // Create database if it doesn't exist
-                    stmt.executeUpdate("CREATE DATABASE IF NOT EXISTS " + DB_NAME);
+                    stmt.executeUpdate("CREATE DATABASE IF NOT EXISTS heartsync");
                     
                     // Use the database
-                    stmt.executeUpdate("USE " + DB_NAME);
+                    stmt.executeUpdate("USE heartsync");
                     
                     // Create users table
                     String createUsersTable = """
@@ -115,39 +114,35 @@ public class DatabaseConnection {
         }
     }
     
-    public Connection getConnection() throws SQLException {
-        if (connection == null || connection.isClosed()) {
-            try {
-                Class.forName("com.mysql.cj.jdbc.Driver");
-                connection = DriverManager.getConnection(URL + DB_NAME, USERNAME, PASSWORD);
-                LOGGER.info("Database connection established successfully");
-            } catch (ClassNotFoundException e) {
-                String error = "MySQL JDBC Driver not found";
-                LOGGER.log(Level.SEVERE, error, e);
-                throw new SQLException(error, e);
-            } catch (SQLException e) {
-                String error = "Failed to establish database connection";
-                LOGGER.log(Level.SEVERE, error, e);
-                throw e;
-            }
+    public static Connection getConnection() throws SQLException {
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            return DriverManager.getConnection(URL, USER, PASSWORD);
+        } catch (ClassNotFoundException e) {
+            LOGGER.log(Level.SEVERE, "MySQL JDBC Driver not found", e);
+            throw new SQLException("Database driver not found", e);
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Connection to database failed", e);
+            throw e;
         }
-        return connection;
     }
     
     public static String hashPassword(String password) {
         try {
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            byte[] hash = md.digest(password.getBytes());
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(password.getBytes());
             StringBuilder hexString = new StringBuilder();
+            
             for (byte b : hash) {
                 String hex = Integer.toHexString(0xff & b);
                 if (hex.length() == 1) hexString.append('0');
                 hexString.append(hex);
             }
+            
             return hexString.toString();
         } catch (NoSuchAlgorithmException e) {
-            LOGGER.log(Level.SEVERE, "Error hashing password", e);
-            return password; // Fallback to plain password if hashing fails
+            LOGGER.log(Level.SEVERE, "Hashing algorithm not found", e);
+            return password; // Fallback to plain text if hashing fails
         }
     }
     

@@ -4,8 +4,8 @@
  */
 package heartsync.controller;
 
-import heartsync.dao.ResetPasswordDAO;
-import heartsync.model.User;
+import heartsync.dao.UserDAOForgot;
+import heartsync.model.UserForgot;
 import heartsync.view.ResetPassword;
 
 /**
@@ -14,10 +14,10 @@ import heartsync.view.ResetPassword;
  */
 public class ResetController {
     private int userId;
-    private ResetPasswordDAO resetPasswordDAO;
+    private UserDAOForgot userDAO;
 
     public ResetController() {
-        resetPasswordDAO = new ResetPasswordDAO();
+        userDAO = new UserDAOForgot();
     }
 
     public void setUserId(int userId) {
@@ -31,10 +31,10 @@ public class ResetController {
 
     public boolean updatePassword(int userId, String newPassword) {
         try {
-            User user = resetPasswordDAO.getUserById(userId);
+            UserForgot user = userDAO.findByUsername(String.valueOf(userId));
             if (user != null) {
-                user.setPassword(newPassword);
-                return resetPasswordDAO.updateUser(user);
+                userDAO.updatePassword(user.getUsername(), newPassword);
+                return true;
             }
             return false;
         } catch (Exception e) {

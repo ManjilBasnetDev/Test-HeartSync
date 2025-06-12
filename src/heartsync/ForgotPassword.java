@@ -29,10 +29,10 @@ import javax.swing.border.LineBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
-import heartsyncdatingapp.controller.ResetController;
-import heartsyncdatingapp.dao.UserDAOForgot;
-import heartsyncdatingapp.model.LoginFinal;
-import heartsyncdatingapp.model.UserForgot;
+import heartsync.controller.ResetController;
+import heartsync.dao.UserDAOForgot;
+import heartsync.model.LoginFinal;
+import heartsync.model.UserForgot;
 
 public class ForgotPassword extends javax.swing.JFrame {
     private ResetController resetController;

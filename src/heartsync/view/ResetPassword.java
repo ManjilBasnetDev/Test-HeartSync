@@ -28,8 +28,8 @@ import javax.swing.border.LineBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
-import heartsyncdatingapp.controller.ResetController;
-import heartsyncdatingapp.model.LoginFinal;
+import heartsync.controller.ResetController;
+import heartsync.model.LoginFinal;
 
 public class ResetPassword extends JFrame {
     private final ResetController resetController;
@@ -73,96 +73,52 @@ public class ResetPassword extends JFrame {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.insets = new Insets(5, 0, 15, 0);
 
-        // Title with modern styling
+        // Title
         JLabel titleLabel = new JLabel("Reset Your Password", SwingConstants.CENTER);
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
         titleLabel.setForeground(Color.BLACK);
-        gbc.insets = new Insets(0, 0, 30, 0);
         formPanel.add(titleLabel, gbc);
 
         // New Password field
-        gbc.insets = new Insets(5, 0, 5, 0);
         JLabel newPasswordLabel = new JLabel("New Password");
-        newPasswordLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        newPasswordLabel.setForeground(Color.BLACK);
+        newPasswordLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         formPanel.add(newPasswordLabel, gbc);
 
         newPasswordField = new JPasswordField();
-        newPasswordField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         newPasswordField.setPreferredSize(new Dimension(0, 40));
-        newPasswordField.setBackground(Color.WHITE);
-        newPasswordField.setOpaque(true);
-        newPasswordField.setBorder(new CompoundBorder(
-            new LineBorder(new Color(200, 200, 200)),
-            new EmptyBorder(5, 10, 5, 10)
-        ));
         formPanel.add(newPasswordField, gbc);
 
         // Confirm Password field
-        gbc.insets = new Insets(15, 0, 5, 0);
-        JLabel confirmLabel = new JLabel("Confirm Password");
-        confirmLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        confirmLabel.setForeground(Color.BLACK);
-        formPanel.add(confirmLabel, gbc);
+        JLabel confirmPasswordLabel = new JLabel("Confirm Password");
+        confirmPasswordLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        formPanel.add(confirmPasswordLabel, gbc);
 
         confirmPasswordField = new JPasswordField();
-        confirmPasswordField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         confirmPasswordField.setPreferredSize(new Dimension(0, 40));
-        confirmPasswordField.setBackground(Color.WHITE);
-        confirmPasswordField.setOpaque(true);
-        confirmPasswordField.setBorder(new CompoundBorder(
-            new LineBorder(new Color(200, 200, 200)),
-            new EmptyBorder(5, 10, 5, 10)
-        ));
-        gbc.insets = new Insets(5, 0, 15, 0);
         formPanel.add(confirmPasswordField, gbc);
 
         // Show password checkbox
         showPasswordCheckbox = new JCheckBox("Show Password");
-        showPasswordCheckbox.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        showPasswordCheckbox.setBackground(Color.WHITE);
+        showPasswordCheckbox.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         showPasswordCheckbox.addActionListener(e -> {
-            boolean show = showPasswordCheckbox.isSelected();
-            newPasswordField.setEchoChar(show ? '\0' : '•');
-            confirmPasswordField.setEchoChar(show ? '\0' : '•');
+            char echo = showPasswordCheckbox.isSelected() ? 0 : '*';
+            newPasswordField.setEchoChar(echo);
+            confirmPasswordField.setEchoChar(echo);
         });
         formPanel.add(showPasswordCheckbox, gbc);
 
         // Validation label
         validationLabel = new JLabel();
         validationLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        validationLabel.setForeground(Color.GRAY);
-        gbc.insets = new Insets(10, 0, 20, 0);
         formPanel.add(validationLabel, gbc);
 
         // Reset button
         resetButton = new JButton("Reset Password");
         resetButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        resetButton.setPreferredSize(new Dimension(0, 40));
         resetButton.setBackground(new Color(229, 89, 36));
         resetButton.setForeground(Color.WHITE);
-        resetButton.setFocusPainted(false);
-        resetButton.setBorderPainted(false);
-        resetButton.setOpaque(true);
-        resetButton.setEnabled(false);
+        resetButton.setPreferredSize(new Dimension(0, 40));
         resetButton.addActionListener(e -> handleResetPassword());
-        
-        // Add hover effect
-        resetButton.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                if (resetButton.isEnabled()) {
-                    resetButton.setBackground(new Color(240, 100, 50));
-                }
-            }
-
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                if (resetButton.isEnabled()) {
-                    resetButton.setBackground(new Color(229, 89, 36));
-                }
-            }
-        });
-        
-        gbc.insets = new Insets(10, 0, 0, 0);
         formPanel.add(resetButton, gbc);
 
         mainPanel.add(formPanel, BorderLayout.CENTER);
@@ -194,34 +150,44 @@ public class ResetPassword extends JFrame {
     }
 
     private void validatePasswords() {
-        String password = new String(newPasswordField.getPassword());
-        String confirm = new String(confirmPasswordField.getPassword());
-        
+        String newPassword = new String(newPasswordField.getPassword());
+        String confirmPassword = new String(confirmPasswordField.getPassword());
+
         StringBuilder status = new StringBuilder("<html>");
         boolean allValid = true;
 
-        // Check password requirements
-        boolean hasUppercase = password.matches(".*[A-Z].*");
-        boolean hasSpecial = password.matches(".*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>/?].*");
-        boolean hasNumber = password.matches(".*[0-9].*");
-        boolean isLongEnough = password.length() >= 8;
-        boolean passwordsMatch = password.equals(confirm);
-
-        status.append(hasUppercase ? "<font color='green'>✓</font>" : "<font color='red'>✗</font>")
-              .append(" Uppercase<br>");
-        status.append(hasSpecial ? "<font color='green'>✓</font>" : "<font color='red'>✗</font>")
-              .append(" Special character<br>");
-        status.append(hasNumber ? "<font color='green'>✓</font>" : "<font color='red'>✗</font>")
-              .append(" Number<br>");
+        // Check password length
+        boolean isLongEnough = newPassword.length() >= 8;
         status.append(isLongEnough ? "<font color='green'>✓</font>" : "<font color='red'>✗</font>")
               .append(" At least 8 characters<br>");
+        allValid &= isLongEnough;
+
+        // Check for uppercase
+        boolean hasUppercase = !newPassword.equals(newPassword.toLowerCase());
+        status.append(hasUppercase ? "<font color='green'>✓</font>" : "<font color='red'>✗</font>")
+              .append(" Contains uppercase letter<br>");
+        allValid &= hasUppercase;
+
+        // Check for number
+        boolean hasNumber = newPassword.matches(".*\\d.*");
+        status.append(hasNumber ? "<font color='green'>✓</font>" : "<font color='red'>✗</font>")
+              .append(" Contains number<br>");
+        allValid &= hasNumber;
+
+        // Check for special character
+        boolean hasSpecial = !newPassword.matches("[A-Za-z0-9 ]*");
+        status.append(hasSpecial ? "<font color='green'>✓</font>" : "<font color='red'>✗</font>")
+              .append(" Contains special character<br>");
+        allValid &= hasSpecial;
+
+        // Check passwords match
+        boolean passwordsMatch = newPassword.equals(confirmPassword);
         status.append(passwordsMatch ? "<font color='green'>✓</font>" : "<font color='red'>✗</font>")
               .append(" Passwords match");
-        
+        allValid &= passwordsMatch;
+
         status.append("</html>");
         validationLabel.setText(status.toString());
-
-        allValid = hasUppercase && hasSpecial && hasNumber && isLongEnough && passwordsMatch;
         resetButton.setEnabled(allValid);
     }
 
@@ -230,10 +196,6 @@ public class ResetPassword extends JFrame {
         confirmPasswordField.setToolTipText("Confirm your new password");
         resetButton.setToolTipText("Click to reset your password");
         showPasswordCheckbox.setToolTipText("Show or hide password characters");
-
-        // Add keyboard mnemonics
-        resetButton.setMnemonic('R');
-        showPasswordCheckbox.setMnemonic('S');
     }
 
     private void handleResetPassword() {

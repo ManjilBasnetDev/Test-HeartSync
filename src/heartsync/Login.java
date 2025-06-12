@@ -202,11 +202,8 @@ public class Login extends javax.swing.JFrame {
         lblForgotPassword.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         lblForgotPassword.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
-                // TODO: Implement forgot password functionality
-                JOptionPane.showMessageDialog(Login.this,
-                    "Forgot password functionality will be implemented soon.",
-                    "Coming Soon",
-                    JOptionPane.INFORMATION_MESSAGE);
+                dispose(); // Close login window
+                new ForgotPassword().setVisible(true);
             }
         });
     }
@@ -401,11 +398,8 @@ public class Login extends javax.swing.JFrame {
         lblForgotPassword.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         lblForgotPassword.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
-                // TODO: Implement forgot password functionality
-                JOptionPane.showMessageDialog(Login.this,
-                    "Forgot password functionality will be implemented soon.",
-                    "Coming Soon",
-                    JOptionPane.INFORMATION_MESSAGE);
+                dispose(); // Close login window
+                new ForgotPassword().setVisible(true);
             }
         });
         lblForgotPassword.setAlignmentX(Component.CENTER_ALIGNMENT);

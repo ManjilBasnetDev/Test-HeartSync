@@ -78,7 +78,31 @@ public class Login extends javax.swing.JFrame {
         txtUsername.setForeground(Color.GRAY);
         
         // Password field setup
-        txtPassword = new javax.swing.JPasswordField();
+        txtPassword = new javax.swing.JPasswordField() {
+            @Override
+            protected void processKeyEvent(java.awt.event.KeyEvent e) {
+                if (e.getID() == java.awt.event.KeyEvent.KEY_TYPED) {
+                    String pass = String.valueOf(getPassword());
+                    if (pass.equals("Enter password")) {
+                        SwingUtilities.invokeLater(() -> {
+                            setText("");
+                            setForeground(Color.BLACK);
+                            setEchoChar('•');
+                        });
+                    }
+                }
+                super.processKeyEvent(e);
+            }
+            
+            @Override
+            public void setText(String t) {
+                super.setText(t);
+                if (t.equals("Enter password")) {
+                    setEchoChar((char)0);
+                    setForeground(Color.GRAY);
+                }
+            }
+        };
         txtPassword.setFont(new java.awt.Font("Segoe UI", 0, 14));
         txtPassword.setBackground(Color.WHITE);
         txtPassword.setOpaque(true);
@@ -116,24 +140,26 @@ public class Login extends javax.swing.JFrame {
         txtPassword.addFocusListener(new java.awt.event.FocusAdapter() {
             @Override
             public void focusGained(java.awt.event.FocusEvent evt) {
-                String pass = String.valueOf(txtPassword.getPassword());
-                if (pass.equals("Enter password")) {
-                    SwingUtilities.invokeLater(() -> {
+                SwingUtilities.invokeLater(() -> {
+                    String pass = String.valueOf(txtPassword.getPassword());
+                    if (pass.equals("Enter password")) {
                         txtPassword.setText("");
                         txtPassword.setForeground(Color.BLACK);
                         txtPassword.setEchoChar('•');
-                    });
-                }
+                    }
+                });
             }
 
             @Override
             public void focusLost(java.awt.event.FocusEvent evt) {
-                String pass = String.valueOf(txtPassword.getPassword());
-                if (pass.isEmpty() || pass.trim().isEmpty()) {
-                    txtPassword.setForeground(Color.GRAY);
-                    txtPassword.setText("Enter password");
-                    txtPassword.setEchoChar((char)0);
-                }
+                SwingUtilities.invokeLater(() -> {
+                    String pass = String.valueOf(txtPassword.getPassword());
+                    if (pass.isEmpty() || pass.trim().isEmpty()) {
+                        txtPassword.setForeground(Color.GRAY);
+                        txtPassword.setText("Enter password");
+                        txtPassword.setEchoChar((char)0);
+                    }
+                });
             }
         });
 
@@ -195,11 +221,6 @@ public class Login extends javax.swing.JFrame {
         String username = txtUsername.getText().trim();
         String password = String.valueOf(txtPassword.getPassword()).trim();
         
-        // Check for placeholder text
-        if (password.equals("Enter password")) {
-            password = "";
-        }
-        
         UserDAO userDAO = null;
         
         try {
@@ -207,7 +228,7 @@ public class Login extends javax.swing.JFrame {
             if (username.isEmpty() || username.equals("USERNAME")) {
                 throw new IllegalArgumentException("Please enter a username");
             }
-            if (password.isEmpty()) {
+            if (password.isEmpty() || password.equals("Enter password")) {
                 throw new IllegalArgumentException("Please enter a password");
             }
             

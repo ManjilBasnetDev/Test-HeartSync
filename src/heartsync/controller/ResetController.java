@@ -5,40 +5,36 @@
 package heartsync.controller;
 
 import heartsync.dao.ResetPasswordDAO;
-import heartsync.model.User;
-import heartsync.view.ResetPassword;
+import java.sql.SQLException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
  * @author manjil-basnet
  */
 public class ResetController {
-    private int userId;
+    private static final Logger LOGGER = Logger.getLogger(ResetController.class.getName());
     private ResetPasswordDAO resetPasswordDAO;
 
     public ResetController() {
         resetPasswordDAO = new ResetPasswordDAO();
     }
 
-    public void setUserId(int userId) {
-        this.userId = userId;
-    }
-
-    public void showResetView() {
-        ResetPassword resetView = new ResetPassword(userId);
-        resetView.setVisible(true);
-    }
-
-    public boolean updatePassword(int userId, String newPassword) {
+    public boolean validateUser(String username) {
         try {
-            User user = resetPasswordDAO.getUserById(userId);
-            if (user != null) {
-                user.setPassword(newPassword);
-                return resetPasswordDAO.updateUser(user);
-            }
+            return resetPasswordDAO.validateUser(username);
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error validating user: {0}", e.getMessage());
             return false;
-        } catch (Exception e) {
-            e.printStackTrace();
+        }
+    }
+
+    public boolean resetPassword(String username, String newPassword) {
+        try {
+            return resetPasswordDAO.resetPassword(username, newPassword);
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error resetting password: {0}", e.getMessage());
             return false;
         }
     }

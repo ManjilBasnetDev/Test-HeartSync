@@ -13,6 +13,8 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.RenderingHints;
 import java.sql.SQLException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -21,6 +23,7 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
+import javax.swing.JPasswordField;
 import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import javax.swing.border.CompoundBorder;
@@ -29,16 +32,19 @@ import javax.swing.border.LineBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
-import heartsyncdatingapp.controller.ResetController;
-import heartsyncdatingapp.dao.UserDAOForgot;
-import heartsyncdatingapp.model.LoginFinal;
-import heartsyncdatingapp.model.UserForgot;
+import heartsync.controller.ResetController;
+import heartsync.dao.ForgotDAO;
+import heartsync.model.User;
+import heartsync.view.LoginView;
 
 public class ForgotPassword extends javax.swing.JFrame {
+    private static final Logger LOGGER = Logger.getLogger(ForgotPassword.class.getName());
     private ResetController resetController;
-    private JTextField usernameTextField;
-    private JTextField favoriteColorTextField;
-    private JTextField firstSchoolTextField;
+    private JTextField usernameField;
+    private JPasswordField newPasswordField;
+    private JPasswordField confirmPasswordField;
+    private JTextField favoriteColorField;
+    private JTextField firstSchoolField;
     private JButton resetButton;
     private JButton backButton;
     private JLabel validationLabel;
@@ -67,9 +73,9 @@ public class ForgotPassword extends javax.swing.JFrame {
     }
 
     private void setupAccessibility() {
-        usernameTextField.setToolTipText("Enter your username");
-        favoriteColorTextField.setToolTipText("Enter your favorite color");
-        firstSchoolTextField.setToolTipText("Enter your first school name");
+        usernameField.setToolTipText("Enter your username");
+        favoriteColorField.setToolTipText("Enter your favorite color");
+        firstSchoolField.setToolTipText("Enter your first school name");
         resetButton.setToolTipText("Click to reset your password");
         backButton.setToolTipText("Return to login page");
     }
@@ -92,17 +98,17 @@ public class ForgotPassword extends javax.swing.JFrame {
             }
         };
 
-        usernameTextField.getDocument().addDocumentListener(validationListener);
-        favoriteColorTextField.getDocument().addDocumentListener(validationListener);
-        firstSchoolTextField.getDocument().addDocumentListener(validationListener);
+        usernameField.getDocument().addDocumentListener(validationListener);
+        favoriteColorField.getDocument().addDocumentListener(validationListener);
+        firstSchoolField.getDocument().addDocumentListener(validationListener);
     }
 
     private void validateFields() {
         if (validationLabel == null) return;
 
-        String username = usernameTextField.getText().trim();
-        String favoriteColor = favoriteColorTextField.getText().trim();
-        String firstSchool = firstSchoolTextField.getText().trim();
+        String username = usernameField.getText().trim();
+        String favoriteColor = favoriteColorField.getText().trim();
+        String firstSchool = firstSchoolField.getText().trim();
 
         StringBuilder status = new StringBuilder("<html>");
         boolean allValid = true;
@@ -200,10 +206,10 @@ public class ForgotPassword extends javax.swing.JFrame {
         gbc.insets = new Insets(0, 0, 5, 0);
         formPanel.add(usernameLabel, gbc);
 
-        usernameTextField = new JTextField();
-        styleTextField(usernameTextField);
+        usernameField = new JTextField();
+        styleTextField(usernameField);
         gbc.insets = new Insets(0, 0, 20, 0);
-        formPanel.add(usernameTextField, gbc);
+        formPanel.add(usernameField, gbc);
 
         // Security Questions Section
         JLabel securityLabel = new JLabel("Security Questions");
@@ -219,10 +225,10 @@ public class ForgotPassword extends javax.swing.JFrame {
         gbc.insets = new Insets(0, 0, 5, 0);
         formPanel.add(colorLabel, gbc);
 
-        favoriteColorTextField = new JTextField();
-        styleTextField(favoriteColorTextField);
+        favoriteColorField = new JTextField();
+        styleTextField(favoriteColorField);
         gbc.insets = new Insets(0, 0, 20, 0);
-        formPanel.add(favoriteColorTextField, gbc);
+        formPanel.add(favoriteColorField, gbc);
 
         // First School Question
         JLabel schoolLabel = new JLabel("What was your first school?");
@@ -231,10 +237,10 @@ public class ForgotPassword extends javax.swing.JFrame {
         gbc.insets = new Insets(0, 0, 5, 0);
         formPanel.add(schoolLabel, gbc);
 
-        firstSchoolTextField = new JTextField();
-        styleTextField(firstSchoolTextField);
+        firstSchoolField = new JTextField();
+        styleTextField(firstSchoolField);
         gbc.insets = new Insets(0, 0, 25, 0);
-        formPanel.add(firstSchoolTextField, gbc);
+        formPanel.add(firstSchoolField, gbc);
 
         // Add validation label
         validationLabel = new JLabel();
@@ -250,7 +256,7 @@ public class ForgotPassword extends javax.swing.JFrame {
         // Reset Password Button
         resetButton = createStyledButton("Reset Password", new Color(229, 89, 36));
         resetButton.setPreferredSize(new Dimension(170, 45));
-        resetButton.addActionListener(e -> handleResetPassword());
+        resetButton.addActionListener(e -> handlePasswordReset());
         resetButton.setEnabled(false);
         buttonPanel.add(resetButton);
 
@@ -262,7 +268,7 @@ public class ForgotPassword extends javax.swing.JFrame {
         backButton.setPreferredSize(new Dimension(170, 45));
         backButton.addActionListener(e -> {
             dispose();
-            new LoginFinal().setVisible(true);
+            new LoginView().setVisible(true);
         });
         buttonPanel.add(backButton);
 
@@ -354,34 +360,61 @@ public class ForgotPassword extends javax.swing.JFrame {
         return button;
     }
 
-    private void handleResetPassword() {
-        String username = usernameTextField.getText().trim();
-        String favoriteColor = favoriteColorTextField.getText().trim();
-        String firstSchool = firstSchoolTextField.getText().trim();
+    private void handlePasswordReset() {
+        String username = usernameField.getText().trim();
+        String newPassword = new String(newPasswordField.getPassword());
+        String confirmPassword = new String(confirmPasswordField.getPassword());
+        String favoriteColor = favoriteColorField.getText().trim();
+        String firstSchool = firstSchoolField.getText().trim();
+
+        // Validate input
+        if (username.isEmpty() || newPassword.isEmpty() || confirmPassword.isEmpty() ||
+            favoriteColor.isEmpty() || firstSchool.isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                "Please fill in all fields",
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        if (!newPassword.equals(confirmPassword)) {
+            JOptionPane.showMessageDialog(this,
+                "Passwords do not match",
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+            return;
+        }
 
         try {
-            UserDAOForgot userDAO = new UserDAOForgot();
-            if (userDAO.validateSecurityQuestions(username, favoriteColor, firstSchool)) {
-                UserForgot user = userDAO.findByUsername(username);
-                if (user != null) {
-                    resetController.setUserId(user.getId());
-                    resetController.showResetView();
+            ForgotDAO forgotDAO = new ForgotDAO();
+            User user = forgotDAO.findByUsername(username);
+            
+            if (user != null && forgotDAO.validateSecurityAnswers(username, favoriteColor, firstSchool)) {
+                if (forgotDAO.updatePassword(username, newPassword)) {
+                    JOptionPane.showMessageDialog(this,
+                        "Password reset successful!",
+                        "Success",
+                        JOptionPane.INFORMATION_MESSAGE);
+                    
+                    // Return to login
                     dispose();
+                    new LoginView().setVisible(true);
                 } else {
                     JOptionPane.showMessageDialog(this,
-                        "User not found.",
+                        "Failed to reset password. Please try again.",
                         "Error",
                         JOptionPane.ERROR_MESSAGE);
                 }
             } else {
                 JOptionPane.showMessageDialog(this,
-                    "Invalid security answers. Please try again.",
-                    "Validation Failed",
+                    "Invalid security answers or username",
+                    "Error",
                     JOptionPane.ERROR_MESSAGE);
             }
-        } catch (SQLException ex) {
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error during password reset: {0}", e.getMessage());
             JOptionPane.showMessageDialog(this,
-                "Database error: " + ex.getMessage(),
+                "An error occurred: " + e.getMessage(),
                 "Error",
                 JOptionPane.ERROR_MESSAGE);
         }

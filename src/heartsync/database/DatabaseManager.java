@@ -85,16 +85,16 @@ public class DatabaseManager {
         }
     }
 
-    public int saveUserProfile(int userId, String fullName, int height, int weight, String country, 
-                             String address, String phone, String qualification, 
-                             String gender, String preferences, String aboutMe, 
-                             String profilePicPath, String relationChoice, 
-                             List<String> hobbies) throws SQLException {
+    public int saveUserProfile(int userId, String fullName, int height, int weight, int age,
+                               String country, String address, String phone, String qualification,
+                               String gender, String preferences, String aboutMe,
+                               String profilePicPath, String relationChoice, 
+                               List<String> hobbies) throws SQLException {
         String sql = """
-            INSERT INTO user_profiles (user_id, full_name, height, weight, country, address,
+            INSERT INTO user_profiles (user_id, full_name, height, weight, age, country, address,
                                      phone, qualification, gender, preferences, about_me,
                                      profile_pic_path, relation_choice)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """;
         
         try (Connection conn = dbConnection.getConnection();
@@ -104,15 +104,16 @@ public class DatabaseManager {
             stmt.setString(2, fullName);
             stmt.setInt(3, height);
             stmt.setInt(4, weight);
-            stmt.setString(5, country);
-            stmt.setString(6, address);
-            stmt.setString(7, phone);
-            stmt.setString(8, qualification);
-            stmt.setString(9, gender);
-            stmt.setString(10, preferences);
-            stmt.setString(11, aboutMe);
-            stmt.setString(12, profilePicPath);
-            stmt.setString(13, relationChoice);
+            stmt.setInt(5, age);
+            stmt.setString(6, country);
+            stmt.setString(7, address);
+            stmt.setString(8, phone);
+            stmt.setString(9, qualification);
+            stmt.setString(10, gender);
+            stmt.setString(11, preferences);
+            stmt.setString(12, aboutMe);
+            stmt.setString(13, profilePicPath);
+            stmt.setString(14, relationChoice);
             
             int affectedRows = stmt.executeUpdate();
             if (affectedRows == 0) {

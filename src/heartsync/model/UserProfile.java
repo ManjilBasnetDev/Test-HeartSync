@@ -6,6 +6,7 @@ public class UserProfile {
     private String fullName;
     private int height;
     private int weight;
+    private int age;
     private String country;
     private String address;
     private String phoneNumber;
@@ -114,5 +115,16 @@ public class UserProfile {
 
     public void setHobbies(List<String> hobbies) {
         this.hobbies = hobbies;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        if (age < 18 || age > 75) {
+            throw new IllegalArgumentException("Age must be between 18 and 75");
+        }
+        this.age = age;
     }
 } 

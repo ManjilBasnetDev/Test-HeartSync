@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS user_profiles (
     full_name VARCHAR(100),
     height INT,
     weight INT,
+    age INT,
     country VARCHAR(100),
     address TEXT,
     phone VARCHAR(20),
@@ -35,7 +36,8 @@ CREATE TABLE IF NOT EXISTS user_profiles (
     profile_pic_path VARCHAR(255),
     relation_choice VARCHAR(50),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id)
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    CHECK (age >= 18 AND age <= 75)
 );
 
 -- Create user_hobbies table

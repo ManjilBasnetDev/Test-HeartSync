@@ -2,11 +2,13 @@ package heartsync;
 
 import javax.swing.JButton;
 import javax.swing.JPasswordField;
+import java.awt.Color;
 
 public class ShowHideController {
-    private JPasswordField passwordField;
-    private JButton toggleButton;
+    private final JPasswordField passwordField;
+    private final JButton toggleButton;
     private boolean isPasswordVisible;
+    private static final String PLACEHOLDER = "Enter password";
     
     public ShowHideController(JPasswordField passwordField, JButton toggleButton) {
         this.passwordField = passwordField;
@@ -17,31 +19,47 @@ public class ShowHideController {
     }
     
     public void togglePasswordVisibility() {
-        String currentPassword = String.valueOf(passwordField.getPassword());
-        if (currentPassword.equals("Enter password")) {
+        String pass = String.valueOf(passwordField.getPassword());
+        if (pass.equals(PLACEHOLDER)) {
             return;
         }
         
         isPasswordVisible = !isPasswordVisible;
-        toggleButton.setText(isPasswordVisible ? "Hide" : "Show");
-        
         if (isPasswordVisible) {
-            passwordField.setEchoChar((char)0);
+            passwordField.setEchoChar((char) 0);
+            toggleButton.setText("Hide");
         } else {
             passwordField.setEchoChar('•');
+            toggleButton.setText("Show");
         }
     }
     
     public String getActualPassword() {
         String pass = String.valueOf(passwordField.getPassword());
-        return pass.equals("Enter password") ? "" : pass;
+        return pass.equals(PLACEHOLDER) ? "" : pass;
     }
     
     public void reset() {
         isPasswordVisible = false;
         toggleButton.setText("Show");
-        passwordField.setText("Enter password");
-        passwordField.setEchoChar((char)0);
-        passwordField.setForeground(java.awt.Color.GRAY);
+        passwordField.setText(PLACEHOLDER);
+        passwordField.setEchoChar((char) 0);
+        passwordField.setForeground(Color.GRAY);
+    }
+    
+    public void onFocusGained() {
+        String pass = String.valueOf(passwordField.getPassword());
+        if (pass.equals(PLACEHOLDER)) {
+            passwordField.setText("");
+            passwordField.setForeground(Color.BLACK);
+            passwordField.setEchoChar('•');
+        }
+    }
+    
+    public void onFocusLost() {
+        String pass = String.valueOf(passwordField.getPassword());
+        if (pass.isEmpty() || pass.trim().isEmpty()) {
+            reset();
+        }
     }
 } 

@@ -78,31 +78,7 @@ public class Login extends javax.swing.JFrame {
         txtUsername.setForeground(Color.GRAY);
         
         // Password field setup
-        txtPassword = new javax.swing.JPasswordField() {
-            @Override
-            protected void processKeyEvent(java.awt.event.KeyEvent e) {
-                if (e.getID() == java.awt.event.KeyEvent.KEY_TYPED) {
-                    String pass = String.valueOf(getPassword());
-                    if (pass.equals("Enter password")) {
-                        SwingUtilities.invokeLater(() -> {
-                            setText("");
-                            setForeground(Color.BLACK);
-                            setEchoChar('•');
-                        });
-                    }
-                }
-                super.processKeyEvent(e);
-            }
-            
-            @Override
-            public void setText(String t) {
-                super.setText(t);
-                if (t.equals("Enter password")) {
-                    setEchoChar((char)0);
-                    setForeground(Color.GRAY);
-                }
-            }
-        };
+        txtPassword = new javax.swing.JPasswordField();
         txtPassword.setFont(new java.awt.Font("Segoe UI", 0, 14));
         txtPassword.setBackground(Color.WHITE);
         txtPassword.setOpaque(true);
@@ -140,26 +116,12 @@ public class Login extends javax.swing.JFrame {
         txtPassword.addFocusListener(new java.awt.event.FocusAdapter() {
             @Override
             public void focusGained(java.awt.event.FocusEvent evt) {
-                SwingUtilities.invokeLater(() -> {
-                    String pass = String.valueOf(txtPassword.getPassword());
-                    if (pass.equals("Enter password")) {
-                        txtPassword.setText("");
-                        txtPassword.setForeground(Color.BLACK);
-                        txtPassword.setEchoChar('•');
-                    }
-                });
+                SwingUtilities.invokeLater(() -> showHideController.onFocusGained());
             }
 
             @Override
             public void focusLost(java.awt.event.FocusEvent evt) {
-                SwingUtilities.invokeLater(() -> {
-                    String pass = String.valueOf(txtPassword.getPassword());
-                    if (pass.isEmpty() || pass.trim().isEmpty()) {
-                        txtPassword.setForeground(Color.GRAY);
-                        txtPassword.setText("Enter password");
-                        txtPassword.setEchoChar((char)0);
-                    }
-                });
+                SwingUtilities.invokeLater(() -> showHideController.onFocusLost());
             }
         });
 
@@ -313,7 +275,9 @@ public class Login extends javax.swing.JFrame {
         btnTogglePassword.setFont(new java.awt.Font("Segoe UI", 0, 14));
         btnTogglePassword.setBackground(new java.awt.Color(240, 240, 240));
         btnTogglePassword.setForeground(new java.awt.Color(108, 117, 125));
-        btnTogglePassword.setBorderPainted(false);
+        btnTogglePassword.setBorder(BorderFactory.createCompoundBorder(
+            new LineBorder(new Color(200, 200, 200)),
+            new EmptyBorder(10, 15, 10, 15)));
         btnTogglePassword.setFocusPainted(false);
         btnTogglePassword.setOpaque(true);
         btnTogglePassword.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));

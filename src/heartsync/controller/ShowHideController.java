@@ -1,42 +1,37 @@
-package heartsync;
+package heartsync.controller;
 
 import javax.swing.JButton;
-import javax.swing.JPasswordField;
+import javax.swing.JTextArea;
 
 public class ShowHideController {
-    private JPasswordField passwordField;
-    private JButton toggleButton;
-    private boolean isPasswordVisible;
-
-    public ShowHideController(JPasswordField passwordField, JButton toggleButton) {
+    private final JTextArea passwordField;
+    private final JButton toggleButton;
+    private String actualPassword = "";
+    private boolean isPasswordVisible = false;
+    
+    public ShowHideController(JTextArea passwordField, JButton toggleButton) {
         this.passwordField = passwordField;
         this.toggleButton = toggleButton;
+        this.actualPassword = "";
         this.isPasswordVisible = false;
-
-        toggleButton.addActionListener(e -> togglePasswordVisibility());
+        
+        toggleButton.addActionListener(e -> togglePassword());
     }
-
-    public void togglePasswordVisibility() {
-        isPasswordVisible = !isPasswordVisible;
-        if (isPasswordVisible) {
-            passwordField.setEchoChar((char) 0); // Show password
-            toggleButton.setText("Hide");
-        } else {
-            passwordField.setEchoChar('•'); // Hide password
-            toggleButton.setText("Show");
-        }
-    }
-
-    public void setActualPassword(String password) {
-        passwordField.setText(password);
-    }
-
-    public String getActualPassword() {
-        return new String(passwordField.getPassword());
-    }
-
     
-
+    public void togglePassword() {
+        isPasswordVisible = !isPasswordVisible;
+        toggleButton.setText(isPasswordVisible ? "Hide" : "Show");
+        updatePasswordDisplay();
+    }
+    
+    public void setActualPassword(String password) {
+        this.actualPassword = password;
+        updatePasswordDisplay();
+    }
+    
+    public String getActualPassword() {
+        return actualPassword;
+    }
     
     public void reset() {
         actualPassword = "";

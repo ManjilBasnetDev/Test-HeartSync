@@ -1,6 +1,7 @@
 package heartsync.view;
 
 import heartsync.controller.UserProfileController;
+import heartsync.model.UserProfile;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Cursor;
@@ -33,12 +34,14 @@ import javax.swing.JSlider;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 
 public class ProfileSetupView extends JFrame {
     private UserProfileController controller;
     private JTextField nameField;
     private JSlider heightSlider;
     private JSlider weightSlider;
+    private JSlider ageSlider;
     private JTextField countryField;
     private JTextField addressField;
     private JTextField phoneField;
@@ -50,6 +53,7 @@ public class ProfileSetupView extends JFrame {
     private String profilePicPath;
     private JLabel heightValueLabel;
     private JLabel weightValueLabel;
+    private JLabel ageValueLabel;
 
     public ProfileSetupView(UserProfileController controller) {
         this.controller = controller;
@@ -132,6 +136,15 @@ public class ProfileSetupView extends JFrame {
         weightValueLabel = new JLabel(weightSlider.getValue() + " kg");
         weightValueLabel.setFont(new Font("Arial", Font.PLAIN, 14));
         weightSlider.addChangeListener(e -> weightValueLabel.setText(weightSlider.getValue() + " kg"));
+
+        // Age Slider with value label
+        ageSlider = createStyledSlider(18, 75, 25);
+        ageValueLabel = new JLabel(ageSlider.getValue() + " years");
+        ageValueLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        ageSlider.addChangeListener(e -> {
+            int age = ageSlider.getValue();
+            ageValueLabel.setText(age + " years");
+        });
         
         countryField = createStyledTextField("Country");
         addressField = createStyledTextField("Address");
@@ -184,6 +197,13 @@ public class ProfileSetupView extends JFrame {
         weightPanel.add(weightSlider, BorderLayout.CENTER);
         weightPanel.add(weightValueLabel, BorderLayout.EAST);
         addFormField(formPanel, "Weight:", weightPanel, gbc);
+
+        // Add age slider with value label
+        JPanel agePanel = new JPanel(new BorderLayout(10, 0));
+        agePanel.setOpaque(false);
+        agePanel.add(ageSlider, BorderLayout.CENTER);
+        agePanel.add(ageValueLabel, BorderLayout.EAST);
+        addFormField(formPanel, "Age:", agePanel, gbc);
         
         addFormField(formPanel, "Country:", countryField, gbc);
         addFormField(formPanel, "Address:", addressField, gbc);
@@ -376,5 +396,31 @@ public class ProfileSetupView extends JFrame {
         slider.setForeground(new Color(219, 112, 147));
         slider.setFont(new Font("Arial", Font.PLAIN, 12));
         return slider;
+    }
+
+    public static void main(String[] args) {
+        // Use SwingUtilities to ensure thread safety
+        SwingUtilities.invokeLater(() -> {
+            try {
+                // Create a dummy user profile for testing
+                UserProfile dummyProfile = new UserProfile();
+                
+                // Create controller with dummy profile
+                UserProfileController controller = new UserProfileController(dummyProfile);
+                
+                // Create and show the profile setup view
+                ProfileSetupView profileSetup = new ProfileSetupView(controller);
+                profileSetup.setVisible(true);
+                
+                // Center the window on screen
+                profileSetup.setLocationRelativeTo(null);
+            } catch (Exception e) {
+                e.printStackTrace();
+                JOptionPane.showMessageDialog(null,
+                    "Error starting Profile Setup: " + e.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+            }
+        });
     }
 } 

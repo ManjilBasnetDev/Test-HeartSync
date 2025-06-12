@@ -82,12 +82,9 @@ public class Login extends javax.swing.JFrame {
         txtPassword.setFont(new java.awt.Font("Segoe UI", 0, 14));
         txtPassword.setBackground(Color.WHITE);
         txtPassword.setOpaque(true);
-        txtPassword.setForeground(Color.GRAY);
         txtPassword.setBorder(BorderFactory.createCompoundBorder(
             new LineBorder(new Color(200, 200, 200)),
             new EmptyBorder(10, 15, 10, 15)));
-        txtPassword.setEchoChar((char)0); // Initially show placeholder text
-        txtPassword.setText("Enter password");
         txtPassword.setMaximumSize(new Dimension(400, 45));
         txtPassword.setPreferredSize(new Dimension(400, 45));
     }
@@ -181,7 +178,7 @@ public class Login extends javax.swing.JFrame {
 
     private void performLogin() {
         String username = txtUsername.getText().trim();
-        String password = String.valueOf(txtPassword.getPassword()).trim();
+        String password = showHideController.getActualPassword().trim();
         
         UserDAO userDAO = null;
         
@@ -190,7 +187,7 @@ public class Login extends javax.swing.JFrame {
             if (username.isEmpty() || username.equals("USERNAME")) {
                 throw new IllegalArgumentException("Please enter a username");
             }
-            if (password.isEmpty() || password.equals("Enter password")) {
+            if (password.isEmpty()) {
                 throw new IllegalArgumentException("Please enter a password");
             }
             

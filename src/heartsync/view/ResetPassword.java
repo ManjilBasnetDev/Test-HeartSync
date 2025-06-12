@@ -130,7 +130,7 @@ public class ResetPassword extends JFrame {
 
         // Validation label
         validationLabel = new JLabel();
-        validationLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        validationLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         validationLabel.setForeground(Color.GRAY);
         gbc.insets = new Insets(10, 0, 20, 0);
         formPanel.add(validationLabel, gbc);

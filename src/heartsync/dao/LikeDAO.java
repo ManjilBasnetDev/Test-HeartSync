@@ -1,4 +1,4 @@
-package heartsyncdatingapp.dao;
+package heartsync.dao;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -7,7 +7,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-import heartsyncdatingapp.database.DatabaseConnection;
+import heartsync.database.DatabaseConnection;
 import heartsyncdatingapp.model.User;
 
 public class LikeDAO {

@@ -462,6 +462,7 @@ public class MoreInfoView extends JFrame {
                 profile.getFullName(),
                 profile.getHeight(),
                 profile.getWeight(),
+                profile.getAge(),  // Add age
                 profile.getCountry(),
                 profile.getAddress(),
                 profile.getPhoneNumber(),

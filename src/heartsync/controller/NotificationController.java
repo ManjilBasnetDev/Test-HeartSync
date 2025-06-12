@@ -1,32 +1,33 @@
 package heartsync.controller;
 
-import heartsync.dao.NotificationDAO;
 import heartsync.model.Notification;
+import java.util.ArrayList;
 import java.util.List;
-import javax.management.Notification;
 
 public class NotificationController {
-    public void notifyMatch(String matchName) {
+    private List<Notification> notifications = new ArrayList<>();
+
+    public void addMatchNotification(String message) {
         Notification notif = new Notification(
-            "You have a new match: " + matchName + "!",
+            message,
             Notification.Type.MATCH
         );
-        NotificationDAO.addNotification(notif);
+        notifications.add(notif);
     }
 
-    public void notifyMessage(String fromUser) {
+    public void addMessageNotification(String message) {
         Notification notif = new Notification(
-            "New message from: " + fromUser + "!",
+            message,
             Notification.Type.MESSAGE
         );
-        NotificationDAO.addNotification(notif);
+        notifications.add(notif);
     }
 
     public List<Notification> getNotifications() {
-        return NotificationDAO.getAllNotifications();
+        return new ArrayList<>(notifications);
     }
 
     public void markAllAsRead() {
-        NotificationDAO.markAllAsRead();
+        notifications.clear();
     }
 }

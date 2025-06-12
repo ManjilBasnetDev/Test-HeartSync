@@ -366,6 +366,7 @@ public class ProfileSetupView extends JFrame {
                 nameField.getText().trim(),
                 heightSlider.getValue(),
                 weightSlider.getValue(),
+                ageSlider.getValue(),
                 countryField.getText().trim(),
                 addressField.getText().trim(),
                 phoneField.getText().trim(),

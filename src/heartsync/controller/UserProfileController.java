@@ -79,12 +79,13 @@ public class UserProfileController {
     }
 
     // Add missing methods
-    public void updateBasicInfo(String fullName, int height, int weight, String country,
+    public void updateBasicInfo(String fullName, int height, int weight, int age, String country,
                               String address, String phone, String qualification,
                               String gender, String preferences, String aboutMe) {
         model.setFullName(fullName);
         model.setHeight(height);
         model.setWeight(weight);
+        model.setAge(age);
         model.setCountry(country);
         model.setAddress(address);
         model.setPhoneNumber(phone);

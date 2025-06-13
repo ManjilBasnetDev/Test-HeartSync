@@ -1,98 +1,183 @@
 package heartsync.view;
 
-import heartsync.chat.ChatManager;
-import heartsync.model.Message;
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.*;
-import java.text.SimpleDateFormat;
-import java.util.List;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 
-public class ChatWindow extends JFrame implements ChatManager.ChatUpdateListener {
-    private final ChatManager chatManager;
-    private final JTextArea chatArea;
-    private final JTextField messageField;
-    private final JButton sendButton;
-    private final SimpleDateFormat timeFormat;
-    private final int currentUserId;
-    private final int otherUserId;
-    
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollBar;
+import javax.swing.JScrollPane;
+import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
+import javax.swing.Timer;
+
+public class ChatWindow extends JFrame {
+    private JPanel mainPanel;
+    private JPanel chatPanel;
+    private JScrollPane scrollPane;
+    private JTextField messageField;
+    private int currentUserId;
+    private int otherUserId;
+
     public ChatWindow(int currentUserId, int otherUserId) {
         this.currentUserId = currentUserId;
         this.otherUserId = otherUserId;
-        this.chatManager = new ChatManager(currentUserId, otherUserId);
-        this.timeFormat = new SimpleDateFormat("HH:mm:ss");
-        
-        // Set up the window
-        setTitle("Chat with User " + otherUserId);
-        setSize(600, 400);
+
+        setTitle("HeartSync - Chat");
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        
-        // Create components
-        chatArea = new JTextArea();
-        chatArea.setEditable(false);
-        chatArea.setLineWrap(true);
-        chatArea.setWrapStyleWord(true);
-        
+        setSize(400, 600);
+        setLocationRelativeTo(null);
+        setLayout(new BorderLayout());
+        getContentPane().setBackground(new Color(250, 245, 250));
+
+        // Header
+        JPanel header = new JPanel(new BorderLayout());
+        header.setBackground(new Color(128, 0, 64));
+        header.setPreferredSize(new Dimension(400, 60));
+        header.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, new Color(233, 54, 128)));
+
+        JLabel nameLabel = new JLabel("User " + otherUserId);
+        nameLabel.setFont(new Font("SansSerif", Font.BOLD, 20));
+        nameLabel.setForeground(Color.WHITE);
+        nameLabel.setBorder(BorderFactory.createEmptyBorder(0, 15, 0, 0));
+
+        JButton backBtn = new JButton("←");
+        backBtn.setFont(new Font("SansSerif", Font.BOLD, 20));
+        backBtn.setBackground(new Color(128, 0, 64));
+        backBtn.setForeground(Color.WHITE);
+        backBtn.setBorderPainted(false);
+        backBtn.setFocusPainted(false);
+        backBtn.setContentAreaFilled(false);
+        backBtn.setOpaque(true);
+        backBtn.setBorder(BorderFactory.createEmptyBorder(5, 15, 5, 15));
+        backBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        backBtn.addActionListener(e -> dispose());
+
+        header.add(nameLabel, BorderLayout.WEST);
+        header.add(backBtn, BorderLayout.EAST);
+        add(header, BorderLayout.NORTH);
+
+        // Chat area
+        chatPanel = new JPanel();
+        chatPanel.setLayout(new BoxLayout(chatPanel, BoxLayout.Y_AXIS));
+        chatPanel.setBackground(new Color(250, 245, 250));
+
+        // Add some dummy messages
+        addMessage("Hey, how are you?", false);
+        addMessage("I'm good, thanks! How about you?", true);
+        addMessage("I'm doing great! Would you like to meet for coffee sometime?", false);
+
+        scrollPane = new JScrollPane(chatPanel);
+        scrollPane.setBorder(null);
+        scrollPane.getViewport().setOpaque(false);
+        scrollPane.setOpaque(false);
+        add(scrollPane, BorderLayout.CENTER);
+
+        // Message input area
+        JPanel inputPanel = new JPanel(new BorderLayout());
+        inputPanel.setBackground(Color.WHITE);
+        inputPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(233, 54, 128)),
+            BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        ));
+
         messageField = new JTextField();
-        sendButton = new JButton("Send");
-        
-        // Layout
-        JPanel mainPanel = new JPanel(new BorderLayout());
-        mainPanel.add(new JScrollPane(chatArea), BorderLayout.CENTER);
-        
-        JPanel bottomPanel = new JPanel(new BorderLayout());
-        bottomPanel.add(messageField, BorderLayout.CENTER);
-        bottomPanel.add(sendButton, BorderLayout.EAST);
-        mainPanel.add(bottomPanel, BorderLayout.SOUTH);
-        
-        add(mainPanel);
-        
-        // Add listeners
+        messageField.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        messageField.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(233, 54, 128)),
+            BorderFactory.createEmptyBorder(5, 5, 5, 5)
+        ));
+
+        JButton sendButton = new JButton("Send");
+        sendButton.setBackground(new Color(233, 54, 128));
+        sendButton.setForeground(Color.WHITE);
+        sendButton.setFocusPainted(false);
+        sendButton.setFont(new Font("SansSerif", Font.BOLD, 14));
+        sendButton.setBorder(BorderFactory.createEmptyBorder(5, 15, 5, 15));
+        sendButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         sendButton.addActionListener(e -> sendMessage());
-        messageField.addActionListener(e -> sendMessage());
-        
-        addWindowListener(new WindowAdapter() {
+
+        inputPanel.add(messageField, BorderLayout.CENTER);
+        inputPanel.add(sendButton, BorderLayout.EAST);
+        add(inputPanel, BorderLayout.SOUTH);
+
+        // Add enter key listener to message field
+        messageField.addKeyListener(new KeyAdapter() {
             @Override
-            public void windowClosing(WindowEvent e) {
-                chatManager.stopMessagePolling();
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                    sendMessage();
+                }
             }
         });
-        
-        // Start real-time updates
-        chatManager.addListener(this);
-        chatManager.startMessagePolling();
     }
-    
+
+    private void addMessage(String text, boolean isCurrentUser) {
+        JPanel messagePanel = new JPanel();
+        messagePanel.setLayout(new BoxLayout(messagePanel, BoxLayout.Y_AXIS));
+        messagePanel.setOpaque(false);
+        messagePanel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+
+        JPanel bubblePanel = new JPanel(new BorderLayout());
+        bubblePanel.setBackground(isCurrentUser ? new Color(233, 54, 128) : Color.WHITE);
+        bubblePanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(233, 54, 128), 1, true),
+            BorderFactory.createEmptyBorder(8, 12, 8, 12)
+        ));
+
+        JLabel messageLabel = new JLabel(text);
+        messageLabel.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        messageLabel.setForeground(isCurrentUser ? Color.WHITE : new Color(51, 51, 51));
+        bubblePanel.add(messageLabel, BorderLayout.CENTER);
+
+        if (isCurrentUser) {
+            messagePanel.setAlignmentX(Component.RIGHT_ALIGNMENT);
+            bubblePanel.setMaximumSize(new Dimension(300, Integer.MAX_VALUE));
+        } else {
+            messagePanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+            bubblePanel.setMaximumSize(new Dimension(300, Integer.MAX_VALUE));
+        }
+
+        messagePanel.add(bubblePanel);
+        chatPanel.add(messagePanel);
+        chatPanel.add(Box.createVerticalStrut(5));
+
+        // Scroll to bottom
+        SwingUtilities.invokeLater(() -> {
+            JScrollBar vertical = scrollPane.getVerticalScrollBar();
+            vertical.setValue(vertical.getMaximum());
+        });
+    }
+
     private void sendMessage() {
-        String text = messageField.getText().trim();
-        if (!text.isEmpty()) {
-            chatManager.sendMessage(text);
+        String message = messageField.getText().trim();
+        if (!message.isEmpty()) {
+            addMessage(message, true);
             messageField.setText("");
+            
+            // Simulate a reply after 1 second
+            Timer timer = new Timer(1000, e -> {
+                addMessage("Thanks for your message! I'll get back to you soon.", false);
+            });
+            timer.setRepeats(false);
+            timer.start();
         }
     }
-    
-    @Override
-    public void onNewMessages(List<Message> newMessages) {
+
+    public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            for (Message message : newMessages) {
-                String sender = (message.getSenderId() == currentUserId) ? "You" : "Other";
-                String time = timeFormat.format(message.getTimestamp());
-                chatArea.append(String.format("[%s] %s: %s%n", 
-                    time, sender, message.getMessageText()));
-            }
-            // Scroll to bottom
-            chatArea.setCaretPosition(chatArea.getDocument().getLength());
-        });
-    }
-    
-    @Override
-    public void onError(String errorMessage) {
-        SwingUtilities.invokeLater(() -> {
-            JOptionPane.showMessageDialog(this, 
-                errorMessage, 
-                "Error", 
-                JOptionPane.ERROR_MESSAGE);
+            new ChatWindow(1, 2).setVisible(true);
         });
     }
 } 

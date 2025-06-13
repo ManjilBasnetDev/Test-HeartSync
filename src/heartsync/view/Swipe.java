@@ -35,6 +35,7 @@ public class Swipe extends JFrame {
     private final RoundedButton likeButton;
     private final RoundedButton rejectButton;
     private final RoundedButton closeButton;
+    private final RoundedButton messageButton;
     private final ArrayList<ProfileData> profiles;
     private int currentIndex;
     
@@ -129,7 +130,7 @@ public class Swipe extends JFrame {
         mainPanel.setOpaque(false);
         
         // Add close button
-        closeButton = new RoundedButton("X", CLOSE_BUTTON_COLOR) {
+        closeButton = new RoundedButton("×", CLOSE_BUTTON_COLOR) {
             private boolean isHovered = false;
 
             {
@@ -158,9 +159,8 @@ public class Swipe extends JFrame {
                 } else {
                     g2.setColor(CLOSE_BUTTON_COLOR);
                 }
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), getHeight(), getHeight()); // Make it circular
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), getHeight(), getHeight());
                 
-                // Add hover effect
                 if (isHovered) {
                     g2.setColor(BUTTON_HOVER_OVERLAY);
                     g2.fillRoundRect(0, 0, getWidth(), getHeight(), getHeight(), getHeight());
@@ -170,9 +170,58 @@ public class Swipe extends JFrame {
             }
         };
         closeButton.setBounds(650, 10, 30, 30);
-        closeButton.setFont(new Font("Segoe UI", Font.BOLD, 16)); // Slightly larger font
+        closeButton.setFont(new Font("Segoe UI", Font.BOLD, 16));
         closeButton.addActionListener(e -> dispose());
         mainPanel.add(closeButton);
+
+        // Add message button
+        messageButton = new RoundedButton("💬", new Color(233, 54, 128)) {
+            private boolean isHovered = false;
+
+            {
+                addMouseListener(new MouseAdapter() {
+                    @Override
+                    public void mouseEntered(MouseEvent e) {
+                        isHovered = true;
+                        repaint();
+                    }
+
+                    @Override
+                    public void mouseExited(MouseEvent e) {
+                        isHovered = false;
+                        repaint();
+                    }
+                });
+            }
+
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g;
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                if (isHovered) {
+                    g2.setColor(new Color(233, 54, 128).darker());
+                } else {
+                    g2.setColor(new Color(233, 54, 128));
+                }
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), getHeight(), getHeight());
+                
+                if (isHovered) {
+                    g2.setColor(BUTTON_HOVER_OVERLAY);
+                    g2.fillRoundRect(0, 0, getWidth(), getHeight(), getHeight(), getHeight());
+                }
+                
+                super.paintComponent(g);
+            }
+        };
+        messageButton.setBounds(610, 10, 30, 30);
+        messageButton.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        messageButton.addActionListener(e -> {
+            FrontPage frontPage = new FrontPage();
+            frontPage.setVisible(true);
+            dispose();
+        });
+        mainPanel.add(messageButton);
         
         // Card panel for profile display
         cardPanel = new JPanel(null);

@@ -8,6 +8,8 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.Rectangle2D;
 import javax.swing.*;
+import heartsync.Login;
+import heartsync.view.Register;
 
 /**
  *
@@ -193,10 +195,15 @@ public class HomePage extends JFrame {
         });
         
         loginButton.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this,
-                "Login functionality coming soon!",
-                "Coming Soon",
-                JOptionPane.INFORMATION_MESSAGE);
+            Login login = new Login();
+            login.setVisible(true);
+            dispose(); // Close the home page when login page opens
+        });
+        
+        createAccountButton.addActionListener(e -> {
+            Register register = new Register();
+            register.setVisible(true);
+            dispose(); // Close the home page when register page opens
         });
         
         return navPanel;
@@ -330,10 +337,9 @@ public class HomePage extends JFrame {
         
         // Add action listeners
         loginButton.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this,
-                "Login functionality coming soon!",
-                "Coming Soon",
-                JOptionPane.INFORMATION_MESSAGE);
+            Login login = new Login();
+            login.setVisible(true);
+            dispose(); // Close the home page when login page opens
         });
         
         createAccountButton.addActionListener(e -> {

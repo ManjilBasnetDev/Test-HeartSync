@@ -16,13 +16,10 @@ import heartsync.model.User;
 
 public class UserDAOLogin {
     private static final Logger LOGGER = Logger.getLogger(UserDAOLogin.class.getName());
-    private Connection connection;
+    private final DatabaseConnection dbConnection;
     
-    public UserDAOLogin() throws SQLException {
-            this.connection = DatabaseConnection.getConnection();
-            if (this.connection == null) {
-                throw new SQLException("Could not establish database connection");
-        }
+    public UserDAOLogin() {
+        this.dbConnection = DatabaseConnection.getInstance();
     }
     
     public boolean authenticate(String username, String password) throws SQLException {
@@ -35,18 +32,14 @@ public class UserDAOLogin {
         
         String sql = "SELECT * FROM users WHERE username = ? AND password = ?";
         
-        try {
-            if (connection == null || connection.isClosed()) {
-                connection = DatabaseConnection.getConnection();
-            }
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             
-            try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-                stmt.setString(1, username);
-                stmt.setString(2, DatabaseConnection.hashPassword(password));
-                
-                try (ResultSet rs = stmt.executeQuery()) {
-                    return rs.next();
-                }
+            stmt.setString(1, username);
+            stmt.setString(2, DatabaseConnection.hashPassword(password));
+            
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next();
             }
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Error during authentication", e);
@@ -61,31 +54,14 @@ public class UserDAOLogin {
         
         String sql = "SELECT * FROM users WHERE username = ?";
         
-        try {
-            if (connection == null || connection.isClosed()) {
-                connection = DatabaseConnection.getConnection();
-            }
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             
-            try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-                stmt.setString(1, username);
-                
-                try (ResultSet rs = stmt.executeQuery()) {
-                    if (rs.next()) {
-                        User user = new User();
-                        user.setId(rs.getInt("id"));
-                        user.setUsername(rs.getString("username"));
-                        user.setPassword(rs.getString("password")); // Note: This is the hashed password
-                        user.setUserType(rs.getString("user_type"));
-                        user.setEmail(rs.getString("email"));
-                        user.setPhoneNumber(rs.getString("phone_number"));
-                        user.setDateOfBirth(rs.getDate("date_of_birth").toLocalDate());
-                        user.setGender(rs.getString("gender"));
-                        user.setInterests(rs.getString("interests"));
-                        user.setBio(rs.getString("bio"));
-                        user.setFavoriteColor(rs.getString("favorite_color"));
-                        user.setFirstSchool(rs.getString("first_school"));
-                        return user;
-                    }
+            stmt.setString(1, username);
+            
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return extractUserFromResultSet(rs);
                 }
             }
         } catch (SQLException e) {
@@ -93,6 +69,21 @@ public class UserDAOLogin {
             throw new SQLException("Failed to retrieve user: " + e.getMessage(), e);
         }
         return null;
+    }
+    
+    private User extractUserFromResultSet(ResultSet rs) throws SQLException {
+        User user = new User();
+        user.setId(rs.getInt("id"));
+        user.setUsername(rs.getString("username"));
+        user.setPassword(rs.getString("password"));
+        user.setUserType(rs.getString("user_type"));
+        user.setEmail(rs.getString("email"));
+        user.setPhoneNumber(rs.getString("phone_number"));
+        user.setDateOfBirth(rs.getString("date_of_birth"));
+        user.setGender(rs.getString("gender"));
+        user.setInterests(rs.getString("interests"));
+        user.setBio(rs.getString("bio"));
+        return user;
     }
     
     public boolean updatePassword(String username, String newPassword) throws SQLException {
@@ -108,21 +99,17 @@ public class UserDAOLogin {
         
         String sql = "UPDATE users SET password = ? WHERE username = ?";
         
-        try {
-            if (connection == null || connection.isClosed()) {
-                connection = DatabaseConnection.getConnection();
-            }
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             
-            try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-                stmt.setString(1, DatabaseConnection.hashPassword(newPassword));
-                stmt.setString(2, username);
-                
-                int rowsAffected = stmt.executeUpdate();
-                if (rowsAffected == 0) {
-                    LOGGER.warning("No user found with username: " + username);
-                }
-                return rowsAffected > 0;
+            stmt.setString(1, DatabaseConnection.hashPassword(newPassword));
+            stmt.setString(2, username);
+            
+            int rowsAffected = stmt.executeUpdate();
+            if (rowsAffected == 0) {
+                LOGGER.warning("No user found with username: " + username);
             }
+            return rowsAffected > 0;
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Error updating password", e);
             throw new SQLException("Failed to update password: " + e.getMessage(), e);
@@ -141,45 +128,37 @@ public class UserDAOLogin {
         if (user.getPassword() == null || user.getPassword().trim().isEmpty()) {
             throw new IllegalArgumentException("Password cannot be empty");
         }
+        
+        // Validate password requirements
+        DatabaseConnection.validatePassword(user.getPassword());
+        
         if (user.getEmail() != null) {
             DatabaseConnection.validateEmail(user.getEmail());
         }
         
-        String sql = "INSERT INTO users (username, password, user_type, email) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO users (username, password, user_type, email, phone_number, date_of_birth, gender, interests, bio) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
-        try {
-            if (connection == null || connection.isClosed()) {
-                connection = DatabaseConnection.getConnection();
-            }
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             
-            try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-                stmt.setString(1, user.getUsername());
-                stmt.setString(2, DatabaseConnection.hashPassword(user.getPassword()));
-                stmt.setString(3, user.getUserType());
-                stmt.setString(4, user.getEmail());
-                
-                return stmt.executeUpdate() > 0;
-            }
+            stmt.setString(1, user.getUsername());
+            stmt.setString(2, DatabaseConnection.hashPassword(user.getPassword()));
+            stmt.setString(3, user.getUserType());
+            stmt.setString(4, user.getEmail());
+            stmt.setString(5, user.getPhoneNumber());
+            stmt.setString(6, user.getDateOfBirth());
+            stmt.setString(7, user.getGender());
+            stmt.setString(8, user.getInterests());
+            stmt.setString(9, user.getBio());
+            
+            return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Error creating user", e);
             throw new SQLException("Failed to create user: " + e.getMessage(), e);
         }
     }
     
-    @Override
-    protected void finalize() throws Throwable {
-        closeConnection();
-        super.finalize();
-    }
-    
     public void closeConnection() {
-        if (connection != null) {
-            try {
-                connection.close();
-                connection = null;
-            } catch (SQLException e) {
-                LOGGER.log(Level.WARNING, "Error closing connection", e);
-            }
-        }
+        dbConnection.closeConnection();
     }
 } 

@@ -4,6 +4,9 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import javax.swing.JOptionPane;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.regex.Pattern;
 
 public class DatabaseConnection {
     private static final String URL = "jdbc:mysql://localhost:3306/";
@@ -87,6 +90,84 @@ public class DatabaseConnection {
             return connection != null && !connection.isClosed();
         } catch (SQLException e) {
             return false;
+        }
+    }
+    
+    /**
+     * Hashes a password using SHA-256 algorithm.
+     * @param password The password to hash
+     * @return The hashed password as a hexadecimal string
+     */
+    public static String hashPassword(String password) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(password.getBytes());
+            StringBuilder hexString = new StringBuilder();
+            
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+            
+            return hexString.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("Error hashing password", e);
+        }
+    }
+    
+    /**
+     * Validates an email address format.
+     * @param email The email address to validate
+     * @throws IllegalArgumentException if the email format is invalid
+     */
+    public static void validateEmail(String email) {
+        if (email == null || email.trim().isEmpty()) {
+            throw new IllegalArgumentException("Email cannot be empty");
+        }
+        
+        String emailRegex = "^[A-Za-z0-9+_.-]+@(.+)$";
+        Pattern pattern = Pattern.compile(emailRegex);
+        
+        if (!pattern.matcher(email).matches()) {
+            throw new IllegalArgumentException("Invalid email format");
+        }
+    }
+    
+    /**
+     * Validates password requirements.
+     * @param password The password to validate
+     * @throws IllegalArgumentException if the password does not meet requirements
+     */
+    public static void validatePassword(String password) {
+        if (password == null || password.trim().isEmpty()) {
+            throw new IllegalArgumentException("Password cannot be empty");
+        }
+        
+        if (password.length() < 6) {
+            throw new IllegalArgumentException("Password must be at least 6 characters long");
+        }
+        
+        // Check for at least one uppercase letter
+        if (!password.matches(".*[A-Z].*")) {
+            throw new IllegalArgumentException("Password must contain at least one uppercase letter");
+        }
+        
+        // Check for at least one lowercase letter
+        if (!password.matches(".*[a-z].*")) {
+            throw new IllegalArgumentException("Password must contain at least one lowercase letter");
+        }
+        
+        // Check for at least one number
+        if (!password.matches(".*\\d.*")) {
+            throw new IllegalArgumentException("Password must contain at least one number");
+        }
+        
+        // Check for at least one special character
+        if (!password.matches(".*[!@#$%^&*(),.?\":{}|<>].*")) {
+            throw new IllegalArgumentException("Password must contain at least one special character");
         }
     }
 } 

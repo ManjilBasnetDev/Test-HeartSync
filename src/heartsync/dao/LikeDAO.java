@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import heartsync.database.DatabaseConnection;
-import heartsyncdatingapp.model.User;
+import heartsync.model.User;
 
 public class LikeDAO {
     private Connection connection;

@@ -3,6 +3,12 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
+            <file>file:/home/manjil-basnet/HeartSyncDatingAppFinal/HeartSync/src/heartsync/database/MySqlConnection.java</file>
+            <file>file:/home/manjil-basnet/HeartSyncDatingAppFinal/HeartSync/src/heartsync/database/DatabaseManager.java</file>
+            <file>file:/home/manjil-basnet/HeartSyncDatingAppFinal/HeartSync/src/heartsync/database/DatabaseConnection.java</file>
+            <file>file:/home/manjil-basnet/HeartSyncDatingAppFinal/HeartSync/src/heartsync/database/DatabaseConfig.java</file>
+            <file>file:/home/manjil-basnet/HeartSyncDatingAppFinal/HeartSync/src/heartsync/ForgotPassword.java</file>
+            <file>file:/home/manjil-basnet/HeartSyncDatingAppFinal/HeartSync/src/heartsync/dao/LikeDAO.java</file>
             <file>file:/home/manjil-basnet/HeartSyncDatingAppFinal/HeartSync/src/heartsync/HeartSync.java</file>
             <file>file:/home/manjil-basnet/HeartSyncDatingAppFinal/HeartSync/src/heartsync/view/HomePage.java</file>
             <file>file:/home/manjil-basnet/HeartSyncDatingAppFinal/HeartSync/src/heartsync/view/FeaturesPage.java</file>
@@ -10,11 +16,6 @@
             <file>file:/home/manjil-basnet/HeartSyncDatingAppFinal/HeartSync/src/heartsync/view/AboutUsPage.java</file>
             <file>file:/home/manjil-basnet/HeartSyncDatingAppFinal/HeartSync/src/heartsync/model/Contact.java</file>
             <file>file:/home/manjil-basnet/HeartSyncDatingAppFinal/HeartSync/src/heartsync/dao/ContactDAO.java</file>
-            <file>file:/home/manjil-basnet/HeartSyncDatingAppFinal/HeartSync/src/heartsync/view/MyLikers.java</file>
-            <file>file:/home/manjil-basnet/HeartSyncDatingAppFinal/HeartSync/src/heartsync/controller/LikeController.java</file>
-            <file>file:/home/manjil-basnet/HeartSyncDatingAppFinal/HeartSync/src/heartsync/dao/LikeDAO.java</file>
-            <file>file:/home/manjil-basnet/HeartSyncDatingAppFinal/HeartSync/src/heartsync/model/Like.java</file>
-            <file>file:/home/manjil-basnet/HeartSyncDatingAppFinal/HeartSync/src/heartsync/view/ResetPassword.java</file>
         </group>
     </open-files>
 </project-private>

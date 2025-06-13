@@ -8,7 +8,8 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.Rectangle2D;
 import javax.swing.*;
-import heartsync.Login;
+import heartsync.controller.LoginController;
+import heartsync.view.LoginView;
 
 /**
  *
@@ -194,8 +195,8 @@ public class HomePage extends JFrame {
         });
         
         loginButton.addActionListener(e -> {
-            Login loginPage = new Login();
-            loginPage.setVisible(true);
+            LoginView loginView = new LoginView();
+new LoginController(loginView).showLoginView();
             dispose(); // Close the home page when login page opens
         });
         
@@ -330,8 +331,8 @@ public class HomePage extends JFrame {
         
         // Add action listeners
         loginButton.addActionListener(e -> {
-            Login loginPage = new Login();
-            loginPage.setVisible(true);
+            LoginView loginView = new LoginView();
+new LoginController(loginView).showLoginView();
             dispose(); // Close the home page when login page opens
         });
         

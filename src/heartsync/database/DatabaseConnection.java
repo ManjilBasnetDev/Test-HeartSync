@@ -1,202 +1,233 @@
-package heartsync.database;
+package heartsyncdatingapp.database;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.swing.JOptionPane;
+import java.time.LocalDate;
+import java.time.Period;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 
+/**
+ * Unified database connection manager for the HeartSync Dating App.
+ * Handles all database operations including initialization and connection management.
+ */
 public class DatabaseConnection {
-    private static final Logger LOGGER = Logger.getLogger(DatabaseConnection.class.getName());
     private static final String URL = "jdbc:mysql://localhost:3306/";
-    private static final String DB_NAME = "heartsync";
-    private static final String USERNAME = "root";
-    private static final String PASSWORD = "lokeshsingh9841@";
-    private static Connection connection;
-    private static DatabaseConnection instance;
+    private static final String DB_NAME = "TestHeartSync";
+    private static final String USERNAME = "manjil";
+    private static final String PASSWORD = "3023";
+    private static boolean driverLoaded = false;
+    private static Connection connection = null;
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private static final int MINIMUM_AGE = 18;
     
-    private DatabaseConnection() {
-        initializeDatabase();
-    }
-    
-    public static DatabaseConnection getInstance() {
-        if (instance == null) {
-            instance = new DatabaseConnection();
+    static {
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            driverLoaded = true;
+            initializeDatabase();
+        } catch (ClassNotFoundException e) {
+            System.err.println("MySQL JDBC Driver not found: " + e.getMessage());
+        } catch (SQLException e) {
+            System.err.println("Error initializing database: " + e.getMessage());
         }
-        return instance;
     }
     
-    private void initializeDatabase() {
+    public static Connection getConnection() throws SQLException {
+        if (!driverLoaded) {
+            throw new SQLException("MySQL JDBC Driver not loaded");
+        }
+        
+        if (connection == null || connection.isClosed()) {
+            connection = DriverManager.getConnection(URL + DB_NAME, USERNAME, PASSWORD);
+        }
+        
+        return connection;
+    }
+    
+    private static void initializeDatabase() throws SQLException {
+        if (!driverLoaded) {
+            return;
+        }
+        
         try {
             // First try connecting to MySQL server
             try (Connection conn = DriverManager.getConnection(URL, USERNAME, PASSWORD)) {
                 try (Statement stmt = conn.createStatement()) {
                     // Create database if it doesn't exist
-                    stmt.executeUpdate("CREATE DATABASE IF NOT EXISTS " + DB_NAME);
+                    stmt.executeUpdate("DROP DATABASE IF EXISTS " + DB_NAME);
+                    stmt.executeUpdate("CREATE DATABASE " + DB_NAME);
                     
                     // Use the database
                     stmt.executeUpdate("USE " + DB_NAME);
                     
-                    // Create users table
-                    String createUsersTable = """
-                        CREATE TABLE IF NOT EXISTS users (
-                            id INT AUTO_INCREMENT PRIMARY KEY,
-                            username VARCHAR(50) UNIQUE NOT NULL,
+                    // Create users table - main user authentication and basic info
+                    String createUsersTableSQL = """
+                        CREATE TABLE users (
+                            id INT PRIMARY KEY AUTO_INCREMENT,
+                            username VARCHAR(50) NOT NULL UNIQUE,
                             password VARCHAR(255) NOT NULL,
                             user_type ENUM('USER', 'ADMIN') NOT NULL DEFAULT 'USER',
-                            email VARCHAR(100),
-                            phone_number VARCHAR(20),
-                            date_of_birth DATE,
-                            gender VARCHAR(10),
-                            interests TEXT,
-                            bio TEXT,
+                            email VARCHAR(100) UNIQUE,
                             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
                         )
                     """;
-                    stmt.executeUpdate(createUsersTable);
+                    stmt.executeUpdate(createUsersTableSQL);
                     
-                    // Create user_profiles table
-                    String createProfilesTable = """
-                        CREATE TABLE IF NOT EXISTS user_profiles (
-                            id INT AUTO_INCREMENT PRIMARY KEY,
-                            user_id INT NOT NULL,
-                            full_name VARCHAR(100),
-                            height INT,
-                            weight INT,
-                            country VARCHAR(100),
-                            address TEXT,
-                            phone VARCHAR(20),
-                            qualification VARCHAR(50),
-                            gender VARCHAR(20),
-                            preferences VARCHAR(20),
-                            about_me TEXT,
-                            profile_pic_path VARCHAR(255),
-                            relation_choice VARCHAR(50),
+                    // Create user_profiles table - detailed user information
+                    String createUserProfilesTableSQL = """
+                        CREATE TABLE user_profiles (
+                            id INT PRIMARY KEY AUTO_INCREMENT,
+                            user_id INT NOT NULL UNIQUE,
+                            full_name VARCHAR(100) NOT NULL,
+                            height INT NOT NULL,
+                            weight INT NOT NULL,
+                            country VARCHAR(50) NOT NULL,
+                            address VARCHAR(200) NOT NULL,
+                            phone VARCHAR(20) NOT NULL,
+                            qualification VARCHAR(100) NOT NULL,
+                            gender VARCHAR(20) NOT NULL,
+                            preferences VARCHAR(20) NOT NULL,
+                            about_me TEXT NOT NULL,
+                            profile_pic_path VARCHAR(500),
+                            relation_choice VARCHAR(50) NOT NULL,
+                            date_of_birth DATE,
+                            interests TEXT,
+                            bio TEXT,
                             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                            FOREIGN KEY (user_id) REFERENCES users(id)
+                            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
                         )
                     """;
-                    stmt.executeUpdate(createProfilesTable);
+                    stmt.executeUpdate(createUserProfilesTableSQL);
                     
                     // Create user_hobbies table
-                    String createHobbiesTable = """
-                        CREATE TABLE IF NOT EXISTS user_hobbies (
-                            id INT AUTO_INCREMENT PRIMARY KEY,
-                            user_id INT,
-                            hobby VARCHAR(100),
-                            FOREIGN KEY (user_id) REFERENCES users(id)
+                    String createHobbiesTableSQL = """
+                        CREATE TABLE user_hobbies (
+                            id INT PRIMARY KEY AUTO_INCREMENT,
+                            user_id INT NOT NULL,
+                            hobby VARCHAR(100) NOT NULL,
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
                         )
                     """;
-                    stmt.executeUpdate(createHobbiesTable);
+                    stmt.executeUpdate(createHobbiesTableSQL);
                     
-                    // Insert test user if not exists
-                    String insertTestUser = """
-                        INSERT IGNORE INTO users (username, password, user_type, email)
-                        VALUES ('testuser', ?, 'USER', 'test@example.com')
+                    // Create contacts table for contact form submissions
+                    String createContactsTableSQL = """
+                        CREATE TABLE contacts (
+                            id INT PRIMARY KEY AUTO_INCREMENT,
+                            full_name VARCHAR(100) NOT NULL,
+                            email VARCHAR(100) NOT NULL,
+                            phone_number VARCHAR(20),
+                            subject VARCHAR(200),
+                            message TEXT NOT NULL,
+                            status ENUM('NEW', 'READ', 'REPLIED') DEFAULT 'NEW',
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                        )
                     """;
-                    try (var pstmt = conn.prepareStatement(insertTestUser)) {
-                        pstmt.setString(1, hashPassword("test123"));
-                        pstmt.executeUpdate();
-                    }
+                    stmt.executeUpdate(createContactsTableSQL);
+                    
+                    // Create matches table for user matches
+                    String createMatchesTableSQL = """
+                        CREATE TABLE matches (
+                            id INT PRIMARY KEY AUTO_INCREMENT,
+                            user1_id INT NOT NULL,
+                            user2_id INT NOT NULL,
+                            match_status ENUM('PENDING', 'ACCEPTED', 'REJECTED') DEFAULT 'PENDING',
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                            FOREIGN KEY (user1_id) REFERENCES users(id) ON DELETE CASCADE,
+                            FOREIGN KEY (user2_id) REFERENCES users(id) ON DELETE CASCADE
+                        )
+                    """;
+                    stmt.executeUpdate(createMatchesTableSQL);
+                    
+                    // Create messages table for user communication
+                    String createMessagesTableSQL = """
+                        CREATE TABLE messages (
+                            id INT PRIMARY KEY AUTO_INCREMENT,
+                            sender_id INT NOT NULL,
+                            receiver_id INT NOT NULL,
+                            message_text TEXT NOT NULL,
+                            message_type ENUM('TEXT', 'IMAGE', 'FILE') DEFAULT 'TEXT',
+                            attachment_path VARCHAR(255),
+                            is_read BOOLEAN DEFAULT FALSE,
+                            sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            read_at TIMESTAMP NULL,
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                            FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
+                            FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE
+                        )
+                    """;
+                    stmt.executeUpdate(createMessagesTableSQL);
+
+                    // Insert default admin user
+                    String insertAdminSQL = """
+                        INSERT INTO users (username, password, user_type, email)
+                        VALUES ('admin', 'admin123', 'ADMIN', 'admin@heartsync.com')
+                    """;
+                    stmt.executeUpdate(insertAdminSQL);
+                    
+                    System.out.println("Database and tables initialized successfully");
                 }
             }
         } catch (SQLException e) {
-            String error = "Database initialization error: " + e.getMessage();
-            LOGGER.log(Level.SEVERE, error, e);
-            JOptionPane.showMessageDialog(null,
-                error,
-                "Database Error",
-                JOptionPane.ERROR_MESSAGE);
+            System.err.println("Error initializing database: " + e.getMessage());
+            throw e;
         }
     }
     
-    public Connection getConnection() throws SQLException {
-        if (connection == null || connection.isClosed()) {
-            try {
-                Class.forName("com.mysql.cj.jdbc.Driver");
-                connection = DriverManager.getConnection(URL + DB_NAME, USERNAME, PASSWORD);
-                LOGGER.info("Database connection established successfully");
-            } catch (ClassNotFoundException e) {
-                String error = "MySQL JDBC Driver not found";
-                LOGGER.log(Level.SEVERE, error, e);
-                throw new SQLException(error, e);
-            } catch (SQLException e) {
-                String error = "Failed to establish database connection";
-                LOGGER.log(Level.SEVERE, error, e);
-                throw e;
-            }
-        }
-        return connection;
-    }
-    
-    public static String hashPassword(String password) {
-        try {
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            byte[] hash = md.digest(password.getBytes());
-            StringBuilder hexString = new StringBuilder();
-            for (byte b : hash) {
-                String hex = Integer.toHexString(0xff & b);
-                if (hex.length() == 1) hexString.append('0');
-                hexString.append(hex);
-            }
-            return hexString.toString();
-        } catch (NoSuchAlgorithmException e) {
-            LOGGER.log(Level.SEVERE, "Error hashing password", e);
-            return password; // Fallback to plain password if hashing fails
-        }
-    }
-    
-    public void closeConnection() {
+    public static void closeConnection() {
         if (connection != null) {
             try {
                 connection.close();
                 connection = null;
-                LOGGER.info("Database connection closed successfully");
             } catch (SQLException e) {
-                LOGGER.log(Level.WARNING, "Error closing database connection", e);
+                System.err.println("Error closing connection: " + e.getMessage());
             }
         }
     }
     
-    public boolean testConnection() {
+    public static boolean testConnection() {
         try (Connection conn = getConnection()) {
-            return conn != null && !conn.isClosed();
+            return conn != null && conn.isValid(5); // 5 second timeout
         } catch (SQLException e) {
             String error = "Database connection test failed: " + e.getMessage();
-            LOGGER.log(Level.SEVERE, error, e);
+            System.err.println(error);
+            e.printStackTrace();
             return false;
         }
     }
     
-    public static void validatePassword(String password) {
-        if (password == null || password.trim().isEmpty()) {
-            throw new IllegalArgumentException("Password cannot be empty");
-        }
-        if (password.length() < 6) {
-            throw new IllegalArgumentException("Password must be at least 6 characters long");
-        }
-        if (!password.matches(".*[A-Z].*")) {
-            throw new IllegalArgumentException("Password must contain at least one uppercase letter");
-        }
-        if (!password.matches(".*[a-z].*")) {
-            throw new IllegalArgumentException("Password must contain at least one lowercase letter");
-        }
-        if (!password.matches(".*\\d.*")) {
-            throw new IllegalArgumentException("Password must contain at least one number");
+    public static void validateAge(String dateOfBirth) {
+        try {
+            LocalDate dob = LocalDate.parse(dateOfBirth, DATE_FORMATTER);
+            LocalDate now = LocalDate.now();
+            int age = Period.between(dob, now).getYears();
+            
+            if (age < MINIMUM_AGE) {
+                throw new IllegalArgumentException("You must be at least " + MINIMUM_AGE + " years old to register.");
+            }
+            if (dob.isAfter(now)) {
+                throw new IllegalArgumentException("Date of birth cannot be in the future.");
+            }
+        } catch (DateTimeParseException e) {
+            throw new IllegalArgumentException("Invalid date format. Please use YYYY-MM-DD format.");
         }
     }
     
-    public static void validateEmail(String email) {
-        if (email == null || email.trim().isEmpty()) {
-            throw new IllegalArgumentException("Email cannot be empty");
-        }
-        if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
-            throw new IllegalArgumentException("Invalid email format");
-        }
+    public static LocalDate parseAndValidateDate(String dateOfBirth) throws IllegalArgumentException {
+        validateAge(dateOfBirth);
+        return LocalDate.parse(dateOfBirth, DATE_FORMATTER);
     }
-} 
+    
+    public static int calculateAge(LocalDate dateOfBirth) {
+        return Period.between(dateOfBirth, LocalDate.now()).getYears();
+    }
+}

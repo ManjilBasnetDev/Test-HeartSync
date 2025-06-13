@@ -1,6 +1,6 @@
 package heartsync.dao;
 
-import heartsync.database.MySqlConnection;
+import heartsync.database.DatabaseConnection;
 import heartsync.model.Contact;
 import java.sql.*;
 
@@ -11,31 +11,7 @@ import java.sql.*;
 public class ContactDAO {
     
     public ContactDAO() {
-        createContactTable();
-    }
-    
-    /**
-     * Creates the contacts table if it doesn't exist.
-     * @throws SQLException if there's an error executing the SQL
-     */
-    private void createContactTable() {
-        String sql = """
-            CREATE TABLE IF NOT EXISTS contacts (
-                id INT PRIMARY KEY AUTO_INCREMENT,
-                full_name VARCHAR(100) NOT NULL,
-                email VARCHAR(100) NOT NULL,
-                message TEXT NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """;
-        
-        try (Connection conn = MySqlConnection.getConnection();
-             Statement stmt = conn.createStatement()) {
-            stmt.execute(sql);
-        } catch (SQLException e) {
-            System.err.println("Error creating contacts table: " + e.getMessage());
-            e.printStackTrace();
-        }
+        // Table creation is now handled by DatabaseConnection initialization
     }
     
     /**
@@ -48,10 +24,10 @@ public class ContactDAO {
         if (contact == null) {
             throw new IllegalArgumentException("Contact cannot be null");
         }
-        
+
         String sql = "INSERT INTO contacts (full_name, email, message) VALUES (?, ?, ?)";
         
-        try (Connection conn = MySqlConnection.getConnection();
+        try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             
             pstmt.setString(1, contact.getFullName());

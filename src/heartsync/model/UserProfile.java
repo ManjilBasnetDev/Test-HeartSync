@@ -1,5 +1,6 @@
-package heartsync.model;
+package heartsyncdatingapp.model;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class UserProfile {
@@ -15,8 +16,17 @@ public class UserProfile {
     private String aboutMe;
     private String profilePicPath;
     private List<String> hobbies;
+    private String relationshipGoal;
+    private String occupation;
+    private String religion;
+    private String ethnicity;
+    private List<String> languages;
+    private String dateOfBirth;
+    private String email;
 
     public UserProfile() {
+        this.hobbies = new ArrayList<>();
+        this.languages = new ArrayList<>();
     }
 
     // Getters and Setters
@@ -114,5 +124,61 @@ public class UserProfile {
 
     public void setHobbies(List<String> hobbies) {
         this.hobbies = hobbies;
+    }
+
+    public String getRelationshipGoal() {
+        return relationshipGoal;
+    }
+
+    public void setRelationshipGoal(String relationshipGoal) {
+        this.relationshipGoal = relationshipGoal;
+    }
+
+    public String getOccupation() {
+        return occupation;
+    }
+
+    public void setOccupation(String occupation) {
+        this.occupation = occupation;
+    }
+
+    public String getReligion() {
+        return religion;
+    }
+
+    public void setReligion(String religion) {
+        this.religion = religion;
+    }
+
+    public String getEthnicity() {
+        return ethnicity;
+    }
+
+    public void setEthnicity(String ethnicity) {
+        this.ethnicity = ethnicity;
+    }
+
+    public List<String> getLanguages() {
+        return languages;
+    }
+
+    public void setLanguages(List<String> languages) {
+        this.languages = languages;
+    }
+
+    public String getDateOfBirth() {
+        return dateOfBirth;
+    }
+
+    public void setDateOfBirth(String dateOfBirth) {
+        this.dateOfBirth = dateOfBirth;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 } 

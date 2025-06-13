@@ -5,10 +5,10 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import heartsyncdatingapp.database.DatabaseConnection;
-import heartsyncdatingapp.model.UserForgot;
+import heartsync.database.DatabaseConnection;
+import heartsync.model.UserForgot;
 
-public class UserDAOForgot {
+public class ForgotDAO {
     
     public UserForgot findByUsername(String username) throws SQLException {
         String query = "SELECT * FROM users WHERE username = ?";

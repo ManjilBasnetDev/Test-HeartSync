@@ -18,6 +18,15 @@ public class LoginView extends javax.swing.JFrame {
     public LoginView() {
         initComponents();
         styleButtons();
+        // --- Back Button Logic ---
+        jButton1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                // Close the LoginView
+                dispose();
+                // Open the HomePage
+                new HomePage().setVisible(true);
+            }
+        });
         // --- Show/Hide Toggle Logic ---
         jPasswordField1.setEchoChar('\u2022');
         jToggleButton1.setText("Show");

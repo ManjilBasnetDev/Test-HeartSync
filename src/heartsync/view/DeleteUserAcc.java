@@ -5,8 +5,9 @@
 package heartsync.view;
 
 import heartsync.dao.UserDAO;
-import heartsync.dao.UserProfileDAO;
 import javax.swing.JOptionPane;
+import heartsync.model.User;
+import heartsync.database.DatabaseConnection;
 
 /**
  *
@@ -17,7 +18,6 @@ public class DeleteUserAcc extends javax.swing.JFrame {
     private int userId;
     private String currentUsername;
     private final UserDAO userDAO;
-    private final UserProfileDAO userProfileDAO;
 
     /**
      * Creates new form DeleteUserAcc
@@ -29,7 +29,6 @@ public class DeleteUserAcc extends javax.swing.JFrame {
         this.userId = userId;
         this.currentUsername = username;
         this.userDAO = new UserDAO();
-        this.userProfileDAO = new UserProfileDAO();
         setLocationRelativeTo(null);
     }
 
@@ -55,17 +54,16 @@ public class DeleteUserAcc extends javax.swing.JFrame {
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
-        jPanel1.setBackground(new java.awt.Color(255, 240, 240));
+        jPanel1.setBackground(new java.awt.Color(243, 235, 235));
 
-        jLabel1.setFont(new java.awt.Font("Yu Gothic UI Semibold", 0, 15)); // NOI18N
+        jLabel1.setFont(new java.awt.Font("Yu Gothic UI Semibold", 1, 15)); // NOI18N
         jLabel1.setText("Delete Account");
 
-        jLabel2.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        jLabel2.setForeground(new java.awt.Color(220, 53, 69));
+        jLabel2.setForeground(new java.awt.Color(255, 51, 51));
         jLabel2.setText("This is permanent and cannot be undone!");
 
-        jLabel4.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
-        jLabel4.setForeground(new java.awt.Color(220, 53, 69));
+        jLabel4.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        jLabel4.setForeground(new java.awt.Color(255, 51, 51));
         jLabel4.setText("WARNING!");
 
         jLabel3.setFont(new java.awt.Font("Yu Gothic Medium", 0, 12)); // NOI18N
@@ -80,11 +78,6 @@ public class DeleteUserAcc extends javax.swing.JFrame {
         jButton2.setText("Done");
 
         jRadioButton1.setText("Show");
-        jRadioButton1.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jRadioButton1ActionPerformed(evt);
-            }
-        });
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -152,16 +145,16 @@ public class DeleteUserAcc extends javax.swing.JFrame {
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addGap(150, 150, 150)
+                .addContainerGap()
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(729, Short.MAX_VALUE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(834, Short.MAX_VALUE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         pack();
@@ -204,7 +197,7 @@ public class DeleteUserAcc extends javax.swing.JFrame {
         if (confirm == JOptionPane.YES_OPTION) {
             try {
                 // Delete the user account
-                if (userDAO.deleteUser(userId)) {
+                if (userDAO.deleteUser(currentUsername)) {
                     JOptionPane.showMessageDialog(this,
                         "Your account has been successfully deleted.",
                         "Account Deleted",
@@ -212,7 +205,7 @@ public class DeleteUserAcc extends javax.swing.JFrame {
                         
                     // Close this window and show login screen
                     this.dispose();
-                    new LoginView().setVisible(true);
+                    new LoginFinal().setVisible(true);
                 } else {
                     JOptionPane.showMessageDialog(this,
                         "Failed to delete account. Please try again later.",
@@ -268,17 +261,17 @@ public class DeleteUserAcc extends javax.swing.JFrame {
 
         java.awt.EventQueue.invokeLater(() -> {
             try {
-                // Initialize database
-                heartsync.database.DatabaseConfig.initializeDatabase();
+                // Initialize database connection
+                DatabaseConnection.getInstance();
                 
                 // Create a test user if it doesn't exist
                 UserDAO userDAO = new UserDAO();
-                heartsync.model.User testUser = userDAO.getUserByUsername("testuser");
+                User testUser = userDAO.getUser("testuser");
                 
                 if (testUser == null) {
-                    testUser = new heartsync.model.User("testuser", "oldpassword", "test@example.com");
+                    testUser = new User("testuser", "oldpassword", "user");
                     userDAO.createUser(testUser);
-                    testUser = userDAO.getUserByUsername("testuser"); // Get the user with ID
+                    testUser = userDAO.getUser("testuser"); // Get the user with ID
                 }
                 
                 // Show the delete account form with the test user

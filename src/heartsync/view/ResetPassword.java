@@ -28,7 +28,7 @@ import javax.swing.border.LineBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
-import heartsyncdatingapp.controller.ResetController;
+import heartsync.controller.ResetController;
 import heartsyncdatingapp.model.LoginFinal;
 
 public class ResetPassword extends JFrame {

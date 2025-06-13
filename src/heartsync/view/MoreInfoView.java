@@ -476,9 +476,9 @@ public class MoreInfoView extends JFrame {
             );
 
             if (profileId != -1) {
-                JOptionPane.showMessageDialog(this, 
+                JOptionPane.showMessageDialog(this,
                     "Profile created successfully!",
-                    "Success", 
+                    "Success",
                     JOptionPane.INFORMATION_MESSAGE);
                     
                 // Open the Swipe view

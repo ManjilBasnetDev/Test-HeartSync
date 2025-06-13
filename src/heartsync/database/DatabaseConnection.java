@@ -1,13 +1,14 @@
 package heartsync.database;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import javax.swing.JOptionPane;
 
 public class DatabaseConnection {
@@ -28,6 +29,28 @@ public class DatabaseConnection {
             instance = new DatabaseConnection();
         }
         return instance;
+    }
+    
+    public static Connection getConnection() throws SQLException {
+        if (instance == null) {
+            instance = new DatabaseConnection();
+        }
+        if (connection == null || connection.isClosed()) {
+            try {
+                Class.forName("com.mysql.cj.jdbc.Driver");
+                connection = DriverManager.getConnection(URL + DB_NAME, USERNAME, PASSWORD);
+                LOGGER.info("Database connection established successfully");
+            } catch (ClassNotFoundException e) {
+                String error = "MySQL JDBC Driver not found";
+                LOGGER.log(Level.SEVERE, error, e);
+                throw new SQLException(error, e);
+            } catch (SQLException e) {
+                String error = "Failed to establish database connection";
+                LOGGER.log(Level.SEVERE, error, e);
+                throw e;
+            }
+        }
+        return connection;
     }
     
     private void initializeDatabase() {
@@ -59,6 +82,20 @@ public class DatabaseConnection {
                         )
                     """;
                     stmt.executeUpdate(createUsersTable);
+                    
+                    // Create messages table
+                    String createMessagesTable = """
+                        CREATE TABLE IF NOT EXISTS messages (
+                            id INT AUTO_INCREMENT PRIMARY KEY,
+                            sender_id INT NOT NULL,
+                            receiver_id INT NOT NULL,
+                            message_text TEXT NOT NULL,
+                            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            FOREIGN KEY (sender_id) REFERENCES users(id),
+                            FOREIGN KEY (receiver_id) REFERENCES users(id)
+                        )
+                    """;
+                    stmt.executeUpdate(createMessagesTable);
                     
                     // Create user_profiles table
                     String createProfilesTable = """
@@ -113,25 +150,6 @@ public class DatabaseConnection {
                 "Database Error",
                 JOptionPane.ERROR_MESSAGE);
         }
-    }
-    
-    public Connection getConnection() throws SQLException {
-        if (connection == null || connection.isClosed()) {
-            try {
-                Class.forName("com.mysql.cj.jdbc.Driver");
-                connection = DriverManager.getConnection(URL + DB_NAME, USERNAME, PASSWORD);
-                LOGGER.info("Database connection established successfully");
-            } catch (ClassNotFoundException e) {
-                String error = "MySQL JDBC Driver not found";
-                LOGGER.log(Level.SEVERE, error, e);
-                throw new SQLException(error, e);
-            } catch (SQLException e) {
-                String error = "Failed to establish database connection";
-                LOGGER.log(Level.SEVERE, error, e);
-                throw e;
-            }
-        }
-        return connection;
     }
     
     public static String hashPassword(String password) {

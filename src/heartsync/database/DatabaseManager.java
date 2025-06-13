@@ -87,16 +87,16 @@ public class DatabaseManager {
 
     public int saveUserProfile(int userId, String fullName, int height, int weight, int age,
                                String country, String address, String phone, String qualification,
-                               String gender, String preferences, String aboutMe,
-                               String profilePicPath, String relationChoice, 
-                               List<String> hobbies) throws SQLException {
+                             String gender, String preferences, String aboutMe, 
+                             String profilePicPath, String relationChoice, 
+                             List<String> hobbies) throws SQLException {
         String sql = """
             INSERT INTO user_profiles (user_id, full_name, height, weight, age, country, address,
                                      phone, qualification, gender, preferences, about_me,
                                      profile_pic_path, relation_choice)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """;
-        
+            """;
+
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             
@@ -114,7 +114,7 @@ public class DatabaseManager {
             stmt.setString(12, aboutMe);
             stmt.setString(13, profilePicPath);
             stmt.setString(14, relationChoice);
-            
+
             int affectedRows = stmt.executeUpdate();
             if (affectedRows == 0) {
                 throw new SQLException("Creating user profile failed, no rows affected.");
@@ -124,24 +124,24 @@ public class DatabaseManager {
             try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
                 if (generatedKeys.next()) {
                     profileId = generatedKeys.getInt(1);
-                } else {
+                    } else {
                     throw new SQLException("Creating user profile failed, no ID obtained.");
                 }
             }
-            
+
             // Save hobbies
             if (hobbies != null && !hobbies.isEmpty()) {
                 String hobbySQL = "INSERT INTO user_hobbies (user_id, hobby) VALUES (?, ?)";
                 try (PreparedStatement hobbyStmt = conn.prepareStatement(hobbySQL)) {
-                    for (String hobby : hobbies) {
+                for (String hobby : hobbies) {
                         hobbyStmt.setInt(1, userId);
                         hobbyStmt.setString(2, hobby);
                         hobbyStmt.addBatch();
-                    }
+                }
                     hobbyStmt.executeBatch();
                 }
             }
-            
+
             LOGGER.log(Level.INFO, "Created user profile with ID: {0}", profileId);
             return profileId;
         } catch (SQLException e) {

@@ -15,6 +15,7 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
+import javax.swing.JLabel;
 
 /*
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
@@ -74,8 +75,7 @@ public class Login extends javax.swing.JFrame {
         txtUsername.setRows(1);
         txtUsername.setMaximumSize(new Dimension(400, 45));
         txtUsername.setPreferredSize(new Dimension(400, 45));
-        txtUsername.setText("USERNAME");
-        txtUsername.setForeground(Color.GRAY);
+        txtUsername.setForeground(Color.BLACK);
         
         // Password field setup
         txtPassword = new javax.swing.JPasswordField();
@@ -87,6 +87,7 @@ public class Login extends javax.swing.JFrame {
             new EmptyBorder(10, 15, 10, 15)));
         txtPassword.setMaximumSize(new Dimension(400, 45));
         txtPassword.setPreferredSize(new Dimension(400, 45));
+        txtPassword.setForeground(Color.BLACK);
     }
 
     private void setupActionListeners() {
@@ -178,33 +179,49 @@ public class Login extends javax.swing.JFrame {
 
     private void performLogin() {
         String username = txtUsername.getText().trim();
-        String password = showHideController.getActualPassword().trim();
-        
-        UserDAO userDAO = null;
+        String password = String.valueOf(txtPassword.getPassword());
         
         try {
-            // Validation
-            if (username.isEmpty() || username.equals("USERNAME")) {
-                throw new IllegalArgumentException("Please enter a username");
-            }
-            if (password.isEmpty()) {
-                throw new IllegalArgumentException("Please enter a password");
-            }
-            
             // Username validation
+            if (username.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Please enter a username", "Invalid Input", JOptionPane.WARNING_MESSAGE);
+                txtUsername.requestFocus();
+                return;
+            }
             if (username.length() < 3) {
-                throw new IllegalArgumentException("Username must be at least 3 characters long");
+                JOptionPane.showMessageDialog(this, "Username must be at least 3 characters long", "Invalid Username", JOptionPane.WARNING_MESSAGE);
+                txtUsername.requestFocus();
+                return;
             }
             if (!username.matches("^[a-zA-Z0-9_]+$")) {
-                throw new IllegalArgumentException("Username can only contain letters, numbers, and underscores");
-            }
-            
-            // Password validation
-            if (password.length() < 6) {
-                throw new IllegalArgumentException("Password must be at least 6 characters long");
+                JOptionPane.showMessageDialog(this, "Username can only contain letters, numbers, and underscores", "Invalid Username", JOptionPane.WARNING_MESSAGE);
+                txtUsername.requestFocus();
+                return;
             }
 
-            userDAO = new UserDAO();
+            // Password validation
+            if (password.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Please enter a password", "Invalid Input", JOptionPane.WARNING_MESSAGE);
+                txtPassword.requestFocus();
+                return;
+            }
+            if (password.length() < 6) {
+                JOptionPane.showMessageDialog(this, "Password must be at least 6 characters long", "Invalid Password", JOptionPane.WARNING_MESSAGE);
+                txtPassword.requestFocus();
+                return;
+            }
+            if (!password.matches(".*[A-Z].*")) {
+                JOptionPane.showMessageDialog(this, "Password must contain at least one uppercase letter", "Invalid Password", JOptionPane.WARNING_MESSAGE);
+                txtPassword.requestFocus();
+                return;
+            }
+            if (!password.matches(".*[0-9].*")) {
+                JOptionPane.showMessageDialog(this, "Password must contain at least one number", "Invalid Password", JOptionPane.WARNING_MESSAGE);
+                txtPassword.requestFocus();
+                return;
+            }
+
+            UserDAO userDAO = new UserDAO();
             if (userDAO.authenticate(username, password)) {
                 JOptionPane.showMessageDialog(this, 
                     "Welcome back, " + username + "!", 
@@ -217,22 +234,8 @@ public class Login extends javax.swing.JFrame {
                     "Invalid username or password. Please try again.", 
                     "Login Failed", 
                     JOptionPane.ERROR_MESSAGE);
-                txtPassword.setText("Enter password");
-                txtPassword.setForeground(Color.GRAY);
-                txtPassword.setEchoChar((char)0);
+                txtPassword.setText("");
                 showHideController.reset();
-                txtPassword.requestFocus();
-            }
-        } catch (IllegalArgumentException e) {
-            JOptionPane.showMessageDialog(this,
-                e.getMessage(),
-                "Invalid Input",
-                JOptionPane.WARNING_MESSAGE);
-            
-            // Focus the appropriate field based on the error
-            if (e.getMessage().toLowerCase().contains("username")) {
-                txtUsername.requestFocus();
-            } else {
                 txtPassword.requestFocus();
             }
         } catch (SQLException e) {
@@ -319,11 +322,18 @@ public class Login extends javax.swing.JFrame {
         usernamePanel.setPreferredSize(new Dimension(480, 45));
         usernamePanel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
+        // Username label (left of field)
+        JLabel lblUsername = new JLabel("Username");
+        lblUsername.setFont(new java.awt.Font("Segoe UI", 0, 14));
+        lblUsername.setForeground(new java.awt.Color(108, 117, 125));
+        lblUsername.setBorder(new EmptyBorder(0, 0, 0, 10));
+        usernamePanel.add(lblUsername);
+        
         // Username field
         txtUsername.setFont(new java.awt.Font("Segoe UI", 0, 14));
         txtUsername.setBackground(Color.WHITE);
         txtUsername.setOpaque(true);
-        txtUsername.setForeground(Color.GRAY);
+        txtUsername.setForeground(Color.BLACK);
         txtUsername.setLineWrap(true);
         txtUsername.setWrapStyleWord(true);
         txtUsername.setBorder(BorderFactory.createCompoundBorder(
@@ -332,9 +342,6 @@ public class Login extends javax.swing.JFrame {
         txtUsername.setRows(1);
         txtUsername.setMaximumSize(new Dimension(400, 45));
         txtUsername.setPreferredSize(new Dimension(400, 45));
-        txtUsername.setText("USERNAME");
-
-        // Add username to its panel with same spacing as password panel
         usernamePanel.add(txtUsername);
         usernamePanel.add(Box.createRigidArea(new Dimension(80, 0))); // Same width as password panel
 
@@ -346,20 +353,23 @@ public class Login extends javax.swing.JFrame {
         passwordPanel.setPreferredSize(new Dimension(480, 45));
         passwordPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
+        // Password label (left of field)
+        JLabel lblPassword = new JLabel("Password");
+        lblPassword.setFont(new java.awt.Font("Segoe UI", 0, 14));
+        lblPassword.setForeground(new java.awt.Color(108, 117, 125));
+        lblPassword.setBorder(new EmptyBorder(0, 0, 0, 10));
+        passwordPanel.add(lblPassword);
+
         // Password field
         txtPassword.setFont(new java.awt.Font("Segoe UI", 0, 14));
         txtPassword.setBackground(Color.WHITE);
         txtPassword.setOpaque(true);
-        txtPassword.setForeground(Color.GRAY);
+        txtPassword.setForeground(Color.BLACK);
         txtPassword.setBorder(BorderFactory.createCompoundBorder(
             new LineBorder(new Color(200, 200, 200)),
             new EmptyBorder(10, 15, 10, 15)));
-        txtPassword.setEchoChar((char)0); // Initially show placeholder text
-        txtPassword.setText("Enter password");
         txtPassword.setMaximumSize(new Dimension(400, 45));
         txtPassword.setPreferredSize(new Dimension(400, 45));
-
-        // Add components to password panel with spacing
         passwordPanel.add(txtPassword);
         passwordPanel.add(Box.createRigidArea(new Dimension(10, 0)));
         passwordPanel.add(btnTogglePassword);
@@ -424,98 +434,6 @@ public class Login extends javax.swing.JFrame {
         // Set up action listeners
         setupActionListeners();
     }// </editor-fold>//GEN-END:initComponents
-
-    private void txtUsernameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtUsernameActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_txtUsernameActionPerformed
-
-    private void btnLoginActionPerformed(java.awt.event.ActionEvent evt) {
-        String username = txtUsername.getText().trim();
-        String password = showHideController.getActualPassword().trim();
-        
-        // Check if either field is empty or contains placeholder text
-        if (username.isEmpty() || username.equals("USERNAME") || 
-            password.isEmpty() || password.equals("Enter password")) {
-            
-            StringBuilder message = new StringBuilder("Please enter ");
-            
-            if (username.isEmpty() || username.equals("USERNAME")) {
-                message.append("username");
-                if (password.isEmpty() || password.equals("Enter password")) {
-                    message.append(" and password");
-                }
-            } else if (password.isEmpty() || password.equals("Enter password")) {
-                message.append("password");
-            }
-            
-            JOptionPane.showMessageDialog(this,
-                message.toString(),
-                "Required Fields",
-                JOptionPane.WARNING_MESSAGE);
-                
-            // Focus the empty field
-            if (username.isEmpty() || username.equals("USERNAME")) {
-                txtUsername.requestFocus();
-            } else {
-                txtPassword.requestFocus();
-            }
-            return;
-        }
-
-        // Username validation
-        if (username.length() < 3) {
-            JOptionPane.showMessageDialog(this,
-                "Username must be at least 3 characters long",
-                "Invalid Username",
-                JOptionPane.WARNING_MESSAGE);
-            txtUsername.requestFocus();
-            return;
-        }
-
-        if (!username.matches("^[a-zA-Z0-9_]+$")) {
-            JOptionPane.showMessageDialog(this,
-                "Username can only contain letters, numbers, and underscores",
-                "Invalid Username",
-                JOptionPane.WARNING_MESSAGE);
-            txtUsername.requestFocus();
-            return;
-        }
-        
-        // Password validation
-        if (password.length() < 6) {
-            JOptionPane.showMessageDialog(this,
-                "Password must be at least 6 characters long",
-                "Invalid Password",
-                JOptionPane.WARNING_MESSAGE);
-            txtPassword.requestFocus();
-            return;
-        }
-        
-        try {
-            UserDAO userDAO = new UserDAO();
-            if (userDAO.authenticate(username, password)) {
-                JOptionPane.showMessageDialog(this, 
-                    "Welcome back, " + username + "!", 
-                    "Login Successful", 
-                    JOptionPane.INFORMATION_MESSAGE);
-                dispose(); // Close login window
-                // TODO: Add code to open main application window
-            } else {
-                JOptionPane.showMessageDialog(this, 
-                    "Invalid username or password. Please try again.", 
-                    "Login Failed", 
-                    JOptionPane.ERROR_MESSAGE);
-                txtPassword.setText("");
-                txtPassword.requestFocus();
-            }
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, 
-                "Unable to connect to the database. Please try again later.\nError: " + e.getMessage(), 
-                "Database Error", 
-                JOptionPane.ERROR_MESSAGE);
-            e.printStackTrace();
-        }
-    }
 
     /**
      * @param args the command line arguments

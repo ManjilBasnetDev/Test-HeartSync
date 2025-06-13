@@ -1,9 +1,9 @@
-package heartsyncdatingapp.controller;
+package heartsync.controller;
 
 import java.util.List;
 
-import heartsyncdatingapp.dao.LikeDAO;
-import heartsyncdatingapp.model.User;
+import heartsync.dao.LikeDAO;
+import heartsync.model.User;
 
 public class LikeController {
     private LikeDAO likeDAO;

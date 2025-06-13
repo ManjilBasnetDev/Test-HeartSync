@@ -46,6 +46,10 @@ public class HomePage extends JFrame {
         setResizable(false);
         setLocationRelativeTo(null);
         
+        // Initialize navigation buttons early to avoid null
+        loginButton = new JButton("Login");
+        createAccountButton = new JButton("Create Account");
+        
         // Create main panel
         mainPanel = new JPanel();
         mainPanel.setLayout(new BorderLayout());
@@ -120,7 +124,6 @@ public class HomePage extends JFrame {
         aboutLabel = new JLabel("About Us");
         featuresLabel = new JLabel("Features");
         contactLabel = new JLabel("Contact Us");
-        loginButton = new JButton("Login");
         
         // Style navigation items
         Font navFont = new Font("SansSerif", Font.PLAIN, 16);
@@ -136,16 +139,6 @@ public class HomePage extends JFrame {
         featuresLabel.setForeground(navColor);
         contactLabel.setForeground(navColor);
         
-        // Style login button
-        loginButton.setFont(navFont);
-        loginButton.setBackground(new Color(229, 89, 36));
-        loginButton.setForeground(Color.WHITE);
-        loginButton.setBorderPainted(false);
-        loginButton.setFocusPainted(false);
-        loginButton.setOpaque(true);
-        loginButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        loginButton.setPreferredSize(new Dimension(100, 35));
-        
         // Add navigation items
         navPanel.add(logoPanel);
         navPanel.add(Box.createHorizontalStrut(50));
@@ -154,7 +147,6 @@ public class HomePage extends JFrame {
         navPanel.add(featuresLabel);
         navPanel.add(contactLabel);
         navPanel.add(Box.createHorizontalStrut(50));
-        navPanel.add(loginButton);
         
         // Add event listeners
         homeLabel.setCursor(new Cursor(Cursor.HAND_CURSOR));
@@ -192,18 +184,6 @@ public class HomePage extends JFrame {
                 setCurrentNavItem(contactLabel);
                 cardLayout.show(contentCards, "contact");
             }
-        });
-        
-        loginButton.addActionListener(e -> {
-            Login login = new Login();
-            login.setVisible(true);
-            dispose(); // Close the home page when login page opens
-        });
-        
-        createAccountButton.addActionListener(e -> {
-            Register register = new Register();
-            register.setVisible(true);
-            dispose(); // Close the home page when register page opens
         });
         
         return navPanel;

@@ -10,9 +10,9 @@ import java.util.regex.Pattern;
 
 public class DatabaseConnection {
     private static final String URL = "jdbc:mysql://localhost:3306/";
-    private static final String DB_NAME = "datingapp";
-    private static final String USERNAME = "manjil";
-    private static final String PASSWORD = "3023";
+    private static final String DB_NAME = "heartsync";
+    private static final String USERNAME = "root";
+    private static final String PASSWORD = "Rohit@56";
     private static Connection connection = null;
     private static DatabaseConnection instance = null;
     
@@ -27,46 +27,62 @@ public class DatabaseConnection {
         return instance;
     }
     
-    static {
-        initializeDatabase();
-    }
-    
-    private static void initializeDatabase() {
+    private void initializeDatabase() {
         try {
+            // Load the JDBC driver
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            System.out.println("MySQL JDBC Driver loaded successfully");
+            
             // First try connecting to MySQL server
             try (Connection conn = DriverManager.getConnection(URL, USERNAME, PASSWORD)) {
                 try (var stmt = conn.createStatement()) {
                     // Create database if it doesn't exist
                     stmt.executeUpdate("CREATE DATABASE IF NOT EXISTS " + DB_NAME);
+                    System.out.println("Database '" + DB_NAME + "' created or already exists");
+                    
+                    // Create users table
+                    stmt.executeUpdate("""
+                        CREATE TABLE IF NOT EXISTS users (
+                            id INT PRIMARY KEY AUTO_INCREMENT,
+                            username VARCHAR(50) UNIQUE NOT NULL,
+                            password VARCHAR(255) NOT NULL,
+                            email VARCHAR(100) UNIQUE NOT NULL,
+                            user_type VARCHAR(20) DEFAULT 'USER',
+                            phone_number VARCHAR(20),
+                            date_of_birth DATE,
+                            gender VARCHAR(10),
+                            interests TEXT,
+                            bio TEXT,
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                        )
+                    """);
+                    System.out.println("Users table created or verified");
                 }
             }
+        } catch (ClassNotFoundException e) {
+            String error = "MySQL JDBC Driver not found: " + e.getMessage();
+            System.err.println(error);
+            JOptionPane.showMessageDialog(null, error, "Database Error", JOptionPane.ERROR_MESSAGE);
+            throw new RuntimeException("Failed to load MySQL JDBC driver", e);
         } catch (SQLException e) {
-            System.err.println("Error initializing database: " + e.getMessage());
-            JOptionPane.showMessageDialog(null,
-                "Database initialization failed: " + e.getMessage(),
-                "Database Error",
-                JOptionPane.ERROR_MESSAGE);
+            String error = "Database initialization failed: " + e.getMessage();
+            System.err.println(error);
+            JOptionPane.showMessageDialog(null, error, "Database Error", JOptionPane.ERROR_MESSAGE);
+            throw new RuntimeException("Failed to initialize database", e);
         }
     }
     
     public Connection getConnection() {
         if (connection == null) {
             try {
-                Class.forName("com.mysql.cj.jdbc.Driver");
                 connection = DriverManager.getConnection(URL + DB_NAME, USERNAME, PASSWORD);
                 System.out.println("Database connected successfully");
-            } catch (ClassNotFoundException e) {
-                System.err.println("Database driver not found: " + e.getMessage());
-                JOptionPane.showMessageDialog(null,
-                    "Database driver not found: " + e.getMessage(),
-                    "Database Error",
-                    JOptionPane.ERROR_MESSAGE);
             } catch (SQLException e) {
-                System.err.println("Database connection failed: " + e.getMessage());
-                JOptionPane.showMessageDialog(null,
-                    "Database connection failed: " + e.getMessage(),
-                    "Database Error",
-                    JOptionPane.ERROR_MESSAGE);
+                String error = "Database connection failed: " + e.getMessage();
+                System.err.println(error);
+                JOptionPane.showMessageDialog(null, error, "Database Error", JOptionPane.ERROR_MESSAGE);
+                throw new RuntimeException("Failed to connect to database", e);
             }
         }
         return connection;
@@ -84,90 +100,43 @@ public class DatabaseConnection {
         }
     }
     
-    public boolean testConnection() {
-        try {
-            getConnection();
-            return connection != null && !connection.isClosed();
-        } catch (SQLException e) {
-            return false;
-        }
-    }
-    
-    /**
-     * Hashes a password using SHA-256 algorithm.
-     * @param password The password to hash
-     * @return The hashed password as a hexadecimal string
-     */
     public static String hashPassword(String password) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hash = digest.digest(password.getBytes());
             StringBuilder hexString = new StringBuilder();
-            
             for (byte b : hash) {
                 String hex = Integer.toHexString(0xff & b);
-                if (hex.length() == 1) {
-                    hexString.append('0');
-                }
+                if (hex.length() == 1) hexString.append('0');
                 hexString.append(hex);
             }
-            
             return hexString.toString();
         } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Error hashing password", e);
+            throw new RuntimeException("Failed to hash password", e);
         }
     }
     
-    /**
-     * Validates an email address format.
-     * @param email The email address to validate
-     * @throws IllegalArgumentException if the email format is invalid
-     */
-    public static void validateEmail(String email) {
-        if (email == null || email.trim().isEmpty()) {
-            throw new IllegalArgumentException("Email cannot be empty");
-        }
-        
-        String emailRegex = "^[A-Za-z0-9+_.-]+@(.+)$";
-        Pattern pattern = Pattern.compile(emailRegex);
-        
-        if (!pattern.matcher(email).matches()) {
-            throw new IllegalArgumentException("Invalid email format");
-        }
-    }
-    
-    /**
-     * Validates password requirements.
-     * @param password The password to validate
-     * @throws IllegalArgumentException if the password does not meet requirements
-     */
     public static void validatePassword(String password) {
-        if (password == null || password.trim().isEmpty()) {
-            throw new IllegalArgumentException("Password cannot be empty");
+        if (password == null || password.length() < 8) {
+            throw new IllegalArgumentException("Password must be at least 8 characters long");
         }
-        
-        if (password.length() < 6) {
-            throw new IllegalArgumentException("Password must be at least 6 characters long");
-        }
-        
-        // Check for at least one uppercase letter
-        if (!password.matches(".*[A-Z].*")) {
+        if (!Pattern.compile("[A-Z]").matcher(password).find()) {
             throw new IllegalArgumentException("Password must contain at least one uppercase letter");
         }
-        
-        // Check for at least one lowercase letter
-        if (!password.matches(".*[a-z].*")) {
+        if (!Pattern.compile("[a-z]").matcher(password).find()) {
             throw new IllegalArgumentException("Password must contain at least one lowercase letter");
         }
-        
-        // Check for at least one number
-        if (!password.matches(".*\\d.*")) {
+        if (!Pattern.compile("[0-9]").matcher(password).find()) {
             throw new IllegalArgumentException("Password must contain at least one number");
         }
-        
-        // Check for at least one special character
-        if (!password.matches(".*[!@#$%^&*(),.?\":{}|<>].*")) {
+        if (!Pattern.compile("[!@#$%^&*(),.?\":{}|<>]").matcher(password).find()) {
             throw new IllegalArgumentException("Password must contain at least one special character");
+        }
+    }
+    
+    public static void validateEmail(String email) {
+        if (email == null || !Pattern.compile("^[A-Za-z0-9+_.-]+@(.+)$").matcher(email).matches()) {
+            throw new IllegalArgumentException("Invalid email format");
         }
     }
 } 

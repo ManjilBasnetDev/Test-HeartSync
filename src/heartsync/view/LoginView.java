@@ -19,14 +19,7 @@ public class LoginView extends javax.swing.JFrame {
         initComponents();
         styleButtons();
         // --- Back Button Logic ---
-        jButton1.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                // Close the LoginView
-                dispose();
-                // Open the HomePage
-                new HomePage().setVisible(true);
-            }
-        });
+        jButton1.addActionListener(evt -> dispose());
         // --- Show/Hide Toggle Logic ---
         jPasswordField1.setEchoChar('\u2022');
         jToggleButton1.setText("Show");
@@ -48,23 +41,7 @@ public class LoginView extends javax.swing.JFrame {
                 showMessage("Forgot Password clicked! (Implement recovery flow here)", javax.swing.JOptionPane.INFORMATION_MESSAGE);
             }
         });
-        // --- Login Button Validation ---
-        jButton2.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                String username = jTextField1.getText().trim();
-                String password = new String(jPasswordField1.getPassword());
-                if (username.isEmpty()) {
-                    showMessage("Username cannot be empty!", javax.swing.JOptionPane.WARNING_MESSAGE);
-                    return;
-                }
-                if (password.isEmpty()) {
-                    showMessage("Password cannot be empty!", javax.swing.JOptionPane.WARNING_MESSAGE);
-                    return;
-                }
-                // For demo: show success popup (replace with actual login logic)
-                showMessage("Login successful! (Replace with real logic)", javax.swing.JOptionPane.INFORMATION_MESSAGE);
-            }
-        });
+        // Login button's action is handled by controller; no listener here.
     }
 
     // Helper for showing popups
@@ -305,6 +282,58 @@ jToggleButton1.setPreferredSize(new java.awt.Dimension(70, 32));
 
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(() -> new LoginView().setVisible(true));
+    }
+
+    
+    // ----- Controller Integration Methods -----
+    public void addLoginButtonListener(java.awt.event.ActionListener l) {
+        jButton2.addActionListener(l);
+    }
+
+    public void addBackButtonListener(java.awt.event.ActionListener l) {
+        jButton1.addActionListener(l);
+    }
+
+    public void addShowPasswordButtonListener(java.awt.event.ActionListener l) {
+        jToggleButton1.addActionListener(l);
+    }
+
+    public void addForgotPasswordListener(java.awt.event.MouseListener l) {
+        jLabel5.addMouseListener(l);
+    }
+
+    public void addUsernameFieldFocusListener(java.awt.event.FocusListener l) {
+        jTextField1.addFocusListener(l);
+    }
+
+    public String getUsername() {
+        return jTextField1.getText().trim();
+    }
+
+    public String getPassword() {
+        return new String(jPasswordField1.getPassword());
+    }
+
+    public void togglePasswordVisibility() {
+        if (jToggleButton1.isSelected()) {
+            jPasswordField1.setEchoChar((char) 0);
+            jToggleButton1.setText("Hide");
+        } else {
+            jPasswordField1.setEchoChar('\u2022');
+            jToggleButton1.setText("Show");
+        }
+    }
+
+    // Overloaded showMessage to accept custom title (used by controller)
+    public void showMessage(String message, String title, int messageType) {
+        javax.swing.JOptionPane.showMessageDialog(this, message, title, messageType);
+    }
+
+    // Utility to clear input fields
+    public void clearFields() {
+        jTextField1.setText("");
+        jPasswordField1.setText("");
+        jTextField1.requestFocusInWindow();
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

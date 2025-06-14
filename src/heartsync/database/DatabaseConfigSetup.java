@@ -1,4 +1,4 @@
-package heartsyncdatingapp.database;
+package heartsync.database;
 
 public class DatabaseConfigSetup {
     // Database connection constants

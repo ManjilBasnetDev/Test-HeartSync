@@ -37,7 +37,7 @@ public class DOBVerificationDialog extends JDialog {
         for (int i = 0; i < 100; i++) years[i] = currentYear - i;
         yearBox = new JComboBox<>(years);
         monthBox = new JComboBox<>(new Integer[]{1,2,3,4,5,6,7,8,9,10,11,12});
-        dayBox = new JComboBox<>(new Integer[31]);
+        dayBox = new JComboBox<>();
         for (int i = 1; i <= 31; i++) dayBox.addItem(i);
 
         gbc.gridwidth = 1; gbc.gridy = 1; gbc.gridx = 0;
@@ -73,9 +73,14 @@ public class DOBVerificationDialog extends JDialog {
     }
 
     private void updateAge() {
-        int year = (int) yearBox.getSelectedItem();
-        int month = (int) monthBox.getSelectedItem();
-        int day = (int) dayBox.getSelectedItem();
+        Integer year = (Integer) yearBox.getSelectedItem();
+        Integer month = (Integer) monthBox.getSelectedItem();
+        Integer day = (Integer) dayBox.getSelectedItem();
+        if (year == null || month == null || day == null) {
+            ageLabel.setText("");
+            okButton.setEnabled(false);
+            return;
+        }
         try {
             LocalDate dob = LocalDate.of(year, month, day);
             LocalDate now = LocalDate.now();

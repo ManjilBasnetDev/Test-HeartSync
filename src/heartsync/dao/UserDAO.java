@@ -8,9 +8,25 @@ public class UserDAO {
     private Connection connection;
     
     public UserDAO() {
-        this.connection = MySqlConnection.getConnection();
+        try {
+            this.connection = MySqlConnection.getConnection();
+        } catch (SQLException e) {
+            System.err.println("Failed to initialize UserDAO: " + e.getMessage());
+            this.connection = null;
+        }
     }
     
+    // Helper to safely get column if it exists
+    private String getStringIfExists(java.sql.ResultSet rs, String column) throws java.sql.SQLException {
+        try {
+            rs.findColumn(column);
+            return rs.getString(column);
+        } catch (java.sql.SQLException ex) {
+            // Column not present
+            return null;
+        }
+    }
+
     // Authenticate user login
     public User authenticateUser(String username, String password) {
         String sql = "SELECT * FROM users WHERE username = ? AND password = ?";

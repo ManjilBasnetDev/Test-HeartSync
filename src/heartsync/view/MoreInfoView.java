@@ -1,4 +1,4 @@
-package heartsyncdatingapp.view;
+package heartsync.view;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -36,9 +36,9 @@ import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
 
-import heartsyncdatingapp.controller.UserProfileController;
-import heartsyncdatingapp.database.DatabaseManagerProfile;
-import heartsyncdatingapp.model.UserProfile;
+import heartsync.controller.UserProfileController;
+import heartsync.database.DatabaseManagerProfile;
+import heartsync.model.UserProfile;
 
 public class MoreInfoView extends JFrame {
     private UserProfileController controller;
@@ -478,7 +478,8 @@ public class MoreInfoView extends JFrame {
                     "Profile created successfully!\nYour User ID is: " + userId,
                     "Success",
                     JOptionPane.INFORMATION_MESSAGE);
-                System.exit(0);
+                this.dispose();
+                new LoginView().setVisible(true);
             } else {
                 JOptionPane.showMessageDialog(this,
                     "Failed to save profile. Please try again.",

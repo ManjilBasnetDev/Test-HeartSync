@@ -1,4 +1,4 @@
-package heartsyncdatingapp.view;
+package heartsync.view;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -38,7 +38,7 @@ import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
-import heartsyncdatingapp.controller.UserProfileController;
+import heartsync.controller.UserProfileController;
 
 public class ProfileSetupView extends JFrame {
     private UserProfileController controller;

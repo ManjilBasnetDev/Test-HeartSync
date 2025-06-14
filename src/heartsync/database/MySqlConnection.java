@@ -11,8 +11,6 @@ public class MySqlConnection {
     }
 
     public static Connection getConnection() throws SQLException {
-        // Dummy implementation: returns null
-        // Replace with actual JDBC connection code
-        return null;
+        return DatabaseConnection.getConnection();
     }
 }

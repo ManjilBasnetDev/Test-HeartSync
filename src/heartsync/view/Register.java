@@ -1,6 +1,10 @@
 package heartsync.view;
 
 import heartsync.model.User;
+import heartsync.dao.UserRegisterDAO;
+import heartsync.model.UserProfile;
+import heartsync.controller.UserProfileController;
+import heartsync.view.ProfileSetupView;
 
 import java.awt.Color;
 import java.awt.Cursor;
@@ -33,11 +37,12 @@ import javax.swing.border.LineBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
-import heartsyncdatingapp.HomePage;
-import heartsyncdatingapp.controller.UserProfileController;
-import heartsyncdatingapp.dao.UserRegisterDAO;
-import heartsyncdatingapp.model.User;
-import heartsyncdatingapp.model.UserProfile;
+
+import heartsync.controller.UserProfileController;
+import heartsync.dao.UserRegisterDAO;
+import heartsync.model.User;
+import heartsync.model.UserProfile;
+import heartsync.view.ProfileSetupView;
 
 public class Register extends JFrame {
     private JPanel mainPanel;
@@ -570,57 +575,79 @@ public class Register extends JFrame {
             String username = usernameField.getText();
             String password = actualPassword;
             String role = userRadio.isSelected() ? "USER" : "ADMIN";
-            
-            // Create user and save
-            User user = new User();
-            user.setUsername(username);
-            user.setPassword(password);
-            user.setUserType(role);
-            
-            try {
-                UserRegisterDAO dao = new UserRegisterDAO();
-                if (dao.createUser(user)) {
-                    JOptionPane.showMessageDialog(this,
-                        "Account created successfully!",
-                        "Success",
-                        JOptionPane.INFORMATION_MESSAGE);
-                    
-                    if (role.equals("USER")) {
-                        // Show DOB verification dialog for users
-                        DOBVerificationDialog dobDialog = new DOBVerificationDialog(this);
-                        dobDialog.setVisible(true);
-                        if (dobDialog.isConfirmed()) {
-                            int age = dobDialog.getAge();
-                            if (age >= 18) {
-                                // Proceed to profile setup
+
+            if (role.equals("USER")) {
+                // Show DOB verification dialog for users
+                DOBVerificationDialog dobDialog = new DOBVerificationDialog(this);
+                dobDialog.setVisible(true);
+                if (dobDialog.isConfirmed()) {
+                    int age = dobDialog.getAge();
+                    if (age >= 18) {
+                        // Only now create user and save
+                        User user = new User();
+                        user.setUsername(username);
+                        user.setPassword(password);
+                        user.setUserType(role);
+                        try {
+                            UserRegisterDAO dao = new UserRegisterDAO();
+                            if (dao.createUser(user)) {
+                                JOptionPane.showMessageDialog(this,
+                                    "Account created successfully!",
+                                    "Success",
+                                    JOptionPane.INFORMATION_MESSAGE);
                                 UserProfile model = new UserProfile();
                                 UserProfileController controller = new UserProfileController(model, username);
                                 ProfileSetupView view = new ProfileSetupView(controller);
+                                view.setLocationRelativeTo(null);
                                 dispose();
                                 view.setVisible(true);
                             } else {
                                 JOptionPane.showMessageDialog(this,
-                                    "You must be at least 18 years old to create an account.",
-                                    "Age Restriction",
+                                    "Error creating account. Please try again.",
+                                    "Error",
                                     JOptionPane.ERROR_MESSAGE);
                             }
+                        } catch (SQLException ex) {
+                            JOptionPane.showMessageDialog(this,
+                                "Error creating account: " + ex.getMessage(),
+                                "Error",
+                                JOptionPane.ERROR_MESSAGE);
                         }
                     } else {
+                        JOptionPane.showMessageDialog(this,
+                            "You must be at least 18 years old to create an account.",
+                            "Age Restriction",
+                            JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            } else {
+                // Create admin user and save immediately
+                User user = new User();
+                user.setUsername(username);
+                user.setPassword(password);
+                user.setUserType(role);
+                try {
+                    UserRegisterDAO dao = new UserRegisterDAO();
+                    if (dao.createUser(user)) {
+                        JOptionPane.showMessageDialog(this,
+                            "Account created successfully!",
+                            "Success",
+                            JOptionPane.INFORMATION_MESSAGE);
                         // For admin users, just close the registration window
                         dispose();
                         // You might want to show admin dashboard here in the future
+                    } else {
+                        JOptionPane.showMessageDialog(this,
+                            "Error creating account. Please try again.",
+                            "Error",
+                            JOptionPane.ERROR_MESSAGE);
                     }
-                } else {
+                } catch (SQLException ex) {
                     JOptionPane.showMessageDialog(this,
-                        "Error creating account. Please try again.",
+                        "Error creating account: " + ex.getMessage(),
                         "Error",
                         JOptionPane.ERROR_MESSAGE);
                 }
-            } catch (SQLException ex) {
-                JOptionPane.showMessageDialog(this,
-                    "Error creating account: " + ex.getMessage(),
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE);
             }
         });
 

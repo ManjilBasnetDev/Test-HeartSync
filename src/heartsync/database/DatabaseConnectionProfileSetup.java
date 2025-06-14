@@ -1,8 +1,10 @@
-package heartsyncdatingapp.database;
+package heartsync.database;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+
+import heartsync.database.DatabaseConfigSetup;
 
 public class DatabaseConnectionProfileSetup {
     private static DatabaseConnection instance;

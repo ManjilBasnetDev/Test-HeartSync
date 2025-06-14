@@ -78,7 +78,7 @@ public class Block extends JFrame {
 
     public Block() {
         // Set light pink background
-        getContentPane().setBackground(new Color(255, 228, 235));
+        getContentPane().setBackground(new Color(255, 228, 236));
         setTitle("Block User");
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setResizable(false);

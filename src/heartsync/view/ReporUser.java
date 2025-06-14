@@ -38,8 +38,8 @@ public class ReporUser extends javax.swing.JFrame {
         this.reportDAO = new ReportDAO();
         this.userDAO = new UserDAO();
         initComponents();
-        setupUI();
         setupReasonComboBox();
+        setupUI();
         loadUserInfo();
         setLocationRelativeTo(null);
     }
@@ -83,7 +83,7 @@ public class ReporUser extends javax.swing.JFrame {
             public void insertUpdate(javax.swing.event.DocumentEvent e) { updateCharCount(); }
         });
         
-        // Set initial character count
+        // Initialize character count
         updateCharCount();
     }
     
@@ -110,6 +110,8 @@ public class ReporUser extends javax.swing.JFrame {
         User reportedUser = userDAO.getUserById(reportedUserId);
         if (reportedUser != null) {
             jLabel4.setText("Reporting: " + reportedUser.getUsername());
+        } else {
+            jLabel4.setText("Reporting: Unknown User");
         }
     }
     

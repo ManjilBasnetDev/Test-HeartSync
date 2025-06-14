@@ -8,8 +8,8 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
-import heartsyncdatingapp.database.DatabaseConnection;
-import heartsyncdatingapp.model.User;
+import heartsync.database.DatabaseConnection;
+import heartsync.model.User;
 
 public class UserRegisterDAO {
     private Connection connection;

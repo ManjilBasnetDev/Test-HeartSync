@@ -478,7 +478,8 @@ public class MoreInfoView extends JFrame {
                     "Profile created successfully!\nYour User ID is: " + userId,
                     "Success",
                     JOptionPane.INFORMATION_MESSAGE);
-                System.exit(0);
+                this.dispose();
+                new LoginView().setVisible(true);
             } else {
                 JOptionPane.showMessageDialog(this,
                     "Failed to save profile. Please try again.",

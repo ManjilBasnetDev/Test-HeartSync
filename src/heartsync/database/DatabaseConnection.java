@@ -14,7 +14,8 @@ import java.time.format.DateTimeParseException;
  * Handles all database operations including initialization and connection management.
  */
 public class DatabaseConnection {
-    private static final String URL = "jdbc:mysql://localhost:3306/";
+    // Added connection parameters to avoid timezone and SSL errors
+    private static final String URL = "jdbc:mysql://localhost:3306/?serverTimezone=UTC&useSSL=false&allowPublicKeyRetrieval=true";
     private static final String DB_NAME = "HEARTSYNCFINAL";
     private static final String USERNAME = "manjil";
     private static final String PASSWORD = "3023";
@@ -41,7 +42,7 @@ public class DatabaseConnection {
         }
         
         if (connection == null || connection.isClosed()) {
-            connection = DriverManager.getConnection(URL + DB_NAME, USERNAME, PASSWORD);
+            connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/" + DB_NAME + "?serverTimezone=UTC&useSSL=false&allowPublicKeyRetrieval=true", USERNAME, PASSWORD);
         }
         
         return connection;
@@ -58,14 +59,14 @@ public class DatabaseConnection {
                 try (Statement stmt = conn.createStatement()) {
                     // Create database if it doesn't exist
                     
-                    stmt.executeUpdate("CREATE DATABASE " + DB_NAME);
+                    stmt.executeUpdate("CREATE DATABASE IF NOT EXISTS " + DB_NAME);
                     
                     // Use the database
                     stmt.executeUpdate("USE " + DB_NAME);
                     
                     // Create users table - main user authentication and basic info
                     String createUsersTableSQL = """
-                        CREATE TABLE users (
+                        CREATE TABLE IF NOT EXISTS users (
                             id INT PRIMARY KEY AUTO_INCREMENT,
                             username VARCHAR(50) NOT NULL UNIQUE,
                             password VARCHAR(255) NOT NULL,
@@ -79,7 +80,7 @@ public class DatabaseConnection {
                     
                     // Create user_profiles table - detailed user information
                     String createUserProfilesTableSQL = """
-                        CREATE TABLE user_profiles (
+                        CREATE TABLE IF NOT EXISTS user_profiles (
                             id INT PRIMARY KEY AUTO_INCREMENT,
                             user_id INT NOT NULL UNIQUE,
                             full_name VARCHAR(100) NOT NULL,
@@ -106,7 +107,7 @@ public class DatabaseConnection {
                     
                     // Create user_hobbies table
                     String createHobbiesTableSQL = """
-                        CREATE TABLE user_hobbies (
+                        CREATE TABLE IF NOT EXISTS user_hobbies (
                             id INT PRIMARY KEY AUTO_INCREMENT,
                             user_id INT NOT NULL,
                             hobby VARCHAR(100) NOT NULL,
@@ -115,6 +116,12 @@ public class DatabaseConnection {
                         )
                     """;
                     stmt.executeUpdate(createHobbiesTableSQL);
+                    // Ensure email column exists in users table (older schema compatibility)
+                    try {
+                        stmt.executeUpdate("ALTER TABLE users ADD COLUMN email VARCHAR(100) UNIQUE");
+                    } catch (SQLException ignore) {
+                        // Column already exists
+                    }
                     
                     // Create contacts table for contact form submissions
                     String createContactsTableSQL = """
@@ -134,7 +141,7 @@ public class DatabaseConnection {
                     
                     // Create matches table for user matches
                     String createMatchesTableSQL = """
-                        CREATE TABLE matches (
+                        CREATE TABLE IF NOT EXISTS matches (
                             id INT PRIMARY KEY AUTO_INCREMENT,
                             user1_id INT NOT NULL,
                             user2_id INT NOT NULL,
@@ -149,7 +156,7 @@ public class DatabaseConnection {
                     
                     // Create messages table for user communication
                     String createMessagesTableSQL = """
-                        CREATE TABLE messages (
+                        CREATE TABLE IF NOT EXISTS messages (
                             id INT PRIMARY KEY AUTO_INCREMENT,
                             sender_id INT NOT NULL,
                             receiver_id INT NOT NULL,
@@ -170,7 +177,10 @@ public class DatabaseConnection {
                     // Insert default admin user
                     String insertAdminSQL = """
                         INSERT INTO users (username, password, user_type, email)
-                        VALUES ('admin', 'admin123', 'ADMIN', 'admin@heartsync.com')
+                        SELECT * FROM (SELECT 'admin', 'admin123', 'ADMIN', 'admin@heartsync.com') AS tmp
+                        WHERE NOT EXISTS (
+                            SELECT username FROM users WHERE username = 'admin'
+                        ) LIMIT 1
                     """;
                     stmt.executeUpdate(insertAdminSQL);
                     

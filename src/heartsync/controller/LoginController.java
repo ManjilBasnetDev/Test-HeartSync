@@ -5,6 +5,7 @@ import heartsync.view.LoginView;
 import heartsync.dao.UserDAO;
 import heartsync.model.User;  // Add this import
 import heartsync.model.LoginModel;  // Add this import
+import heartsync.view.Swipe;
 
 import javax.swing.*;
 import java.awt.Color;
@@ -154,11 +155,9 @@ public class LoginController {
                         // For demo purposes, we'll just show success
                         System.out.println("User logged in: " + authenticatedUser);
                         
-                        // Close login window and return to main app
+                        // Close login window and open Swipe interface
                         view.dispose();
-                        
-                        // Example: Open main app window (you would create MainAppView)
-                        // new MainAppController(new MainAppView(), authenticatedUser);
+                        new Swipe().setVisible(true);
                         
                     } else {
                         // Authentication failed

@@ -8,6 +8,7 @@ public class User {
     private String username;
     private String password;
     private String email;
+    private String userType;
     private Date createdAt;
     
     // Default constructor
@@ -57,6 +58,14 @@ public class User {
     
     public Date getCreatedAt() {
         return createdAt;
+    }
+
+    public String getUserType() {
+        return userType;
+    }
+
+    public void setUserType(String userType) {
+        this.userType = userType;
     }
     
     public void setCreatedAt(Date createdAt) {

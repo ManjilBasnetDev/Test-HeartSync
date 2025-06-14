@@ -1,5 +1,7 @@
 package heartsync.view;
 
+import heartsync.model.User;
+
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Dimension;
@@ -146,8 +148,8 @@ public class Register extends JFrame {
                 super.paintComponent(g);
             }
         };
-        mainPanel.setPreferredSize(new Dimension(450, 480));  // Set fixed size
-        mainPanel.setSize(new Dimension(450, 480));  // Add this line
+        mainPanel.setPreferredSize(new Dimension(500, 480));  // Set fixed size
+        mainPanel.setSize(new Dimension(500, 480));  // Add this line
         mainPanel.setBackground(new Color(255, 219, 227));
         mainPanel.setOpaque(true);
         setContentPane(mainPanel);  // Use setContentPane instead of add
@@ -157,7 +159,7 @@ public class Register extends JFrame {
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
         titleLabel.setForeground(Color.BLACK);
         titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        titleLabel.setBounds(0, 40, 450, 40);  // Adjusted width
+        titleLabel.setBounds(0, 40, 500, 40);  // Adjusted width
         
         // Username field styled like login page
         usernameField = new JTextArea();
@@ -584,14 +586,25 @@ public class Register extends JFrame {
                         JOptionPane.INFORMATION_MESSAGE);
                     
                     if (role.equals("USER")) {
-                        // Create MVC components for profile setup only for regular users
-                        UserProfile model = new UserProfile();
-                        UserProfileController controller = new UserProfileController(model, username);
-                        ProfileSetupView view = new ProfileSetupView(controller);
-                        
-                        // Close registration window and show profile setup
-                        dispose();
-                        view.setVisible(true);
+                        // Show DOB verification dialog for users
+                        DOBVerificationDialog dobDialog = new DOBVerificationDialog(this);
+                        dobDialog.setVisible(true);
+                        if (dobDialog.isConfirmed()) {
+                            int age = dobDialog.getAge();
+                            if (age >= 18) {
+                                // Proceed to profile setup
+                                UserProfile model = new UserProfile();
+                                UserProfileController controller = new UserProfileController(model, username);
+                                ProfileSetupView view = new ProfileSetupView(controller);
+                                dispose();
+                                view.setVisible(true);
+                            } else {
+                                JOptionPane.showMessageDialog(this,
+                                    "You must be at least 18 years old to create an account.",
+                                    "Age Restriction",
+                                    JOptionPane.ERROR_MESSAGE);
+                            }
+                        }
                     } else {
                         // For admin users, just close the registration window
                         dispose();

@@ -8,13 +8,20 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import javax.swing.border.EmptyBorder;
+import javax.swing.border.*;
+import java.awt.geom.RoundRectangle2D;
 
 /**
  *
  * @author HP
  */
 public class ReviewAndApprove extends javax.swing.JFrame {
+
+    private static final Color PRIMARY_COLOR = new Color(41, 128, 185);
+    private static final Color SECONDARY_COLOR = new Color(52, 152, 219);
+    private static final Color BACKGROUND_COLOR = new Color(236, 240, 241);
+    private static final Color CARD_COLOR = Color.WHITE;
+    private static final int CARD_RADIUS = 15;
 
     /**
      * Creates new form ReviewAndApprove
@@ -29,6 +36,7 @@ public class ReviewAndApprove extends javax.swing.JFrame {
         // Set up the main panel with a better layout
         jPanel1.setLayout(new GridLayout(2, 4, 20, 20));
         jPanel1.setBorder(new EmptyBorder(20, 20, 20, 20));
+        jPanel1.setBackground(BACKGROUND_COLOR);
         
         // Create and add user panels
         for (int i = 0; i < 8; i++) {
@@ -37,109 +45,103 @@ public class ReviewAndApprove extends javax.swing.JFrame {
     }
     
     private void addUserPanel(int index) {
-        JPanel userPanel = new JPanel();
+        JPanel userPanel = createRoundedPanel();
         userPanel.setLayout(new BoxLayout(userPanel, BoxLayout.Y_AXIS));
-        userPanel.setBackground(Color.WHITE);
-        userPanel.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200), 1, true));
+        userPanel.setBackground(CARD_COLOR);
         
-        // Profile Image
-        JLabel imageLabel = new JLabel();
-        ImageIcon defaultIcon = new ImageIcon(getClass().getResource("/heartsync/Images/default_profile.png"));
-        Image scaledImage = defaultIcon.getImage().getScaledInstance(80, 80, Image.SCALE_SMOOTH);
-        imageLabel.setIcon(new ImageIcon(scaledImage));
-        imageLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        // Add profile picture
+        JLabel profilePic = new JLabel();
+        profilePic.setIcon(new ImageIcon(getClass().getResource("/heartsync/Images/default_profile.png")));
+        profilePic.setAlignmentX(Component.CENTER_ALIGNMENT);
+        profilePic.setBorder(new EmptyBorder(10, 10, 10, 10));
+        userPanel.add(profilePic);
         
-        // User Name
-        JLabel nameLabel = new JLabel("Rajesh Dai");
-        nameLabel.setFont(new Font("Yu Gothic UI Semibold", Font.PLAIN, 14));
+        // Add name label
+        JLabel nameLabel = new JLabel("User " + (index + 1));
+        nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
         nameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        userPanel.add(nameLabel);
         
-        // User Details
-        String[] userDetails = {
-            "Age: 25 | Location: Kathmandu",
-            "Age: 28 | Location: Pokhara",
-            "Age: 23 | Location: Lalitpur",
-            "Age: 30 | Location: Bhaktapur",
-            "Age: 27 | Location: Butwal",
-            "Age: 24 | Location: Biratnagar",
-            "Age: 29 | Location: Chitwan",
-            "Age: 26 | Location: Dharan"
-        };
-        JLabel detailsLabel = new JLabel(userDetails[index]);
-        detailsLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        detailsLabel.setForeground(Color.GRAY);
-        detailsLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        // Add status label
+        JLabel statusLabel = new JLabel("Pending Review");
+        statusLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        statusLabel.setForeground(new Color(155, 155, 155));
+        statusLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        userPanel.add(statusLabel);
         
-        // Buttons Panel
+        // Add buttons panel
         JPanel buttonPanel = new JPanel();
         buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 5));
-        buttonPanel.setBackground(Color.WHITE);
+        buttonPanel.setBackground(CARD_COLOR);
         
-        JButton approveBtn = new JButton("Approve");
-        approveBtn.setBackground(new Color(40, 167, 69));
-        approveBtn.setForeground(Color.WHITE);
-        approveBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        
-        JButton rejectBtn = new JButton("Reject");
-        rejectBtn.setBackground(new Color(220, 53, 69));
-        rejectBtn.setForeground(Color.WHITE);
-        rejectBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        
-        // Add action listeners
-        approveBtn.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                handleApprove(index);
-            }
-        });
-        
-        rejectBtn.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                handleReject(index);
-            }
-        });
-        
+        // Approve button
+        JButton approveBtn = createStyledButton("Approve", PRIMARY_COLOR);
+        approveBtn.addActionListener(e -> handleApprove(index));
         buttonPanel.add(approveBtn);
+        
+        // Reject button
+        JButton rejectBtn = createStyledButton("Reject", new Color(231, 76, 60));
+        rejectBtn.addActionListener(e -> handleReject(index));
         buttonPanel.add(rejectBtn);
         
-        // Add components to user panel
-        userPanel.add(Box.createVerticalStrut(10));
-        userPanel.add(imageLabel);
-        userPanel.add(Box.createVerticalStrut(10));
-        userPanel.add(nameLabel);
-        userPanel.add(Box.createVerticalStrut(5));
-        userPanel.add(detailsLabel);
-        userPanel.add(Box.createVerticalStrut(10));
         userPanel.add(buttonPanel);
         userPanel.add(Box.createVerticalStrut(10));
         
         jPanel1.add(userPanel);
     }
     
-    private void handleApprove(int userIndex) {
-        // TODO: Implement actual approval logic
+    private JPanel createRoundedPanel() {
+        return new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(getBackground());
+                g2.fill(new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), CARD_RADIUS, CARD_RADIUS));
+                g2.dispose();
+            }
+        };
+    }
+    
+    private JButton createStyledButton(String text, Color color) {
+        JButton button = new JButton(text) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(color);
+                g2.fill(new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), 10, 10));
+                g2.setColor(Color.WHITE);
+                FontMetrics fm = g2.getFontMetrics();
+                int x = (getWidth() - fm.stringWidth(getText())) / 2;
+                int y = (getHeight() - fm.getHeight()) / 2 + fm.getAscent();
+                g2.drawString(getText(), x, y);
+                g2.dispose();
+            }
+        };
+        button.setPreferredSize(new Dimension(80, 30));
+        button.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        button.setForeground(Color.WHITE);
+        button.setBorderPainted(false);
+        button.setContentAreaFilled(false);
+        button.setFocusPainted(false);
+        return button;
+    }
+    
+    private void handleApprove(int index) {
+        // TODO: Implement approve functionality
         JOptionPane.showMessageDialog(this,
-            "User approved successfully!",
-            "Success",
+            "User " + (index + 1) + " has been approved!",
+            "Approval Successful",
             JOptionPane.INFORMATION_MESSAGE);
     }
     
-    private void handleReject(int userIndex) {
-        // TODO: Implement actual rejection logic
-        int confirm = JOptionPane.showConfirmDialog(this,
-            "Are you sure you want to reject this user?",
-            "Confirm Rejection",
-            JOptionPane.YES_NO_OPTION,
-            JOptionPane.WARNING_MESSAGE);
-            
-        if (confirm == JOptionPane.YES_OPTION) {
-            // TODO: Implement rejection
-            JOptionPane.showMessageDialog(this,
-                "User rejected successfully!",
-                "Success",
-                JOptionPane.INFORMATION_MESSAGE);
-        }
+    private void handleReject(int index) {
+        // TODO: Implement reject functionality
+        JOptionPane.showMessageDialog(this,
+            "User " + (index + 1) + " has been rejected.",
+            "Rejection Successful",
+            JOptionPane.INFORMATION_MESSAGE);
     }
 
     /**

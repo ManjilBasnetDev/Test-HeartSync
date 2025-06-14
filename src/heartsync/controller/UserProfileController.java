@@ -1,9 +1,9 @@
-package heartsyncdatingapp.controller;
+package heartsync.controller;
 
 import java.util.List;
 
-import heartsyncdatingapp.model.UserProfile;
-import heartsyncdatingapp.view.MoreInfoView;
+import heartsync.model.UserProfile;
+import heartsync.view.MoreInfoView;
 
 public class UserProfileController {
     private UserProfile model;

@@ -1,4 +1,4 @@
-package heartsyncdatingapp.database;
+package heartsync.database;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -46,6 +46,7 @@ public class DatabaseManagerProfile {
                 "user_id INT NOT NULL UNIQUE, " +
                 "full_name VARCHAR(100) NOT NULL, " +
                 "height INT NOT NULL, " +
+                "age INT, " +
                 "weight INT NOT NULL, " +
                 "country VARCHAR(50) NOT NULL, " +
                 "address VARCHAR(200) NOT NULL, " +
@@ -104,26 +105,27 @@ public class DatabaseManagerProfile {
 
             // Insert user profile with the correct user_id
             String insertUserSQL = """
-                INSERT INTO user_profiles (user_id, full_name, height, weight, country, address, 
+                INSERT INTO user_profiles (user_id, full_name, height, age, weight, country, address, 
                                       phone, qualification, gender, preferences, 
                                       about_me, profile_pic_path, relation_choice)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """;
 
             try (PreparedStatement pstmt = conn.prepareStatement(insertUserSQL, Statement.RETURN_GENERATED_KEYS)) {
                 pstmt.setInt(1, userId);
                 pstmt.setString(2, fullName);
                 pstmt.setInt(3, height);
-                pstmt.setInt(4, weight);
-                pstmt.setString(5, country);
-                pstmt.setString(6, address);
-                pstmt.setString(7, phone);
-                pstmt.setString(8, qualification);
-                pstmt.setString(9, gender);
-                pstmt.setString(10, preferences);
-                pstmt.setString(11, aboutMe);
-                pstmt.setString(12, profilePicPath);
-                pstmt.setString(13, relationChoice);
+                pstmt.setNull(4, java.sql.Types.INTEGER); // TODO: Replace with actual age if available
+                pstmt.setInt(5, weight);
+                pstmt.setString(6, country);
+                pstmt.setString(7, address);
+                pstmt.setString(8, phone);
+                pstmt.setString(9, qualification);
+                pstmt.setString(10, gender);
+                pstmt.setString(11, preferences);
+                pstmt.setString(12, aboutMe);
+                pstmt.setString(13, profilePicPath);
+                pstmt.setString(14, relationChoice);
 
                 pstmt.executeUpdate();
             }

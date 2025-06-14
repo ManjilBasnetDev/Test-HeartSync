@@ -37,12 +37,12 @@ import javax.swing.border.LineBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
-import heartsyncdatingapp.HomePage;
-import heartsyncdatingapp.controller.UserProfileController;
-import heartsyncdatingapp.dao.UserRegisterDAO;
-import heartsyncdatingapp.model.User;
-import heartsyncdatingapp.model.UserProfile;
-import heartsyncdatingapp.view.ProfileSetupView;
+
+import heartsync.controller.UserProfileController;
+import heartsync.dao.UserRegisterDAO;
+import heartsync.model.User;
+import heartsync.model.UserProfile;
+import heartsync.view.ProfileSetupView;
 
 public class Register extends JFrame {
     private JPanel mainPanel;

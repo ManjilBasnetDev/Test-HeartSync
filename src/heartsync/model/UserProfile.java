@@ -1,4 +1,4 @@
-package heartsyncdatingapp.model;
+package heartsync.model;
 
 import java.util.ArrayList;
 import java.util.List;

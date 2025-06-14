@@ -1,4 +1,4 @@
-package heartsyncdatingapp.database;
+package heartsync.database;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -15,7 +15,7 @@ import java.time.format.DateTimeParseException;
  */
 public class DatabaseConnection {
     private static final String URL = "jdbc:mysql://localhost:3306/";
-    private static final String DB_NAME = "TestHeartSync";
+    private static final String DB_NAME = "HEARTSYNCFINAL";
     private static final String USERNAME = "manjil";
     private static final String PASSWORD = "3023";
     private static boolean driverLoaded = false;
@@ -57,7 +57,7 @@ public class DatabaseConnection {
             try (Connection conn = DriverManager.getConnection(URL, USERNAME, PASSWORD)) {
                 try (Statement stmt = conn.createStatement()) {
                     // Create database if it doesn't exist
-                    stmt.executeUpdate("DROP DATABASE IF EXISTS " + DB_NAME);
+                    
                     stmt.executeUpdate("CREATE DATABASE " + DB_NAME);
                     
                     // Use the database

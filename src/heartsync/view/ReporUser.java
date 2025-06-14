@@ -3,6 +3,7 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
  */
 package heartsync.view;
+
 import heartsync.dao.ReportDAO;
 import heartsync.model.Report;
 import javax.swing.*;
@@ -36,6 +37,7 @@ public class ReporUser extends javax.swing.JFrame {
             "Spam",
             "Fake Profile",
             "Hate Speech",
+            "Underage User",
             "Other"
         };
         reasonComboBox.setModel(new DefaultComboBoxModel<>(reasons));

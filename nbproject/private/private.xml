@@ -16,6 +16,10 @@
             <file>file:/C:/Users/HP/OneDrive/Desktop/gitpush/Test-HeartSync/src/heartsync/database/Forgotdatabase.sql</file>
             <file>file:/C:/Users/HP/OneDrive/Desktop/gitpush/Test-HeartSync/src/heartsync/dao/DeleteUserDAO.java</file>
             <file>file:/C:/Users/HP/OneDrive/Desktop/gitpush/Test-HeartSync/src/heartsync/dao/ContactDAO.java</file>
+            <file>file:/C:/Users/HP/OneDrive/Desktop/gitpush/Test-HeartSync/src/heartsync/view/ReporUser.java</file>
+            <file>file:/C:/Users/HP/OneDrive/Desktop/gitpush/Test-HeartSync/src/heartsync/view/ReviewAndApprove.java</file>
+            <file>file:/C:/Users/HP/OneDrive/Desktop/gitpush/Test-HeartSync/src/heartsync/dao/ReportDAO.java</file>
+            <file>file:/C:/Users/HP/OneDrive/Desktop/gitpush/Test-HeartSync/src/heartsync/dao/UserDAOForgot.java</file>
         </group>
     </open-files>
 </project-private>

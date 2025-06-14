@@ -172,7 +172,7 @@ public class MatchedUserList extends JFrame {
         styleButton(viewProfileButton, new Color(70, 120, 255));
         styleButton(messageButton, new Color(255, 182, 193));
         styleButton(blockButton, new Color(255, 99, 71));
-        styleButton(backButton, new Color(200, 200, 200));
+        styleButton(backButton, new Color(200, 200, 201));
         
         // Add buttons to the horizontal panel
         buttonPanel.add(viewProfileButton);

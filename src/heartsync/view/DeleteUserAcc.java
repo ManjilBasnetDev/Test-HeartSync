@@ -4,10 +4,10 @@
  */
 package heartsync.view;
 
+import heartsync.dao.DeleteUserDAO;
 import heartsync.dao.UserDAO;
+import heartsync.dao.UserProfileDAO;
 import javax.swing.JOptionPane;
-import heartsync.model.User;
-import heartsync.database.DatabaseConnection;
 
 /**
  *
@@ -18,6 +18,8 @@ public class DeleteUserAcc extends javax.swing.JFrame {
     private int userId;
     private String currentUsername;
     private final UserDAO userDAO;
+    private final UserProfileDAO userProfileDAO;
+    private final DeleteUserDAO deleteUserDAO;
 
     /**
      * Creates new form DeleteUserAcc
@@ -29,6 +31,8 @@ public class DeleteUserAcc extends javax.swing.JFrame {
         this.userId = userId;
         this.currentUsername = username;
         this.userDAO = new UserDAO();
+        this.userProfileDAO = new UserProfileDAO();
+        this.deleteUserDAO = new DeleteUserDAO();
         setLocationRelativeTo(null);
     }
 
@@ -78,6 +82,11 @@ public class DeleteUserAcc extends javax.swing.JFrame {
         jButton2.setText("Done");
 
         jRadioButton1.setText("Show");
+        jRadioButton1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jRadioButton1ActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -196,8 +205,8 @@ public class DeleteUserAcc extends javax.swing.JFrame {
             
         if (confirm == JOptionPane.YES_OPTION) {
             try {
-                // Delete the user account
-                if (userDAO.deleteUser(currentUsername)) {
+                // Delete the user account and all associated data
+                if (deleteUserDAO.deleteUserAndAssociatedData(userId)) {
                     JOptionPane.showMessageDialog(this,
                         "Your account has been successfully deleted.",
                         "Account Deleted",
@@ -205,7 +214,7 @@ public class DeleteUserAcc extends javax.swing.JFrame {
                         
                     // Close this window and show login screen
                     this.dispose();
-                    new LoginFinal().setVisible(true);
+                    new LoginView().setVisible(true);
                 } else {
                     JOptionPane.showMessageDialog(this,
                         "Failed to delete account. Please try again later.",
@@ -225,8 +234,10 @@ public class DeleteUserAcc extends javax.swing.JFrame {
         // Toggle password field echo char between bullet and normal char
         if (jRadioButton1.isSelected()) {
             jPasswordField1.setEchoChar((char) 0); // Show characters
+            jRadioButton1.setText("Hide");
         } else {
             jPasswordField1.setEchoChar('•'); // Hide with bullets
+            jRadioButton1.setText("Show");
         }
     }
 
@@ -261,17 +272,17 @@ public class DeleteUserAcc extends javax.swing.JFrame {
 
         java.awt.EventQueue.invokeLater(() -> {
             try {
-                // Initialize database connection
-                DatabaseConnection.getInstance();
+                // Initialize database
+                heartsync.database.DatabaseConfig.initializeDatabase();
                 
                 // Create a test user if it doesn't exist
                 UserDAO userDAO = new UserDAO();
-                User testUser = userDAO.getUser("testuser");
+                heartsync.model.User testUser = userDAO.getUserByUsername("testuser");
                 
                 if (testUser == null) {
-                    testUser = new User("testuser", "oldpassword", "user");
+                    testUser = new heartsync.model.User("testuser", "oldpassword", "test@example.com");
                     userDAO.createUser(testUser);
-                    testUser = userDAO.getUser("testuser"); // Get the user with ID
+                    testUser = userDAO.getUserByUsername("testuser"); // Get the user with ID
                 }
                 
                 // Show the delete account form with the test user

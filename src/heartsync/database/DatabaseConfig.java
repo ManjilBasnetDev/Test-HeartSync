@@ -4,7 +4,7 @@ public class DatabaseConfig {
     // Database connection constants
     public static final String DB_URL = "jdbc:mysql://localhost:3306/heartsync";
     public static final String USER = "root";
-    public static final String PASS = "Rohit@56";
+    public static final String PASS = "Yuva@123";
     public static final String DRIVER_CLASS = "com.mysql.cj.jdbc.Driver";
     
     // Database table names

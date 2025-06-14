@@ -6,7 +6,16 @@
             <file>file:/C:/Users/HP/OneDrive/Desktop/gitpush/Test-HeartSync/src/heartsync/view/DeleteUserAcc.java</file>
             <file>file:/C:/Users/HP/OneDrive/Desktop/gitpush/Test-HeartSync/src/heartsync/view/LoginFinal.java</file>
             <file>file:/C:/Users/HP/OneDrive/Desktop/gitpush/Test-HeartSync/src/heartsync/dao/UserDAOLogin.java</file>
-            <file>file:/C:/Users/HP/OneDrive/Desktop/gitpush/Test-HeartSync/src/heartsync/Login.java</file>
+            <file>file:/C:/Users/HP/OneDrive/Desktop/gitpush/Test-HeartSync/src/heartsync/view/ContactsPage.java</file>
+            <file>file:/C:/Users/HP/OneDrive/Desktop/gitpush/Test-HeartSync/src/heartsync/view/FeaturesPage.java</file>
+            <file>file:/C:/Users/HP/OneDrive/Desktop/gitpush/Test-HeartSync/src/heartsync/view/HomePage.java</file>
+            <file>file:/C:/Users/HP/OneDrive/Desktop/gitpush/Test-HeartSync/src/heartsync/database/DatabaseManager.java</file>
+            <file>file:/C:/Users/HP/OneDrive/Desktop/gitpush/Test-HeartSync/src/heartsync/database/DatabaseConnection1.java</file>
+            <file>file:/C:/Users/HP/OneDrive/Desktop/gitpush/Test-HeartSync/src/heartsync/database/DatabaseConfig.java</file>
+            <file>file:/C:/Users/HP/OneDrive/Desktop/gitpush/Test-HeartSync/src/heartsync/database/DatabaseConnection.java</file>
+            <file>file:/C:/Users/HP/OneDrive/Desktop/gitpush/Test-HeartSync/src/heartsync/database/Forgotdatabase.sql</file>
+            <file>file:/C:/Users/HP/OneDrive/Desktop/gitpush/Test-HeartSync/src/heartsync/dao/DeleteUserDAO.java</file>
+            <file>file:/C:/Users/HP/OneDrive/Desktop/gitpush/Test-HeartSync/src/heartsync/dao/ContactDAO.java</file>
         </group>
     </open-files>
 </project-private>

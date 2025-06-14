@@ -12,7 +12,7 @@ public class DatabaseConnection {
     private static final String URL = "jdbc:mysql://localhost:3306/";
     private static final String DB_NAME = "heartsync";
     private static final String USERNAME = "root";
-    private static final String PASSWORD = "Rohit@56";
+    private static final String PASSWORD = "Yuva@123";
     private static Connection connection = null;
     private static DatabaseConnection instance = null;
     
@@ -39,6 +39,9 @@ public class DatabaseConnection {
                     // Create database if it doesn't exist
                     stmt.executeUpdate("CREATE DATABASE IF NOT EXISTS " + DB_NAME);
                     System.out.println("Database '" + DB_NAME + "' created or already exists");
+                    
+                    // Select the database
+                    stmt.executeUpdate("USE " + DB_NAME);
                     
                     // Create users table
                     stmt.executeUpdate("""

@@ -17,6 +17,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
 public class LoginController {
+    private static LoginView currentLoginView = null;
     private LoginView view;
     private UserDAO userDAO;
     private LoginModel loginModel;
@@ -147,17 +148,18 @@ public class LoginController {
                             JOptionPane.INFORMATION_MESSAGE
                         );
                         
-                        // Here you would typically:
-                        // 1. Store user session
-                        // 2. Open main application window
-                        // 3. Close login window
+                        // Store user session
+                        // In a real app, you might want to store this in a session manager
                         
-                        // For demo purposes, we'll just show success
-                        System.out.println("User logged in: " + authenticatedUser);
-                        
-                        // Close login window and open Swipe interface
+                        // Close login window and open main application window
                         view.dispose();
-                        new Swipe().setVisible(true);
+                        
+                        // Open main application window in the Event Dispatch Thread
+                        SwingUtilities.invokeLater(() -> {
+                            Swipe swipeView = new Swipe();
+                            // You might want to pass the authenticated user to the Swipe view
+                            swipeView.setVisible(true);
+                        });
                         
                     } else {
                         // Authentication failed
@@ -183,18 +185,12 @@ public class LoginController {
     }
     
     private void handleBack() {
-        // Handle back button - go back to previous screen
-        int option = JOptionPane.showConfirmDialog(
-            view,
-            "Are you sure you want to go back?",
-            "Confirm",
-            JOptionPane.YES_NO_OPTION
-        );
-        
-        if (option == JOptionPane.YES_OPTION) {
-            // Close login window and return to main app
-            view.dispose();
-        }
+        // Close the login view
+        view.dispose();
+        // Open the HomePage in the Event Dispatch Thread
+        SwingUtilities.invokeLater(() -> {
+            new heartsync.view.HomePage().setVisible(true);
+        });
     }
     
     private void handleForgotPassword() {
@@ -203,10 +199,36 @@ public class LoginController {
         new heartsync.view.ForgotPassword().setVisible(true);
     }
     
-    // Method to start the login view
-    public void showLoginView() {
+    /**
+     * Creates and shows the login view using the controller.
+     * This is a static method that can be called from anywhere in the application
+     * to show the login screen. Ensures only one login view exists at a time.
+     */
+    public static void createAndShowLoginView() {
+        // Ensure UI updates happen on the Event Dispatch Thread
         SwingUtilities.invokeLater(() -> {
-            view.setVisible(true);
+            // If a login view already exists, bring it to front and return
+            if (currentLoginView != null && currentLoginView.isDisplayable()) {
+                currentLoginView.toFront();
+                currentLoginView.requestFocus();
+                return;
+            }
+            
+            // Create new login view
+            currentLoginView = new LoginView();
+            LoginController controller = new LoginController(currentLoginView);
+            
+            currentLoginView.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+            currentLoginView.addWindowListener(new java.awt.event.WindowAdapter() {
+                @Override
+                public void windowClosed(java.awt.event.WindowEvent e) {
+                    currentLoginView = null;
+                }
+            });
+            
+            // Center and show the view
+            currentLoginView.setLocationRelativeTo(null);
+            currentLoginView.setVisible(true);
         });
     }
 }

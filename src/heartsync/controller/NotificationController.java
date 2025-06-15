@@ -1,9 +1,8 @@
 package heartsync.controller;
 
 import heartsync.dao.NotificationDAO;
-import heartsync.model.Notification;
 import java.util.List;
-import javax.management.Notification;
+import heartsync.model.Notification;
 
 public class NotificationController {
     public void notifyMatch(String matchName) {

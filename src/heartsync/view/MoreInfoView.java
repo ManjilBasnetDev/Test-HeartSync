@@ -36,6 +36,7 @@ import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
 
+import heartsync.controller.LoginController;
 import heartsync.controller.UserProfileController;
 import heartsync.database.DatabaseManagerProfile;
 import heartsync.model.UserProfile;
@@ -479,7 +480,7 @@ public class MoreInfoView extends JFrame {
                     "Success",
                     JOptionPane.INFORMATION_MESSAGE);
                 this.dispose();
-                new LoginView().setVisible(true);
+                LoginController.createAndShowLoginView();
             } else {
                 JOptionPane.showMessageDialog(this,
                     "Failed to save profile. Please try again.",

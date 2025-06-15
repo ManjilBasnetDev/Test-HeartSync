@@ -8,6 +8,9 @@ import java.time.LocalDate;
 import java.time.Period;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Unified database connection manager for the HeartSync Dating App.
@@ -23,6 +26,9 @@ public class DatabaseConnection {
     private static Connection connection = null;
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final int MINIMUM_AGE = 18;
+    
+    // Hashing algorithm for passwords
+    private static final String HASH_ALGORITHM = "SHA-256";
     
     static {
         try {
@@ -46,6 +52,32 @@ public class DatabaseConnection {
         }
         
         return connection;
+    }
+    
+    /**
+     * Hashes a password using SHA-256 algorithm
+     * @param password The password to hash
+     * @return The hashed password as a hexadecimal string
+     * @throws RuntimeException if the hashing algorithm is not available
+     */
+    public static String hashPassword(String password) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance(HASH_ALGORITHM);
+            byte[] hashBytes = digest.digest(password.getBytes(StandardCharsets.UTF_8));
+            
+            // Convert the byte array to a hex string
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hashBytes) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+            return hexString.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("Error hashing password: " + e.getMessage(), e);
+        }
     }
     
     private static void initializeDatabase() throws SQLException {

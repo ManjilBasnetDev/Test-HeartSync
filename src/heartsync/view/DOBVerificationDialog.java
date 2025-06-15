@@ -100,4 +100,25 @@ public class DOBVerificationDialog extends JDialog {
     public boolean isConfirmed() {
         return confirmed;
     }
+    
+    /**
+     * Returns the selected date of birth in YYYY-MM-DD format
+     * @return Formatted date string or null if no valid date is selected
+     */
+    public String getDateOfBirth() {
+        try {
+            Integer year = (Integer) yearBox.getSelectedItem();
+            Integer month = (Integer) monthBox.getSelectedItem();
+            Integer day = (Integer) dayBox.getSelectedItem();
+            
+            if (year == null || month == null || day == null) {
+                return null;
+            }
+            
+            // Format as YYYY-MM-DD
+            return String.format("%04d-%02d-%02d", year, month, day);
+        } catch (Exception e) {
+            return null;
+        }
+    }
 }

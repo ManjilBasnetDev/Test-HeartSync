@@ -11,8 +11,36 @@ public class User {
     private String userType;
     private Date createdAt;
     
+    // Additional fields
+    private String phoneNumber;
+    private String dateOfBirth;
+    private String gender;
+    private String interests;
+    private String bio;
+    private String favoriteColor;
+    private String firstSchool;
+    
     // Default constructor
     public User() {
+    }
+    
+    // Full constructor with all fields
+    public User(int id, String username, String password, String email, String userType, 
+               String phoneNumber, String dateOfBirth, String gender, 
+               String interests, String bio, String favoriteColor, String firstSchool) {
+        this.id = id;
+        this.username = username;
+        this.password = password;
+        this.email = email;
+        this.userType = userType;
+        this.phoneNumber = phoneNumber;
+        this.dateOfBirth = dateOfBirth;
+        this.gender = gender;
+        this.interests = interests;
+        this.bio = bio;
+        this.favoriteColor = favoriteColor;
+        this.firstSchool = firstSchool;
+        this.createdAt = new Date();
     }
     
     // Constructor with parameters
@@ -70,6 +98,69 @@ public class User {
     
     public void setCreatedAt(Date createdAt) {
         this.createdAt = createdAt;
+    }
+    
+    // Additional getters and setters
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    public String getDateOfBirth() {
+        return dateOfBirth;
+    }
+
+    public void setDateOfBirth(String dateOfBirth) {
+        this.dateOfBirth = dateOfBirth;
+    }
+    
+    // Overload to accept LocalDate
+    public void setDateOfBirth(java.time.LocalDate dateOfBirth) {
+        this.dateOfBirth = dateOfBirth != null ? dateOfBirth.toString() : null;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+
+    public String getInterests() {
+        return interests;
+    }
+
+    public void setInterests(String interests) {
+        this.interests = interests;
+    }
+
+    public String getBio() {
+        return bio;
+    }
+
+    public void setBio(String bio) {
+        this.bio = bio;
+    }
+
+
+    public String getFavoriteColor() {
+        return favoriteColor;
+    }
+
+    public void setFavoriteColor(String favoriteColor) {
+        this.favoriteColor = favoriteColor;
+    }
+
+    public String getFirstSchool() {
+        return firstSchool;
+    }
+
+    public void setFirstSchool(String firstSchool) {
+        this.firstSchool = firstSchool;
     }
     
     @Override

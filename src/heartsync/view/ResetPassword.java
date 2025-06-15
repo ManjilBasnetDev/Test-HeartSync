@@ -247,8 +247,8 @@ public class ResetPassword extends JFrame {
                     "Success",
                     JOptionPane.INFORMATION_MESSAGE);
                 dispose();
-                LoginView loginView = new LoginView();
-                new LoginController(loginView).showLoginView();
+                // Use the static method to ensure consistent login view initialization
+                LoginController.createAndShowLoginView();
             } else {
                 JOptionPane.showMessageDialog(this,
                     "Failed to reset password. Please try again.",

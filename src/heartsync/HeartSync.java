@@ -27,9 +27,9 @@ public class HeartSync {
             // Set system look and feel
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
             
-            // Launch the login screen using the LoginController for consistent initialization
+            // Launch the HomePage first
             SwingUtilities.invokeLater(() -> {
-                LoginController.createAndShowLoginView();
+                new heartsync.view.HomePage().setVisible(true);
             });
         } catch (Exception e) {
             System.err.println("Error starting application: " + e.getMessage());

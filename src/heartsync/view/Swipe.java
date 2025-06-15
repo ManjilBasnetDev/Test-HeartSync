@@ -4,6 +4,7 @@
  */
 package heartsync.view;
 
+import heartsync.model.User;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.RoundRectangle2D;
@@ -38,6 +39,16 @@ public class Swipe extends JFrame {
     private final RoundedButton logoutButton;
     private final ArrayList<ProfileData> profiles;
     private int currentIndex;
+    private User currentUser; // Add field to store the current user
+    
+    // Method to set the current user after login
+    public void setUser(User user) {
+        this.currentUser = user;
+        // You can update the UI here based on the user if needed
+        if (user != null) {
+            setTitle("HeartSync - Welcome, " + user.getUsername() + "!");
+        }
+    }
     
     private static class ProfileData {
         String imagePath;
@@ -145,6 +156,8 @@ public class Swipe extends JFrame {
             
             if (confirm == JOptionPane.YES_OPTION) {
                 dispose();
+                // Clear the current user
+                currentUser = null;
                 // Use the static method to ensure consistent login view initialization
                 heartsync.controller.LoginController.createAndShowLoginView();
             }

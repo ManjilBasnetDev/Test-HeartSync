@@ -2,6 +2,7 @@ package heartsync.view;
 
 import heartsync.model.User;
 import heartsync.dao.UserRegisterDAO;
+import heartsync.dao.UserDAOForgot;
 import heartsync.model.UserProfile;
 import heartsync.controller.UserProfileController;
 import heartsync.view.ProfileSetupView;
@@ -605,7 +606,19 @@ public class Register extends JFrame {
                     user.setDateOfBirth(dobDialog.getDateOfBirth());
                 }
 
-                // Attempt to create the user
+                // Show security questions dialog for all users
+                SecurityQuestionsDialog securityDialog = new SecurityQuestionsDialog(this);
+                securityDialog.setVisible(true);
+                
+                if (!securityDialog.isConfirmed()) {
+                    return; // User cancelled the security questions dialog
+                }
+                
+                // Set security questions in the user object
+                user.setFavoriteColor(securityDialog.getFavoriteColor());
+                user.setFirstSchool(securityDialog.getFirstSchool());
+                
+                // Attempt to create the user with security questions
                 UserRegisterDAO dao = new UserRegisterDAO();
                 if (dao.createUser(user)) {
                     // Show success message
@@ -616,7 +629,7 @@ public class Register extends JFrame {
                     
                     // Proceed based on user type
                     if (role.equals("USER")) {
-                        // For regular users, open profile setup
+                        // Open profile setup for regular users
                         UserProfile model = new UserProfile();
                         UserProfileController controller = new UserProfileController(model, username);
                         ProfileSetupView view = new ProfileSetupView(controller);

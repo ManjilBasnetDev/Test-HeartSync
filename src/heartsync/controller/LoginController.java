@@ -198,39 +198,9 @@ public class LoginController {
     }
     
     private void handleForgotPassword() {
-        // Handle forgot password - show dialog or open new window
-        String username = JOptionPane.showInputDialog(
-            view,
-            "Enter your username to reset password:",
-            "Forgot Password",
-            JOptionPane.QUESTION_MESSAGE
-        );
-        
-        if (username != null && !username.trim().isEmpty()) {
-            if (userDAO != null) {
-                // Check if username exists
-                if (userDAO.usernameExists(username.trim())) {
-                    // In a real app, you'd send an email or SMS
-                    view.showMessage(
-                        "Password reset instructions have been sent to your email.",
-                        "Password Reset",
-                        JOptionPane.INFORMATION_MESSAGE
-                    );
-                } else {
-                    view.showMessage(
-                        "Username not found. Please check and try again.",
-                        "User Not Found",
-                        JOptionPane.ERROR_MESSAGE
-                    );
-                }
-            } else {
-                view.showMessage(
-                    "Database connection not available.",
-                    "Database Error",
-                    JOptionPane.ERROR_MESSAGE
-                );
-            }
-        }
+        // Dispose current login view and open ForgotPassword window
+        view.dispose();
+        new heartsync.view.ForgotPassword().setVisible(true);
     }
     
     // Method to start the login view

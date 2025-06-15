@@ -4,6 +4,8 @@
  */
 package heartsync.view;
 
+import heartsync.view.ForgotPassword;
+
 /**
  *
  * @author manjil-basnet
@@ -37,8 +39,10 @@ public class LoginView extends javax.swing.JFrame {
         // --- Make Forgot Password Clickable ---
         jLabel5.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         jLabel5.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
-                showMessage("Forgot Password clicked! (Implement recovery flow here)", javax.swing.JOptionPane.INFORMATION_MESSAGE);
+                new ForgotPassword().setVisible(true);
+                dispose();
             }
         });
         // Login button's action is handled by controller; no listener here.

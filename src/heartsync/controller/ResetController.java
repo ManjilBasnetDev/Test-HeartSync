@@ -4,7 +4,7 @@
  */
 package heartsync.controller;
 
-import heartsync.dao.ResetPasswordDAO;
+import heartsync.dao.ResetDAO;
 import heartsync.model.User;
 import heartsync.view.ResetPassword;
 
@@ -14,10 +14,10 @@ import heartsync.view.ResetPassword;
  */
 public class ResetController {
     private int userId;
-    private ResetPasswordDAO resetPasswordDAO;
+    private ResetDAO resetPasswordDAO;
 
     public ResetController() {
-        resetPasswordDAO = new ResetPasswordDAO();
+        resetPasswordDAO = new ResetDAO();
     }
 
     public void setUserId(int userId) {

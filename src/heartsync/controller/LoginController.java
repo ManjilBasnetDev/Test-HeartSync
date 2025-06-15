@@ -3,12 +3,13 @@ package heartsync.controller;
 
 import heartsync.view.LoginView;
 import heartsync.dao.UserDAO;
-import heartsync.model.User;  // Add this import
-import heartsync.model.LoginModel;  // Add this import
+import heartsync.model.User;
+import heartsync.model.LoginModel;
 import heartsync.view.Swipe;
+import heartsync.view.HomePage;
 
 import javax.swing.*;
-import java.awt.Color;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
@@ -19,6 +20,14 @@ import java.awt.event.MouseEvent;
 public class LoginController {
     private static LoginView currentLoginView = null;
     private LoginView view;
+    
+    /**
+     * Gets the current login view instance if it exists
+     * @return The current LoginView instance, or null if none exists
+     */
+    public static LoginView getCurrentLoginView() {
+        return currentLoginView != null && currentLoginView.isDisplayable() ? currentLoginView : null;
+    }
     private UserDAO userDAO;
     private LoginModel loginModel;
     
@@ -98,6 +107,8 @@ public class LoginController {
         });
     }
     
+    private static Swipe currentSwipeView = null;
+    
     private void handleLogin() {
         String username = view.getUsername();
         String password = view.getPassword();
@@ -121,9 +132,9 @@ public class LoginController {
         }
         
         // Show loading cursor
-        view.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.WAIT_CURSOR));
+        view.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
         
-        // Perform authentication in background thread
+        // Use SwingWorker for database operations to prevent UI freezing
         SwingWorker<User, Void> worker = new SwingWorker<User, Void>() {
             @Override
             protected User doInBackground() throws Exception {
@@ -135,7 +146,7 @@ public class LoginController {
             @Override
             protected void done() {
                 // Reset cursor
-                view.setCursor(java.awt.Cursor.getDefaultCursor());
+                view.setCursor(Cursor.getDefaultCursor());
                 
                 try {
                     User authenticatedUser = get();
@@ -148,17 +159,20 @@ public class LoginController {
                             JOptionPane.INFORMATION_MESSAGE
                         );
                         
-                        // Store user session
-                        // In a real app, you might want to store this in a session manager
-                        
-                        // Close login window and open main application window
+                        // Close login window
                         view.dispose();
                         
-                        // Open main application window in the Event Dispatch Thread
+                        // Show existing Swipe view or create a new one
                         SwingUtilities.invokeLater(() -> {
-                            Swipe swipeView = new Swipe();
-                            // You might want to pass the authenticated user to the Swipe view
-                            swipeView.setVisible(true);
+                            if (currentSwipeView == null || !currentSwipeView.isDisplayable()) {
+                                currentSwipeView = new Swipe();
+                                currentSwipeView.setUser(authenticatedUser);
+                                currentSwipeView.setVisible(true);
+                            } else {
+                                currentSwipeView.setExtendedState(JFrame.NORMAL);
+                                currentSwipeView.toFront();
+                                currentSwipeView.requestFocus();
+                            }
                         });
                         
                     } else {
@@ -184,19 +198,28 @@ public class LoginController {
         worker.execute();
     }
     
+    private static HomePage homePageInstance = null;
+    
     private void handleBack() {
         // Close the login view
         view.dispose();
-        // Open the HomePage in the Event Dispatch Thread
+        // Show existing HomePage or create a new one if it doesn't exist
         SwingUtilities.invokeLater(() -> {
-            new heartsync.view.HomePage().setVisible(true);
+            if (homePageInstance == null || !homePageInstance.isDisplayable()) {
+                homePageInstance = new heartsync.view.HomePage();
+                homePageInstance.setVisible(true);
+            } else {
+                homePageInstance.setExtendedState(JFrame.NORMAL);
+                homePageInstance.toFront();
+                homePageInstance.requestFocus();
+            }
         });
     }
     
     private void handleForgotPassword() {
-        // Dispose current login view and open ForgotPassword window
+        // Dispose current login view and open ForgotPassword window using singleton
         view.dispose();
-        new heartsync.view.ForgotPassword().setVisible(true);
+        heartsync.view.ForgotPassword.showForgotPassword();
     }
     
     /**
@@ -207,21 +230,34 @@ public class LoginController {
     public static void createAndShowLoginView() {
         // Ensure UI updates happen on the Event Dispatch Thread
         SwingUtilities.invokeLater(() -> {
-            // If a login view already exists, bring it to front and return
-            if (currentLoginView != null && currentLoginView.isDisplayable()) {
-                currentLoginView.toFront();
-                currentLoginView.requestFocus();
-                return;
+            // If a login view already exists and is visible, bring it to front and return
+            if (currentLoginView != null) {
+                if (currentLoginView.isDisplayable()) {
+                    currentLoginView.setExtendedState(JFrame.NORMAL);
+                    currentLoginView.toFront();
+                    currentLoginView.requestFocus();
+                    return;
+                } else {
+                    // Clean up any disposed but not null reference
+                    currentLoginView = null;
+                }
             }
             
-            // Create new login view
+            // Create new login view and controller
             currentLoginView = new LoginView();
-            LoginController controller = new LoginController(currentLoginView);
+            new LoginController(currentLoginView);
             
-            currentLoginView.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+            // Add window listener to clean up reference when closed
             currentLoginView.addWindowListener(new java.awt.event.WindowAdapter() {
                 @Override
                 public void windowClosed(java.awt.event.WindowEvent e) {
+                    // Clean up the reference when window is closed
+                    currentLoginView = null;
+                }
+                
+                @Override
+                public void windowClosing(java.awt.event.WindowEvent e) {
+                    // Ensure cleanup happens even if window is force-closed
                     currentLoginView = null;
                 }
             });

@@ -38,12 +38,34 @@ public class LoginView extends javax.swing.JFrame {
             }
         });
         // --- Make Forgot Password Clickable ---
-        jLabel5.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         jLabel5.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
-                new ForgotPassword().setVisible(true);
-                dispose();
+                // Store a reference to this login view
+                LoginView currentLoginView = LoginView.this;
+                
+                // Hide the login window
+                setVisible(false);
+                
+                // Show the forgot password window using the singleton pattern
+                ForgotPassword.showForgotPassword();
+                
+                // Add a window listener to the application's window to handle coming back to login
+                java.awt.Window[] windows = java.awt.Window.getWindows();
+                for (java.awt.Window window : windows) {
+                    if (window.isShowing() && window instanceof ForgotPassword) {
+                        window.addWindowListener(new java.awt.event.WindowAdapter() {
+                            @Override
+                            public void windowClosed(java.awt.event.WindowEvent e) {
+                                // Show the login window again when forgot password is closed
+                                currentLoginView.setVisible(true);
+                                currentLoginView.toFront();
+                                window.removeWindowListener(this);
+                            }
+                        });
+                        break;
+                    }
+                }
             }
         });
         // Login button's action is handled by controller; no listener here.
@@ -165,7 +187,12 @@ jToggleButton1.setPreferredSize(new java.awt.Dimension(70, 32));
         jButton2.setText("Login");
 
         jLabel5.setForeground(new java.awt.Color(102, 153, 255));
-        jLabel5.setText("Forgot Password?");
+        jLabel5.setText("<html><u>Forgot Password?</u></html>");
+        jLabel5.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        // Remove any existing mouse listeners to prevent duplicates
+        for (java.awt.event.MouseListener ml : jLabel5.getMouseListeners()) {
+            jLabel5.removeMouseListener(ml);
+        }
 
         jLabel6.setFont(new java.awt.Font("Liberation Sans", 0, 18)); // NOI18N
         jLabel6.setForeground(new java.awt.Color(102, 102, 102));

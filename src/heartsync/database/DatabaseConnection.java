@@ -155,6 +155,19 @@ public class DatabaseConnection {
                         // Column already exists
                     }
                     
+                    // Add security question columns if they don't exist
+                    try {
+                        stmt.executeUpdate("ALTER TABLE users ADD COLUMN favorite_color VARCHAR(50)");
+                    } catch (SQLException ignore) {
+                        // Column already exists
+                    }
+                    
+                    try {
+                        stmt.executeUpdate("ALTER TABLE users ADD COLUMN first_school VARCHAR(100)");
+                    } catch (SQLException ignore) {
+                        // Column already exists
+                    }
+                    
                     // Create contacts table for contact form submissions
                     String createContactsTableSQL = """
                         CREATE TABLE contacts (

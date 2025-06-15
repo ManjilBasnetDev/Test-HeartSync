@@ -24,13 +24,23 @@ public class UserRegisterDAO {
             throw new SQLException("Username already exists");
         }
 
-        // Only include required fields in the initial insert
-        String sql = "INSERT INTO users (username, password, user_type) VALUES (?, ?, ?)";
+        // Include security questions in the initial insert if provided
+        boolean hasSecurityQuestions = user.getFavoriteColor() != null && user.getFirstSchool() != null;
+        String sql = "INSERT INTO users (username, password, user_type" +
+                    (hasSecurityQuestions ? ", favorite_color, first_school" : "") + 
+                    ") VALUES (?, ?, ?" + (hasSecurityQuestions ? ", ?, ?" : "") + ")";
         
         try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            statement.setString(1, user.getUsername());
-            statement.setString(2, DatabaseConnection.hashPassword(user.getPassword()));
-            statement.setString(3, user.getUserType() != null ? user.getUserType() : "USER");
+            int paramIndex = 1;
+            statement.setString(paramIndex++, user.getUsername());
+            statement.setString(paramIndex++, DatabaseConnection.hashPassword(user.getPassword()));
+            statement.setString(paramIndex++, user.getUserType() != null ? user.getUserType() : "USER");
+            
+            // Set security questions if provided
+            if (hasSecurityQuestions) {
+                statement.setString(paramIndex++, user.getFavoriteColor());
+                statement.setString(paramIndex, user.getFirstSchool());
+            }
             
             int rowsInserted = statement.executeUpdate();
             
@@ -40,7 +50,7 @@ public class UserRegisterDAO {
                     if (generatedKeys.next()) {
                         user.setId(generatedKeys.getInt(1));
                         
-                        // Update additional user info if provided
+                        // Update additional user info if provided (excluding security questions)
                         if (user.getEmail() != null || user.getPhoneNumber() != null || 
                             user.getDateOfBirth() != null) {
                             updateUserAdditionalInfo(user);
@@ -74,6 +84,19 @@ public class UserRegisterDAO {
             needsComma = true;
         }
         
+        // Add security questions if provided
+        if (user.getFavoriteColor() != null) {
+            if (needsComma) sql.append(", ");
+            sql.append("favorite_color = ?");
+            needsComma = true;
+        }
+        
+        if (user.getFirstSchool() != null) {
+            if (needsComma) sql.append(", ");
+            sql.append("first_school = ?");
+            needsComma = true;
+        }
+        
         sql.append(" WHERE id = ?");
         
         try (PreparedStatement stmt = connection.prepareStatement(sql.toString())) {
@@ -89,6 +112,15 @@ public class UserRegisterDAO {
             
             if (user.getDateOfBirth() != null) {
                 stmt.setString(paramIndex++, user.getDateOfBirth());
+            }
+            
+            // Set security questions if provided
+            if (user.getFavoriteColor() != null) {
+                stmt.setString(paramIndex++, user.getFavoriteColor());
+            }
+            
+            if (user.getFirstSchool() != null) {
+                stmt.setString(paramIndex++, user.getFirstSchool());
             }
             
             stmt.setInt(paramIndex, user.getId());

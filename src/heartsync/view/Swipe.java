@@ -392,15 +392,19 @@ public class Swipe extends JFrame {
         // Hide current window
         this.setVisible(false);
         
-        // TODO: Will be replaced with actual ChatSystem instantiation
-        // Example: ChatSystem chatSystem = new ChatSystem();
-        JOptionPane.showMessageDialog(this,
-            "Opening chat system...\nPlease provide the ChatSystem UI/code to complete the implementation",
-            "Chat System",
-            JOptionPane.INFORMATION_MESSAGE);
+        // Create and show chat system
+        SwingUtilities.invokeLater(() -> {
+            ChatSystem chatSystem = new ChatSystem();
+            chatSystem.setVisible(true);
             
-        // Show current window again (temporary, will be removed when actual chat system is implemented)
-        this.setVisible(true);
+            // Dispose this window when chat system is closed
+            chatSystem.addWindowListener(new WindowAdapter() {
+                @Override
+                public void windowClosed(WindowEvent e) {
+                    Swipe.this.dispose();
+                }
+            });
+        });
     }
     
     private void openMyProfile() {

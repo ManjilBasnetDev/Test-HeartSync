@@ -163,13 +163,8 @@ public class ChatSystem extends JFrame {
         menu.setPreferredSize(new Dimension(250, getHeight()));
         menu.setLayout(new BoxLayout(menu, BoxLayout.Y_AXIS));
         
-        // Menu title
-        JLabel menuTitle = new JLabel("Matched Users");
-        menuTitle.setFont(new Font("Segoe UI", Font.BOLD, 20));
-        menuTitle.setForeground(Color.WHITE);
-        menuTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
-        menuTitle.setBorder(new EmptyBorder(20, 0, 20, 0));
-        menu.add(menuTitle);
+        // Add some padding at the top
+        menu.add(Box.createRigidArea(new Dimension(0, 20)));
         
         // Menu items
         String[] menuItems = {"❤️ LIKED USERS", "🔖 SAVED USERS", "💝 MY LIKERS"};
@@ -184,11 +179,11 @@ public class ChatSystem extends JFrame {
             menuButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
             menuButton.setAlignmentX(Component.CENTER_ALIGNMENT);
             
-            menuButton.addMouseListener(new java.awt.event.MouseAdapter() {
-                public void mouseEntered(java.awt.event.MouseEvent evt) {
+            menuButton.addMouseListener(new MouseAdapter() {
+                public void mouseEntered(MouseEvent evt) {
                     menuButton.setBackground(MENU_BACKGROUND.darker());
                 }
-                public void mouseExited(java.awt.event.MouseEvent evt) {
+                public void mouseExited(MouseEvent evt) {
                     menuButton.setBackground(MENU_BACKGROUND);
                 }
             });

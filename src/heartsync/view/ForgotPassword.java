@@ -99,6 +99,8 @@ public class ForgotPassword extends javax.swing.JFrame {
     }
 
     private void validateFields() {
+        // Enhanced validation that checks actual database values
+
         if (validationLabel == null) return;
 
         String username = usernameTextField.getText().trim();
@@ -107,36 +109,71 @@ public class ForgotPassword extends javax.swing.JFrame {
 
         StringBuilder status = new StringBuilder("<html>");
         boolean allValid = true;
+        UserForgot user = null;
 
-        // Username validation
+        // Try to fetch the user once so we do not make multiple DB calls in the same pass
+        if (!username.isEmpty() && username.length() >= 3) {
+            try {
+                UserDAOForgot dao = new UserDAOForgot();
+                user = dao.findByUsername(username);
+            } catch (Exception ex) {
+                // Log and ignore; we will present a generic validation failure.
+                System.err.println("DB error during validation: " + ex.getMessage());
+            }
+        }
+
+        // Username validation – must exist in DB
         if (username.isEmpty()) {
             status.append("<font color='#666666'>• Username required</font><br>");
             allValid = false;
         } else if (username.length() < 3) {
             status.append("<font color='#666666'>• Username too short</font><br>");
             allValid = false;
+        } else if (user == null) {
+            status.append("<font color='#FF0000'>• Username not found</font><br>");
+            allValid = false;
         } else {
             status.append("<font color='#43A047'>• Username valid</font><br>");
         }
 
         // Security questions validation
+        // Favorite color validation – only meaningful if user exists
         if (favoriteColor.isEmpty()) {
             status.append("<font color='#666666'>• Favorite color required</font><br>");
             allValid = false;
+        } else if (user == null) {
+            status.append("<font color='#666666'>• Favorite color (awaiting valid username)</font><br>");
+            allValid = false;
+        } else if (!favoriteColor.equalsIgnoreCase(user.getFavoriteColor().trim())) {
+            status.append("<font color='#FF0000'>• Favorite color incorrect</font><br>");
+            allValid = false;
         } else {
-            status.append("<font color='#43A047'>• Favorite color provided</font><br>");
+            status.append("<font color='#43A047'>• Favorite color correct</font><br>");
         }
 
+        // First school validation – only meaningful if user exists
         if (firstSchool.isEmpty()) {
             status.append("<font color='#666666'>• First school required</font><br>");
             allValid = false;
+        } else if (user == null) {
+            status.append("<font color='#666666'>• First school (awaiting valid username)</font><br>");
+            allValid = false;
+        } else if (!firstSchool.equalsIgnoreCase(user.getFirstSchool().trim())) {
+            status.append("<font color='#FF0000'>• First school incorrect</font><br>");
+            allValid = false;
         } else {
-            status.append("<font color='#43A047'>• First school provided</font><br>");
+            status.append("<font color='#43A047'>• First school correct</font><br>");
         }
 
         status.append("</html>");
         validationLabel.setText(status.toString());
+        // Enable reset button only when ALL validations including DB checks have passed and user exists
         resetButton.setEnabled(allValid);
+
+        // Auto-focus reset button if it just became enabled (optional UX tweak)
+        if (allValid) {
+            resetButton.requestFocusInWindow();
+        }
     }
 
     @SuppressWarnings("unchecked")

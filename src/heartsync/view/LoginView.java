@@ -4,6 +4,7 @@
  */
 package heartsync.view;
 
+import heartsync.controller.LoginController;
 import heartsync.view.ForgotPassword;
 
 /**
@@ -284,8 +285,9 @@ jToggleButton1.setPreferredSize(new java.awt.Dimension(70, 32));
         }
         //</editor-fold>
 
-        /* Create and display the form */
-        java.awt.EventQueue.invokeLater(() -> new LoginView().setVisible(true));
+
+        /* Create and display the login view using the controller */
+        java.awt.EventQueue.invokeLater(() -> LoginController.createAndShowLoginView());
     }
 
     

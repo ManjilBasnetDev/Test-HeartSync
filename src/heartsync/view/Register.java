@@ -572,82 +572,94 @@ public class Register extends JFrame {
                 return;
             }
 
-            String username = usernameField.getText();
+            String username = usernameField.getText().trim();
             String password = actualPassword;
             String role = userRadio.isSelected() ? "USER" : "ADMIN";
 
-            if (role.equals("USER")) {
-                // Show DOB verification dialog for users
-                DOBVerificationDialog dobDialog = new DOBVerificationDialog(this);
-                dobDialog.setVisible(true);
-                if (dobDialog.isConfirmed()) {
+            // Create user object with basic info
+            User user = new User();
+            user.setUsername(username);
+            user.setPassword(password);
+            user.setUserType(role);
+
+            try {
+                // For users, verify age first
+                if (role.equals("USER")) {
+                    DOBVerificationDialog dobDialog = new DOBVerificationDialog(this);
+                    dobDialog.setVisible(true);
+                    
+                    if (!dobDialog.isConfirmed()) {
+                        return; // User cancelled the DOB dialog
+                    }
+                    
                     int age = dobDialog.getAge();
-                    if (age >= 18) {
-                        // Only now create user and save
-                        User user = new User();
-                        user.setUsername(username);
-                        user.setPassword(password);
-                        user.setUserType(role);
-                        try {
-                            UserRegisterDAO dao = new UserRegisterDAO();
-                            if (dao.createUser(user)) {
-                                JOptionPane.showMessageDialog(this,
-                                    "Account created successfully!",
-                                    "Success",
-                                    JOptionPane.INFORMATION_MESSAGE);
-                                UserProfile model = new UserProfile();
-                                UserProfileController controller = new UserProfileController(model, username);
-                                ProfileSetupView view = new ProfileSetupView(controller);
-                                view.setLocationRelativeTo(null);
-                                dispose();
-                                view.setVisible(true);
-                            } else {
-                                JOptionPane.showMessageDialog(this,
-                                    "Error creating account. Please try again.",
-                                    "Error",
-                                    JOptionPane.ERROR_MESSAGE);
-                            }
-                        } catch (SQLException ex) {
-                            JOptionPane.showMessageDialog(this,
-                                "Error creating account: " + ex.getMessage(),
-                                "Error",
-                                JOptionPane.ERROR_MESSAGE);
-                        }
-                    } else {
+                    if (age < 18) {
                         JOptionPane.showMessageDialog(this,
                             "You must be at least 18 years old to create an account.",
                             "Age Restriction",
                             JOptionPane.ERROR_MESSAGE);
+                        return;
                     }
+                    
+                    // Set DOB if available
+                    user.setDateOfBirth(dobDialog.getDateOfBirth());
                 }
-            } else {
-                // Create admin user and save immediately
-                User user = new User();
-                user.setUsername(username);
-                user.setPassword(password);
-                user.setUserType(role);
-                try {
-                    UserRegisterDAO dao = new UserRegisterDAO();
-                    if (dao.createUser(user)) {
-                        JOptionPane.showMessageDialog(this,
-                            "Account created successfully!",
-                            "Success",
-                            JOptionPane.INFORMATION_MESSAGE);
-                        // For admin users, just close the registration window
-                        dispose();
-                        // You might want to show admin dashboard here in the future
-                    } else {
-                        JOptionPane.showMessageDialog(this,
-                            "Error creating account. Please try again.",
-                            "Error",
-                            JOptionPane.ERROR_MESSAGE);
-                    }
-                } catch (SQLException ex) {
+
+                // Attempt to create the user
+                UserRegisterDAO dao = new UserRegisterDAO();
+                if (dao.createUser(user)) {
+                    // Show success message
                     JOptionPane.showMessageDialog(this,
-                        "Error creating account: " + ex.getMessage(),
-                        "Error",
-                        JOptionPane.ERROR_MESSAGE);
+                        "Account created successfully!",
+                        "Success",
+                        JOptionPane.INFORMATION_MESSAGE);
+                    
+                    // Proceed based on user type
+                    if (role.equals("USER")) {
+                        // For regular users, open profile setup
+                        UserProfile model = new UserProfile();
+                        UserProfileController controller = new UserProfileController(model, username);
+                        ProfileSetupView view = new ProfileSetupView(controller);
+                        view.setLocationRelativeTo(null);
+                        dispose();
+                        view.setVisible(true);
+                    } else {
+                        // For admin users, just close the window
+                        dispose();
+                        // TODO: Open admin dashboard if needed
+                    }
+                } else {
+                    throw new SQLException("Failed to create user account");
                 }
+            } catch (SQLException ex) {
+                // Handle specific SQL errors
+                String errorMessage = "Error creating account. ";
+                
+                if (ex.getMessage().contains("Duplicate entry") && ex.getMessage().contains("username")) {
+                    errorMessage = "Username already exists. Please choose a different username.";
+                } else if (ex.getMessage().contains("cannot be null")) {
+                    errorMessage = "Missing required information: " + ex.getMessage();
+                } else {
+                    errorMessage += ex.getMessage();
+                }
+                
+                JOptionPane.showMessageDialog(this,
+                    errorMessage,
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+                
+                // Log the full error for debugging
+                System.err.println("Error creating user account: " + ex.getMessage());
+                ex.printStackTrace();
+            } catch (Exception ex) {
+                // Handle any other exceptions
+                JOptionPane.showMessageDialog(this,
+                    "An unexpected error occurred: " + ex.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+                
+                System.err.println("Unexpected error during registration: " + ex.getMessage());
+                ex.printStackTrace();
             }
         });
 

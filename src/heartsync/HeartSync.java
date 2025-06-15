@@ -4,7 +4,7 @@
  */
 package heartsync;
 
-import heartsync.view.HomePage;
+import heartsync.controller.LoginController;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
@@ -27,11 +27,9 @@ public class HeartSync {
             // Set system look and feel
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
             
-            // Launch the application on the Event Dispatch Thread
+            // Launch the login screen using the LoginController for consistent initialization
             SwingUtilities.invokeLater(() -> {
-                HomePage mainWindow = new HomePage();
-                mainWindow.setLocationRelativeTo(null); // Center on screen
-                mainWindow.setVisible(true);
+                LoginController.createAndShowLoginView();
             });
         } catch (Exception e) {
             System.err.println("Error starting application: " + e.getMessage());

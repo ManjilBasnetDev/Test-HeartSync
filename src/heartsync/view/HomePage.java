@@ -195,8 +195,8 @@ public class HomePage extends JFrame {
         });
         
         loginButton.addActionListener(e -> {
-            LoginView loginView = new LoginView();
-new LoginController(loginView).showLoginView();
+            // Use the static method to ensure consistent login view initialization
+            LoginController.createAndShowLoginView();
             dispose(); // Close the home page when login page opens
         });
         
@@ -329,10 +329,9 @@ new LoginController(loginView).showLoginView();
         loginButton.setBounds(100, 500, 180, 55);
         createAccountButton.setBounds(300, 500, 230, 55);
         
-        // Add action listeners
         loginButton.addActionListener(e -> {
-            LoginView loginView = new LoginView();
-new LoginController(loginView).showLoginView();
+            // Use the static method to ensure consistent login view initialization
+            LoginController.createAndShowLoginView();
             dispose(); // Close the home page when login page opens
         });
         

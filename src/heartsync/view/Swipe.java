@@ -35,6 +35,7 @@ public class Swipe extends JFrame {
     private final RoundedButton likeButton;
     private final RoundedButton rejectButton;
     private final RoundedButton closeButton;
+    private final RoundedButton logoutButton;
     private final ArrayList<ProfileData> profiles;
     private int currentIndex;
     
@@ -129,6 +130,27 @@ public class Swipe extends JFrame {
         mainPanel.setOpaque(false);
         
         // Add close button
+        // Logout button
+        logoutButton = new RoundedButton("Logout", new Color(108, 117, 125));
+        logoutButton.setBounds(500, 10, 100, 30);
+        logoutButton.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        logoutButton.addActionListener(e -> {
+            int confirm = JOptionPane.showConfirmDialog(
+                this,
+                "Are you sure you want to logout?",
+                "Confirm Logout",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE
+            );
+            
+            if (confirm == JOptionPane.YES_OPTION) {
+                dispose();
+                // Use the static method to ensure consistent login view initialization
+                heartsync.controller.LoginController.createAndShowLoginView();
+            }
+        });
+        mainPanel.add(logoutButton);
+        
         closeButton = new RoundedButton("X", CLOSE_BUTTON_COLOR) {
             private boolean isHovered = false;
 

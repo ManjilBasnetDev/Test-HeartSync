@@ -300,8 +300,8 @@ public class ForgotPassword extends javax.swing.JFrame {
         backButton.setPreferredSize(new Dimension(170, 45));
         backButton.addActionListener(e -> {
             dispose();
-            LoginView loginView = new LoginView();
-            new LoginController(loginView).showLoginView();
+            // Use the static method to ensure consistent login view initialization
+            LoginController.createAndShowLoginView();
         });
         buttonPanel.add(backButton);
 

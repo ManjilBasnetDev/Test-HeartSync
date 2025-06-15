@@ -28,8 +28,9 @@ import javax.swing.border.LineBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
-import heartsyncdatingapp.controller.ResetController;
-import heartsyncdatingapp.model.LoginFinal;
+import heartsync.controller.ResetController;
+import heartsync.view.LoginView;
+import heartsync.controller.LoginController;
 
 public class ResetPassword extends JFrame {
     private final ResetController resetController;
@@ -246,7 +247,8 @@ public class ResetPassword extends JFrame {
                     "Success",
                     JOptionPane.INFORMATION_MESSAGE);
                 dispose();
-                new LoginFinal().setVisible(true);
+                LoginView loginView = new LoginView();
+                new LoginController(loginView).showLoginView();
             } else {
                 JOptionPane.showMessageDialog(this,
                     "Failed to reset password. Please try again.",

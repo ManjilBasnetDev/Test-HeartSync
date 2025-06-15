@@ -389,12 +389,18 @@ public class Swipe extends JFrame {
     }
     
     private void openChatSystem() {
-        ProfileData profile = profiles.get(currentIndex);
-        // TODO: Replace this with actual chat system navigation
+        // Hide current window
+        this.setVisible(false);
+        
+        // TODO: Will be replaced with actual ChatSystem instantiation
+        // Example: ChatSystem chatSystem = new ChatSystem();
         JOptionPane.showMessageDialog(this,
-            "Opening chat with " + profile.name + "\nChat system coming soon!",
-            "Chat",
+            "Opening chat system...\nPlease provide the ChatSystem UI/code to complete the implementation",
+            "Chat System",
             JOptionPane.INFORMATION_MESSAGE);
+            
+        // Show current window again (temporary, will be removed when actual chat system is implemented)
+        this.setVisible(true);
     }
     
     private void openMyProfile() {

@@ -10,7 +10,11 @@
             <file>file:/home/manjil-basnet/HeartSyncDatingAppFinal/HeartSync/src/heartsync/view/AboutUsPage.java</file>
             <file>file:/home/manjil-basnet/HeartSyncDatingAppFinal/HeartSync/src/heartsync/model/Contact.java</file>
             <file>file:/home/manjil-basnet/HeartSyncDatingAppFinal/HeartSync/src/heartsync/dao/ContactDAO.java</file>
-            <file>file:/home/manjil-basnet/HeartSyncDatingAppFinal/HeartSync/src/heartsync/database/DatabaseConnection.java</file>
+            <file>file:/home/manjil-basnet/HeartSyncDatingAppFinal/HeartSync/src/heartsync/controller/NotificationController.java</file>
+            <file>file:/home/manjil-basnet/HeartSyncDatingAppFinal/HeartSync/src/heartsync/dao/ForgotDAO.java</file>
+            <file>file:/home/manjil-basnet/HeartSyncDatingAppFinal/HeartSync/src/heartsync/dao/ResetDAO.java</file>
+            <file>file:/home/manjil-basnet/HeartSyncDatingAppFinal/HeartSync/src/heartsync/dao/UserDAO.java</file>
+            <file>file:/home/manjil-basnet/HeartSyncDatingAppFinal/HeartSync/src/heartsync/view/ResetPassword.java</file>
         </group>
     </open-files>
 </project-private>

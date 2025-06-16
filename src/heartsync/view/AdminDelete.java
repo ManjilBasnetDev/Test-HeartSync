@@ -392,7 +392,7 @@ public class AdminDelete extends javax.swing.JFrame {
 
     private void styleDeletePanel() {
         // Style the main panel
-        jPanel1.setBackground(new Color(255, 228, 236)); // Lighter pink background
+        jPanel1.setBackground(new Color(255, 228, 236));
         jPanel1.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
         
         // Style the title
@@ -411,10 +411,13 @@ public class AdminDelete extends javax.swing.JFrame {
         jLabel3.setFont(new Font("Segoe UI", Font.BOLD, 16));
         jLabel2.setForeground(new Color(44, 44, 84));
         jLabel3.setForeground(new Color(44, 44, 84));
+        jLabel2.setText("Warning: Deleting your account will permanently");
+        jLabel3.setText("remove all your data and cannot be undone.");
         
         // Style the username label and field
         jLabel4.setFont(new Font("Segoe UI", Font.BOLD, 16));
         jLabel4.setForeground(new Color(44, 44, 84));
+        jLabel4.setText("Enter username to confirm");
         
         jTextField1.setFont(new Font("Segoe UI", Font.PLAIN, 16));
         jTextField1.setBorder(BorderFactory.createCompoundBorder(
@@ -433,10 +436,12 @@ public class AdminDelete extends javax.swing.JFrame {
         jButton1.setCursor(new Cursor(Cursor.HAND_CURSOR));
         jButton1.setBorder(BorderFactory.createEmptyBorder(12, 25, 12, 25));
         jButton1.setPreferredSize(new Dimension(300, 45));
+        jButton1.setText("Delete User Account");
         
         // Style the confirmation message
         jLabel5.setFont(new Font("Segoe UI", Font.ITALIC, 14));
         jLabel5.setForeground(new Color(44, 44, 84));
+        jLabel5.setText("We'll send a confirmation email to verify this action. Check your inbox.");
         
         // Add hover effect to the delete button
         jButton1.addMouseListener(new MouseAdapter() {
@@ -589,6 +594,9 @@ public class AdminDelete extends javax.swing.JFrame {
         deleteColumn.setCellRenderer(new DeleteButtonRenderer());
         deleteColumn.setCellEditor(new DeleteButtonEditor(new JCheckBox()));
 
+        // Add initial data
+        refreshReportedUsers();
+
         // Add table to scroll pane
         JScrollPane scrollPane = new JScrollPane(reportedTable);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
@@ -731,11 +739,13 @@ public class AdminDelete extends javax.swing.JFrame {
         // Clear existing data
         reportedTableModel.setRowCount(0);
         
-        // Add sample data (replace with actual data fetch logic)
-        reportedTableModel.addRow(new Object[]{"user123", "alice", "04/09/2024", "Spam", "Delete"});
-        reportedTableModel.addRow(new Object[]{"john_doe", "bob", "04/09/2024", "Harassment", "Delete"});
-        reportedTableModel.addRow(new Object[]{"test456", "charlie", "04/07/2024", "Inappropriate content", "Delete"});
-        reportedTableModel.addRow(new Object[]{"janedoe", "david", "04/06/2024", "Spam", "Delete"});
+        // Add sample data
+        reportedTableModel.addRow(new Object[]{"user123", "alice", "04/09/2024", "Spam", ""});
+        reportedTableModel.addRow(new Object[]{"john_doe", "bob", "04/09/2024", "Harassment", ""});
+        reportedTableModel.addRow(new Object[]{"test456", "charlie", "04/07/2024", "Inappropriate content", ""});
+        reportedTableModel.addRow(new Object[]{"janedoe", "david", "04/06/2024", "Spam", ""});
+        reportedTableModel.addRow(new Object[]{"mike_smith", "emma", "04/05/2024", "Fake profile", ""});
+        reportedTableModel.addRow(new Object[]{"sarah_jones", "frank", "04/04/2024", "Inappropriate messages", ""});
     }
 
     // Custom Delete Button Renderer

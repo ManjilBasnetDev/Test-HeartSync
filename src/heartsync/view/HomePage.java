@@ -4,6 +4,10 @@
  */
 package heartsync.view;
 
+import heartsync.navigation.WindowManager;
+
+import heartsync.navigation.WindowManager;
+
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.Rectangle2D;
@@ -40,6 +44,8 @@ public class HomePage extends JFrame {
      * Creates new form ProfileSetup
      */
     public HomePage() {
+        // Register this instance so WindowManager is aware of it
+        WindowManager.getWindow(HomePage.class, () -> this);
         setTitle("HeartSync - Find Love");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1200, 900);

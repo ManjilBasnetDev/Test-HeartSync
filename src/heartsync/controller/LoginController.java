@@ -1,25 +1,23 @@
 // LoginController.java - Controller for login functionality
 package heartsync.controller;
 
-import heartsync.view.LoginView;
-import heartsync.dao.UserDAO;
 import heartsync.model.User;
 import heartsync.model.LoginModel;
-import heartsync.view.Swipe;
-import heartsync.view.HomePage;
-
+import heartsync.dao.UserDAO;
+import heartsync.view.*;
+import heartsync.navigation.WindowManager;
+import java.awt.Cursor;
 import javax.swing.*;
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.FocusEvent;
-import java.awt.event.FocusListener;
-import java.awt.event.MouseAdapter;
+import java.awt.event.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.awt.event.MouseEvent;
+import java.awt.Color;
 
 public class LoginController {
     private static LoginView currentLoginView = null;
-    private LoginView view;
+    private final LoginView view;
+    private static final Logger logger = Logger.getLogger(LoginController.class.getName());
     
     /**
      * Gets the current login view instance if it exists
@@ -28,57 +26,39 @@ public class LoginController {
     public static LoginView getCurrentLoginView() {
         return currentLoginView != null && currentLoginView.isDisplayable() ? currentLoginView : null;
     }
-    private UserDAO userDAO;
-    private LoginModel loginModel;
+    private final UserDAO userDAO;
+    private final LoginModel loginModel;
     
     public LoginController(LoginView view) {
         this.view = view;
         this.loginModel = new LoginModel();
         
+        // Initialize UserDAO
+        UserDAO tempDAO = null;
+        try {
+            tempDAO = new UserDAO();
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error initializing UserDAO", e);
+            view.showMessage("Failed to initialize database connection. Please try again later.", 
+                           "Initialization Error", JOptionPane.ERROR_MESSAGE);
+        }
+        this.userDAO = tempDAO;
+        
         // Set this controller in the view
         view.setController(this);
-        
-        // Initialize UserDAO with proper error handling
-        try {
-            this.userDAO = new UserDAO();
-        } catch (Exception e) {
-            System.err.println("Failed to initialize UserDAO: " + e.getMessage());
-            e.printStackTrace();
-            // Show error to user
-            JOptionPane.showMessageDialog(view, 
-                "Database connection failed. Please check your database configuration.", 
-                "Database Error", 
-                JOptionPane.ERROR_MESSAGE);
-            return;
-        }
         
         initializeEventListeners();
     }
     
     private void initializeEventListeners() {
         // Login button listener
-        view.addLoginButtonListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                handleLogin();
-            }
-        });
+        view.addLoginButtonListener(e -> handleLogin());
         
         // Back button listener
-        view.addBackButtonListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                handleBack();
-            }
-        });
+        view.addBackButtonListener(e -> handleBack());
         
         // Show/Hide password button listener
-        view.addShowPasswordButtonListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                view.togglePasswordVisibility();
-            }
-        });
+        view.addShowPasswordButtonListener(e -> view.togglePasswordVisibility());
         
         // Forgot password link listener
         view.addForgotPasswordListener(new MouseAdapter() {
@@ -113,8 +93,8 @@ public class LoginController {
     private static Swipe currentSwipeView = null;
     
     private void handleLogin() {
-        String username = view.getUsername();
-        String password = view.getPassword();
+        String username = view.getUsername() != null ? view.getUsername().trim() : "";
+        String password = view.getPassword() != null ? view.getPassword().trim() : "";
         
         // Set values in model
         loginModel.setUsername(username);
@@ -130,53 +110,52 @@ public class LoginController {
         // Check if UserDAO is initialized
         if (userDAO == null) {
             view.showMessage("Database connection not available. Please restart the application.", 
-                "Database Error", JOptionPane.ERROR_MESSAGE);
+                          "Database Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
         
-        // Show loading cursor
+        // Disable login button and show loading state
+        view.setLoginButtonEnabled(false);
         view.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
         
-        // Use SwingWorker for database operations to prevent UI freezing
+        // Create a worker thread for authentication
         SwingWorker<User, Void> worker = new SwingWorker<User, Void>() {
+            private String username = view.getUsername();
+            private String password = view.getPassword();
+            
             @Override
             protected User doInBackground() throws Exception {
-                // Simulate network delay (remove in production)
-                Thread.sleep(500);
-                return userDAO.authenticateUser(username, password);
+                try {
+                    // Perform authentication in background
+                    // Ensure DAO gets trimmed credentials
+        return userDAO.authenticateUser(username.trim(), password);
+                } catch (Exception e) {
+                    throw new Exception("Authentication failed: " + e.getMessage());
+                }
             }
             
             @Override
             protected void done() {
-                // Reset cursor
+                // Re-enable login button and reset cursor
+                view.setLoginButtonEnabled(true);
                 view.setCursor(Cursor.getDefaultCursor());
                 
                 try {
                     User authenticatedUser = get();
                     
                     if (authenticatedUser != null) {
-                        // Successful login
+                        // Successful login - show welcome message
                         view.showMessage(
                             "Welcome back, " + authenticatedUser.getUsername() + "!",
                             "Login Successful",
                             JOptionPane.INFORMATION_MESSAGE
                         );
                         
-                        // Close login window
+                        // Close login window on successful login
                         view.dispose();
                         
-                        // Show existing Swipe view or create a new one
-                        SwingUtilities.invokeLater(() -> {
-                            if (currentSwipeView == null || !currentSwipeView.isDisplayable()) {
-                                currentSwipeView = new Swipe();
-                                currentSwipeView.setUser(authenticatedUser);
-                                currentSwipeView.setVisible(true);
-                            } else {
-                                currentSwipeView.setExtendedState(JFrame.NORMAL);
-                                currentSwipeView.toFront();
-                                currentSwipeView.requestFocus();
-                            }
-                        });
+                        // Open appropriate view based on user type
+                        openUserView(authenticatedUser);
                         
                     } else {
                         // Authentication failed
@@ -187,54 +166,64 @@ public class LoginController {
                         );
                         view.clearFields();
                     }
-                } catch (Exception e) {
+                } catch (java.util.concurrent.ExecutionException e) {
+                    // Handle execution exceptions
+                    Throwable cause = e.getCause();
                     view.showMessage(
-                        "An error occurred during login: " + e.getMessage(),
+                        "Login error: " + (cause != null ? cause.getMessage() : "Unknown error"),
                         "Login Error",
                         JOptionPane.ERROR_MESSAGE
                     );
-                    e.printStackTrace();
+                } catch (Exception e) {
+                    // Handle other exceptions
+                    view.showMessage(
+                        "An error occurred: " + e.getMessage(),
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE
+                    );
                 }
             }
         };
         
+        // Execute the worker
         worker.execute();
+    }
+    
+    /**
+     * Helper method to open the appropriate view based on user type
+     */
+    private void openUserView(User user) {
+        SwingUtilities.invokeLater(() -> {
+            try {
+                if ((user.getUserType() != null && user.getUserType().equalsIgnoreCase("admin")) || user.getUsername().equalsIgnoreCase("admin")) {
+                    // Open admin dashboard
+                    // Use the static method to show admin dashboard
+                    WindowManager.show(AdminDashboard.class, AdminDashboard::new, view);
+                } else {
+                    // Open regular user view (Swipe)
+                    WindowManager.show(Swipe.class, Swipe::new, view);
+                }
+            } catch (Exception e) {
+                logger.log(Level.SEVERE, "Error opening user view", e);
+                view.showMessage("Error initializing application view: " + e.getMessage(),
+                               "Initialization Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
     }
     
     private static HomePage homePageInstance = null;
     
     public void handleBack() {
-        // Hide the login view instead of disposing it
-        view.setVisible(false);
-        
-        // Show existing HomePage or create a new one if it doesn't exist
-        SwingUtilities.invokeLater(() -> {
-            try {
-                if (homePageInstance == null || !homePageInstance.isDisplayable()) {
-                    homePageInstance = new heartsync.view.HomePage();
-                    homePageInstance.setLocationRelativeTo(null);
-                    homePageInstance.setVisible(true);
-                } else {
-                    homePageInstance.setExtendedState(JFrame.NORMAL);
-                    homePageInstance.toFront();
-                    homePageInstance.requestFocus();
-                }
-            } catch (Exception e) {
-                System.err.println("Error showing home page: " + e.getMessage());
-                e.printStackTrace();
-                // If there's an error, just close the login view
-                view.dispose();
-            }
-        });
+        WindowManager.show(heartsync.view.HomePage.class, heartsync.view.HomePage::new, view);
     }
     
     public void handleForgotPassword() {
         // Hide current login view instead of disposing it
         view.setVisible(false);
         
-        // Show forgot password dialog
+        // Show forgot password dialog and indicate we're coming from login
         try {
-            heartsync.view.ForgotPassword.showForgotPassword();
+            heartsync.view.ForgotPassword.showForgotPassword(true);
         } catch (Exception e) {
             System.err.println("Error showing forgot password: " + e.getMessage());
             e.printStackTrace();

@@ -80,6 +80,21 @@ public class ResetDAO {
         return null;
     }
     
+    // Update only the password (hashed)
+    public boolean updatePassword(int id, String newPlainPassword) {
+        String sql = "UPDATE users SET password = ? WHERE id = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, DatabaseConnection.hashPassword(newPlainPassword));
+            pstmt.setInt(2, id);
+            pstmt.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     public boolean updateUser(User user) {
         String sql = "UPDATE users SET username = ?, email = ?, phone_number = ?, date_of_birth = ?, " +
                    "gender = ?, interests = ?, bio = ?, favorite_color = ?, first_school = ? " +

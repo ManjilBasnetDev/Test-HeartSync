@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+
 import javax.swing.AbstractButton;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -49,6 +50,7 @@ public class MoreInfoView extends JFrame {
     private ButtonGroup relationButtonGroup;
     private JLabel selectedHobbiesLabel;
 
+    public MoreInfoView(UserProfileController controller) {
     public MoreInfoView(UserProfileController controller) {
         this.controller = controller;
         this.hobbyCategories = new HashMap<>();
@@ -459,6 +461,9 @@ public class MoreInfoView extends JFrame {
             DatabaseManagerProfile dbManager = DatabaseManagerProfile.getInstance();
             int userId = dbManager.saveUserProfile(
                 controller.getCurrentUsername(),
+            DatabaseManagerProfile dbManager = DatabaseManagerProfile.getInstance();
+            int userId = dbManager.saveUserProfile(
+                controller.getCurrentUsername(),
                 profile.getFullName(),
                 profile.getHeight(),
                 profile.getWeight(),
@@ -474,6 +479,10 @@ public class MoreInfoView extends JFrame {
                 selectedHobbies
             );
 
+            if (userId != -1) {
+                JOptionPane.showMessageDialog(this,
+                    "Profile created successfully!\nYour User ID is: " + userId,
+                    "Success",
             if (userId != -1) {
                 JOptionPane.showMessageDialog(this,
                     "Profile created successfully!\nYour User ID is: " + userId,
@@ -520,5 +529,7 @@ public class MoreInfoView extends JFrame {
             }
         });
     }
+}
+    
 }
     

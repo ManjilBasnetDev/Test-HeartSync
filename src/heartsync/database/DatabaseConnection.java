@@ -102,11 +102,17 @@ public class DatabaseConnection {
             return;
         }
         
+    private static void initializeDatabase() throws SQLException {
+        if (!driverLoaded) {
+            return;
+        }
+        
         try {
             // First try connecting to MySQL server
             try (Connection conn = DriverManager.getConnection(URL, USERNAME, PASSWORD)) {
                 try (Statement stmt = conn.createStatement()) {
                     // Create database if it doesn't exist
+                    
                     
                     stmt.executeUpdate("CREATE DATABASE IF NOT EXISTS " + DB_NAME);
                     
@@ -115,18 +121,26 @@ public class DatabaseConnection {
                     
                     // Create users table - main user authentication and basic info
                     String createUsersTableSQL = """
+                    // Create users table - main user authentication and basic info
+                    String createUsersTableSQL = """
                         CREATE TABLE IF NOT EXISTS users (
+                            id INT PRIMARY KEY AUTO_INCREMENT,
+                            username VARCHAR(50) NOT NULL UNIQUE,
                             id INT PRIMARY KEY AUTO_INCREMENT,
                             username VARCHAR(50) NOT NULL UNIQUE,
                             password VARCHAR(255) NOT NULL,
                             user_type ENUM('USER', 'ADMIN') NOT NULL DEFAULT 'USER',
+                            email VARCHAR(100) UNIQUE,
                             email VARCHAR(100) UNIQUE,
                             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
                         )
                     """;
                     stmt.executeUpdate(createUsersTableSQL);
+                    stmt.executeUpdate(createUsersTableSQL);
                     
+                    // Create user_profiles table - detailed user information
+                    String createUserProfilesTableSQL = """
                     // Create user_profiles table - detailed user information
                     String createUserProfilesTableSQL = """
                         CREATE TABLE IF NOT EXISTS user_profiles (
@@ -147,14 +161,35 @@ public class DatabaseConnection {
                             date_of_birth DATE,
                             interests TEXT,
                             bio TEXT,
+                            id INT PRIMARY KEY AUTO_INCREMENT,
+                            user_id INT NOT NULL UNIQUE,
+                            full_name VARCHAR(100) NOT NULL,
+                            height INT NOT NULL,
+                            weight INT NOT NULL,
+                            country VARCHAR(50) NOT NULL,
+                            address VARCHAR(200) NOT NULL,
+                            phone VARCHAR(20) NOT NULL,
+                            qualification VARCHAR(100) NOT NULL,
+                            gender VARCHAR(20) NOT NULL,
+                            preferences VARCHAR(20) NOT NULL,
+                            about_me TEXT NOT NULL,
+                            profile_pic_path VARCHAR(500),
+                            relation_choice VARCHAR(50) NOT NULL,
+                            date_of_birth DATE,
+                            interests TEXT,
+                            bio TEXT,
                             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
                             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
                         )
                     """;
                     stmt.executeUpdate(createUserProfilesTableSQL);
+                    stmt.executeUpdate(createUserProfilesTableSQL);
                     
                     // Create user_hobbies table
+                    String createHobbiesTableSQL = """
                     String createHobbiesTableSQL = """
                         CREATE TABLE IF NOT EXISTS user_hobbies (
                             id INT PRIMARY KEY AUTO_INCREMENT,
@@ -215,7 +250,25 @@ public class DatabaseConnection {
                         )
                     """;
                     stmt.executeUpdate(createMatchesTableSQL);
+                    stmt.executeUpdate(createMatchesTableSQL);
                     
+                    // Create messages table for user communication
+                    String createMessagesTableSQL = """
+                        CREATE TABLE IF NOT EXISTS messages (
+                            id INT PRIMARY KEY AUTO_INCREMENT,
+                            sender_id INT NOT NULL,
+                            receiver_id INT NOT NULL,
+                            message_text TEXT NOT NULL,
+                            message_type ENUM('TEXT', 'IMAGE', 'FILE') DEFAULT 'TEXT',
+                            attachment_path VARCHAR(255),
+                            is_read BOOLEAN DEFAULT FALSE,
+                            sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            read_at TIMESTAMP NULL,
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                            FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
+                            FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE
+                        )
                     // Create messages table for user communication
                     String createMessagesTableSQL = """
                         CREATE TABLE IF NOT EXISTS messages (
@@ -247,14 +300,31 @@ public class DatabaseConnection {
                     stmt.executeUpdate(insertAdminSQL);
                     
                     System.out.println("Database and tables initialized successfully");
+                    stmt.executeUpdate(createMessagesTableSQL);
+
+                    // Insert default admin user
+                    String insertAdminSQL = """
+                        INSERT INTO users (username, password, user_type, email)
+                        SELECT * FROM (SELECT 'admin', 'admin123', 'ADMIN', 'admin@heartsync.com') AS tmp
+                        WHERE NOT EXISTS (
+                            SELECT username FROM users WHERE username = 'admin'
+                        ) LIMIT 1
+                    """;
+                    stmt.executeUpdate(insertAdminSQL);
+                    
+                    System.out.println("Database and tables initialized successfully");
                 }
             }
         } catch (SQLException e) {
             System.err.println("Error initializing database: " + e.getMessage());
             throw e;
         }
+            System.err.println("Error initializing database: " + e.getMessage());
+            throw e;
+        }
     }
     
+    public static void closeConnection() {
     public static void closeConnection() {
         if (connection != null) {
             try {
@@ -262,21 +332,40 @@ public class DatabaseConnection {
                 connection = null;
             } catch (SQLException e) {
                 System.err.println("Error closing connection: " + e.getMessage());
+                System.err.println("Error closing connection: " + e.getMessage());
             }
         }
     }
     
     public static boolean testConnection() {
+    public static boolean testConnection() {
         try (Connection conn = getConnection()) {
+            return conn != null && conn.isValid(5); // 5 second timeout
             return conn != null && conn.isValid(5); // 5 second timeout
         } catch (SQLException e) {
             String error = "Database connection test failed: " + e.getMessage();
+            System.err.println(error);
+            e.printStackTrace();
             System.err.println(error);
             e.printStackTrace();
             return false;
         }
     }
     
+    public static void validateAge(String dateOfBirth) {
+        try {
+            LocalDate dob = LocalDate.parse(dateOfBirth, DATE_FORMATTER);
+            LocalDate now = LocalDate.now();
+            int age = Period.between(dob, now).getYears();
+            
+            if (age < MINIMUM_AGE) {
+                throw new IllegalArgumentException("You must be at least " + MINIMUM_AGE + " years old to register.");
+            }
+            if (dob.isAfter(now)) {
+                throw new IllegalArgumentException("Date of birth cannot be in the future.");
+            }
+        } catch (DateTimeParseException e) {
+            throw new IllegalArgumentException("Invalid date format. Please use YYYY-MM-DD format.");
     public static void validateAge(String dateOfBirth) {
         try {
             LocalDate dob = LocalDate.parse(dateOfBirth, DATE_FORMATTER);
@@ -301,5 +390,13 @@ public class DatabaseConnection {
     
     public static int calculateAge(LocalDate dateOfBirth) {
         return Period.between(dateOfBirth, LocalDate.now()).getYears();
+    public static LocalDate parseAndValidateDate(String dateOfBirth) throws IllegalArgumentException {
+        validateAge(dateOfBirth);
+        return LocalDate.parse(dateOfBirth, DATE_FORMATTER);
     }
+    
+    public static int calculateAge(LocalDate dateOfBirth) {
+        return Period.between(dateOfBirth, LocalDate.now()).getYears();
+    }
+}
 }

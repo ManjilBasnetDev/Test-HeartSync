@@ -1,12 +1,20 @@
 package heartsync.view;
 
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.ActionEvent;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
 import java.awt.event.ActionListener;
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.Calendar;
+
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JDialog;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
 
 public class DOBVerificationDialog extends JDialog {
     private JComboBox<Integer> yearBox;

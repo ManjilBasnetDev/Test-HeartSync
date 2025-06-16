@@ -35,6 +35,9 @@ public class LoginController {
         this.view = view;
         this.loginModel = new LoginModel();
         
+        // Set this controller in the view
+        view.setController(this);
+        
         // Initialize UserDAO with proper error handling
         try {
             this.userDAO = new UserDAO();
@@ -200,26 +203,44 @@ public class LoginController {
     
     private static HomePage homePageInstance = null;
     
-    private void handleBack() {
-        // Close the login view
-        view.dispose();
+    public void handleBack() {
+        // Hide the login view instead of disposing it
+        view.setVisible(false);
+        
         // Show existing HomePage or create a new one if it doesn't exist
         SwingUtilities.invokeLater(() -> {
-            if (homePageInstance == null || !homePageInstance.isDisplayable()) {
-                homePageInstance = new heartsync.view.HomePage();
-                homePageInstance.setVisible(true);
-            } else {
-                homePageInstance.setExtendedState(JFrame.NORMAL);
-                homePageInstance.toFront();
-                homePageInstance.requestFocus();
+            try {
+                if (homePageInstance == null || !homePageInstance.isDisplayable()) {
+                    homePageInstance = new heartsync.view.HomePage();
+                    homePageInstance.setLocationRelativeTo(null);
+                    homePageInstance.setVisible(true);
+                } else {
+                    homePageInstance.setExtendedState(JFrame.NORMAL);
+                    homePageInstance.toFront();
+                    homePageInstance.requestFocus();
+                }
+            } catch (Exception e) {
+                System.err.println("Error showing home page: " + e.getMessage());
+                e.printStackTrace();
+                // If there's an error, just close the login view
+                view.dispose();
             }
         });
     }
     
-    private void handleForgotPassword() {
-        // Dispose current login view and open ForgotPassword window using singleton
-        view.dispose();
-        heartsync.view.ForgotPassword.showForgotPassword();
+    public void handleForgotPassword() {
+        // Hide current login view instead of disposing it
+        view.setVisible(false);
+        
+        // Show forgot password dialog
+        try {
+            heartsync.view.ForgotPassword.showForgotPassword();
+        } catch (Exception e) {
+            System.err.println("Error showing forgot password: " + e.getMessage());
+            e.printStackTrace();
+            // If there's an error, show the login view again
+            view.setVisible(true);
+        }
     }
     
     /**
@@ -234,6 +255,7 @@ public class LoginController {
             if (currentLoginView != null) {
                 if (currentLoginView.isDisplayable()) {
                     currentLoginView.setExtendedState(JFrame.NORMAL);
+                    currentLoginView.setVisible(true);
                     currentLoginView.toFront();
                     currentLoginView.requestFocus();
                     return;
@@ -243,28 +265,33 @@ public class LoginController {
                 }
             }
             
-            // Create new login view and controller
-            currentLoginView = new LoginView();
-            new LoginController(currentLoginView);
-            
-            // Add window listener to clean up reference when closed
-            currentLoginView.addWindowListener(new java.awt.event.WindowAdapter() {
-                @Override
-                public void windowClosed(java.awt.event.WindowEvent e) {
-                    // Clean up the reference when window is closed
-                    currentLoginView = null;
-                }
+            try {
+                // Create new login view and controller
+                currentLoginView = new LoginView();
+                new LoginController(currentLoginView);
                 
-                @Override
-                public void windowClosing(java.awt.event.WindowEvent e) {
-                    // Ensure cleanup happens even if window is force-closed
-                    currentLoginView = null;
-                }
-            });
-            
-            // Center and show the view
-            currentLoginView.setLocationRelativeTo(null);
-            currentLoginView.setVisible(true);
+                // Add window listener to clean up reference when closed
+                currentLoginView.addWindowListener(new java.awt.event.WindowAdapter() {
+                    @Override
+                    public void windowClosed(java.awt.event.WindowEvent e) {
+                        // Clean up the reference when window is closed
+                        currentLoginView = null;
+                    }
+                    
+                    @Override
+                    public void windowClosing(java.awt.event.WindowEvent e) {
+                        // Ensure cleanup happens even if window is force-closed
+                        currentLoginView = null;
+                    }
+                });
+                
+                // Center and show the view
+                currentLoginView.setLocationRelativeTo(null);
+                currentLoginView.setVisible(true);
+            } catch (Exception e) {
+                System.err.println("Error creating login view: " + e.getMessage());
+                e.printStackTrace();
+            }
         });
     }
 }

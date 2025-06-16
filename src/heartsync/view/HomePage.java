@@ -195,10 +195,9 @@ public class HomePage extends JFrame {
         });
         
         loginButton.addActionListener(e -> {
-            // Use the static method to ensure consistent login view initialization
-            LoginController.createAndShowLoginView();
-            // Minimize the home page instead of closing it
-            setExtendedState(JFrame.ICONIFIED);
+            LoginView loginView = new LoginView();
+new LoginController(loginView).showLoginView();
+            dispose(); // Close the home page when login page opens
         });
         
         return navPanel;
@@ -331,10 +330,9 @@ public class HomePage extends JFrame {
         createAccountButton.setBounds(300, 500, 230, 55);
         
         loginButton.addActionListener(e -> {
-            // Use the static method to ensure consistent login view initialization
-            LoginController.createAndShowLoginView();
-            // Minimize the home page instead of closing it
-            setExtendedState(JFrame.ICONIFIED);
+            LoginView loginView = new LoginView();
+new LoginController(loginView).showLoginView();
+            dispose(); // Close the home page when login page opens
         });
         
         createAccountButton.addActionListener(e -> {

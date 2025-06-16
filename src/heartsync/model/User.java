@@ -19,28 +19,10 @@ public class User {
     private String bio;
     private String favoriteColor;
     private String firstSchool;
+    private Date createdAt;
     
     // Default constructor
     public User() {
-    }
-    
-    // Full constructor with all fields
-    public User(int id, String username, String password, String email, String userType, 
-               String phoneNumber, String dateOfBirth, String gender, 
-               String interests, String bio, String favoriteColor, String firstSchool) {
-        this.id = id;
-        this.username = username;
-        this.password = password;
-        this.email = email;
-        this.userType = userType;
-        this.phoneNumber = phoneNumber;
-        this.dateOfBirth = dateOfBirth;
-        this.gender = gender;
-        this.interests = interests;
-        this.bio = bio;
-        this.favoriteColor = favoriteColor;
-        this.firstSchool = firstSchool;
-        this.createdAt = new Date();
     }
     
     // Constructor with parameters
@@ -88,33 +70,25 @@ public class User {
         return createdAt;
     }
 
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+
     public String getUserType() {
         return userType;
     }
 
-    public void setUserType(String userType) {
-        this.userType = userType;
-    }
-    
-    public void setCreatedAt(Date createdAt) {
-        this.createdAt = createdAt;
-    }
-    
-    // Additional getters and setters
-    public String getPhoneNumber() {
-        return phoneNumber;
-    }
-
-    public void setPhoneNumber(String phoneNumber) {
-        this.phoneNumber = phoneNumber;
-    }
-
     public String getDateOfBirth() {
         return dateOfBirth;
+
+    public void setUserType(String userType) {
+        this.userType = userType;
     }
 
     public void setDateOfBirth(String dateOfBirth) {
         this.dateOfBirth = dateOfBirth;
+    
+    public void setCreatedAt(Date createdAt) {
+        this.createdAt = createdAt;
     }
     
     // Overload to accept LocalDate
@@ -132,36 +106,6 @@ public class User {
 
     public String getInterests() {
         return interests;
-    }
-
-    public void setInterests(String interests) {
-        this.interests = interests;
-    }
-
-    public String getBio() {
-        return bio;
-    }
-
-    public void setBio(String bio) {
-        this.bio = bio;
-    }
-
-
-    public String getFavoriteColor() {
-        return favoriteColor;
-    }
-
-    public void setFavoriteColor(String favoriteColor) {
-        this.favoriteColor = favoriteColor;
-    }
-
-    public String getFirstSchool() {
-        return firstSchool;
-    }
-
-    public void setFirstSchool(String firstSchool) {
-        this.firstSchool = firstSchool;
-    }
     
     @Override
     public String toString() {
@@ -182,7 +126,28 @@ public class User {
     }
     
     @Override
+    public String toString() {
+        return "User{" +
+                "id=" + id +
+                ", username='" + username + '\'' +
+                ", email='" + email + '\'' +
+                ", createdAt=" + createdAt +
+                '}';
     public int hashCode() {
         return Integer.hashCode(id);
     }
+    
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        User user = (User) obj;
+        return id == user.id;
+    }
+    
+    @Override
+    public int hashCode() {
+        return Integer.hashCode(id);
+    }
+}
 }

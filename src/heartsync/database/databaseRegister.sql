@@ -18,6 +18,36 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
+-- Create user_profiles table
+CREATE TABLE IF NOT EXISTS user_profiles (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    full_name VARCHAR(100),
+    height INT,
+    weight INT,
+    age INT,
+    country VARCHAR(100),
+    address TEXT,
+    phone VARCHAR(20),
+    qualification VARCHAR(50),
+    gender VARCHAR(20),
+    preferences VARCHAR(20),
+    about_me TEXT,
+    profile_pic_path VARCHAR(255),
+    relation_choice VARCHAR(50),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    CHECK (age >= 18 AND age <= 75)
+);
+
+-- Create user_hobbies table
+CREATE TABLE IF NOT EXISTS user_hobbies (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT,
+    hobby VARCHAR(100),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
 -- Create matches table
 CREATE TABLE IF NOT EXISTS matches (
     id INT AUTO_INCREMENT PRIMARY KEY,

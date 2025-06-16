@@ -32,6 +32,14 @@ public class ForgotPassword extends javax.swing.JFrame {
     
     // Private constructor to prevent direct instantiation
     private ForgotPassword() {
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosed(java.awt.event.WindowEvent e) {
+                // Show login view when forgot password is closed
+                heartsync.controller.LoginController.createAndShowLoginView();
+            }
+        });
         try {
             // Set system look and feel and UI properties
             UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
@@ -63,19 +71,25 @@ public class ForgotPassword extends javax.swing.JFrame {
     }
     
     // Singleton pattern to ensure only one instance exists
-    public static synchronized ForgotPassword getInstance() {
-        if (instance == null || !instance.isDisplayable()) {
-            instance = new ForgotPassword();
-        }
-        return instance;
-    }
-    
     public static void showForgotPassword() {
         SwingUtilities.invokeLater(() -> {
-            ForgotPassword dialog = getInstance();
-            dialog.setVisible(true);
-            dialog.toFront();
+            if (instance == null || !instance.isDisplayable()) {
+                instance = new ForgotPassword();
+                instance.setLocationRelativeTo(null);
+                instance.setVisible(true);
+            } else {
+                instance.setExtendedState(JFrame.NORMAL);
+                instance.toFront();
+                instance.requestFocus();
+            }
         });
+    }
+    
+    @Override
+    public void dispose() {
+        super.dispose();
+        // Don't set instance to null here to maintain the singleton pattern
+        // The windowClosed event will handle cleanup
     }
 
     private void setupAccessibility() {
@@ -242,19 +256,30 @@ public class ForgotPassword extends javax.swing.JFrame {
                 // If security questions are valid, show password reset dialog
                 String newPassword = showResetPasswordDialog();
                 if (newPassword != null && !newPassword.isEmpty()) {
+                    // Hash the password before updating
+                    String hashedPassword = DatabaseConnection.hashPassword(newPassword);
+                    
                     // Update the password in the database
-                    userDAO.updatePassword(username, DatabaseConnection.hashPassword(newPassword));
+                    userDAO.updatePassword(username, hashedPassword);
                     
-                    // Show success message
-                    JOptionPane.showMessageDialog(this,
-                        "Your password has been reset successfully.",
-                        "Password Reset",
-                        JOptionPane.INFORMATION_MESSAGE);
+                    // Verify the password was updated
+                    UserForgot updatedUser = userDAO.findByUsername(username);
+                    if (updatedUser != null && DatabaseConnection.verifyPassword(newPassword, updatedUser.getPassword())) {
+                        // Show success message
+                        JOptionPane.showMessageDialog(this,
+                            "Your password has been reset successfully.\nPlease login with your new password.",
+                            "Password Reset",
+                            JOptionPane.INFORMATION_MESSAGE);
                     
-                    // Close the dialog and show login screen
-                    dispose();
-                    // Use the LoginController to properly manage the login view
-                    heartsync.controller.LoginController.createAndShowLoginView();
+                        // Close the dialog and show login view
+                        SwingUtilities.invokeLater(() -> {
+                            dispose();
+                            // Use the controller to show login view to ensure proper cleanup
+                            heartsync.controller.LoginController.createAndShowLoginView();
+                        });
+                    } else {
+                        throw new SQLException("Failed to verify password update. Please contact support.");
+                    }
                 }
             } else {
                 JOptionPane.showMessageDialog(this,
@@ -262,10 +287,10 @@ public class ForgotPassword extends javax.swing.JFrame {
                     "Validation Failed",
                     JOptionPane.ERROR_MESSAGE);
             }
-        } catch (SQLException ex) {
+        } catch (Exception ex) {
             JOptionPane.showMessageDialog(this,
-                "Error: " + ex.getMessage(),
-                "Database Error",
+                "Error updating password: " + ex.getMessage(),
+                "Error",
                 JOptionPane.ERROR_MESSAGE);
             ex.printStackTrace();
         }
@@ -605,10 +630,9 @@ public class ForgotPassword extends javax.swing.JFrame {
             ex.printStackTrace();
         }
 
-        /* Create and display the form */
+        /* Show the forgot password dialog */
         SwingUtilities.invokeLater(() -> {
-            ForgotPassword dialog = ForgotPassword.getInstance();
-            dialog.setVisible(true);
+            ForgotPassword.showForgotPassword();
         });
     }
 }

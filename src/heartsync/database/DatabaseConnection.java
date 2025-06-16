@@ -80,6 +80,23 @@ public class DatabaseConnection {
         }
     }
     
+    /**
+     * Verifies if a plain text password matches a hashed password
+     * @param plainPassword The plain text password to verify
+     * @param hashedPassword The hashed password to compare against
+     * @return true if the passwords match, false otherwise
+     */
+    public static boolean verifyPassword(String plainPassword, String hashedPassword) {
+        if (plainPassword == null || hashedPassword == null) {
+            return false;
+        }
+        String hashedInput = hashPassword(plainPassword);
+        return MessageDigest.isEqual(
+            hashedInput.getBytes(StandardCharsets.UTF_8),
+            hashedPassword.getBytes(StandardCharsets.UTF_8)
+        );
+    }
+    
     private static void initializeDatabase() throws SQLException {
         if (!driverLoaded) {
             return;

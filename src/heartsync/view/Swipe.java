@@ -140,8 +140,27 @@ public class Swipe extends JFrame {
         };
         mainPanel.setOpaque(false);
         
-        // Add close button
-        // Logout button
+        // --- Navigation bar ---
+        JPanel navBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 10));
+        navBar.setOpaque(false);
+
+        RoundedButton profileBtn = new RoundedButton("My Profile", BUTTON_COLOR);
+        RoundedButton searchBtn = new RoundedButton("Search", BUTTON_COLOR);
+        RoundedButton messagesBtn = new RoundedButton("Messages", BUTTON_COLOR);
+
+        profileBtn.addActionListener(e -> openMyProfile());
+        searchBtn.addActionListener(e -> JOptionPane.showMessageDialog(this,
+                "Search feature coming soon!","Coming Soon",JOptionPane.INFORMATION_MESSAGE));
+        messagesBtn.addActionListener(e -> JOptionPane.showMessageDialog(this,
+                "Messaging feature coming soon!","Coming Soon",JOptionPane.INFORMATION_MESSAGE));
+
+        navBar.add(profileBtn);
+        navBar.add(searchBtn);
+        navBar.add(messagesBtn);
+        navBar.setBounds(20,10,400,50);
+        mainPanel.add(navBar);
+
+        // Logout button (keep existing color)
         logoutButton = new RoundedButton("Logout", new Color(108, 117, 125));
         logoutButton.setBounds(500, 10, 100, 30);
         logoutButton.setFont(new Font("Segoe UI", Font.BOLD, 12));
@@ -392,6 +411,12 @@ public class Swipe extends JFrame {
         showNextProfile();
     }
     
+    // --- Navigation handlers ---
+    private void openMyProfile() {
+        JOptionPane.showMessageDialog(this,
+                "Profile editing coming soon!","Coming Soon",JOptionPane.INFORMATION_MESSAGE);
+    }
+
     private void rejectCurrentProfile() {
         ProfileData profile = profiles.get(currentIndex);
         JOptionPane.showMessageDialog(this,

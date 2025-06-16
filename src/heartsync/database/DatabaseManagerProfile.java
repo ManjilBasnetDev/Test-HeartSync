@@ -6,6 +6,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
+import java.util.ArrayList;
+
+import heartsync.model.UserProfile;
 
 public class DatabaseManagerProfile {
     private static DatabaseManagerProfile instance;
@@ -166,5 +169,61 @@ public class DatabaseManagerProfile {
 
     public void closeConnection() {
         DatabaseConnection.closeConnection();
+    }
+
+    // Retrieve an existing user profile for editing
+    public UserProfile getUserProfile(String username) throws SQLException {
+        UserProfile profile = null;
+        String sql = """
+            SELECT u.id AS user_id, up.full_name, up.height, up.weight, up.country, up.address, up.phone,
+                   up.qualification, up.gender, up.preferences, up.about_me, up.profile_pic_path,
+                   up.relation_choice
+            FROM users u
+            LEFT JOIN user_profiles up ON u.id = up.user_id
+            WHERE u.username = ?
+        """;
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, username);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    profile = new UserProfile();
+                    profile.setFullName(rs.getString("full_name"));
+                    profile.setHeight(rs.getInt("height"));
+                    profile.setWeight(rs.getInt("weight"));
+                    profile.setCountry(rs.getString("country"));
+                    profile.setAddress(rs.getString("address"));
+                    profile.setPhoneNumber(rs.getString("phone"));
+                    profile.setQualification(rs.getString("qualification"));
+                    profile.setGender(rs.getString("gender"));
+                    profile.setPreferences(rs.getString("preferences"));
+                    profile.setAboutMe(rs.getString("about_me"));
+                    profile.setProfilePicPath(rs.getString("profile_pic_path"));
+                    profile.setRelationshipGoal(rs.getString("relation_choice"));
+
+                    // Load hobbies if they exist
+                    int userId = rs.getInt("user_id");
+                    String hobbySql = "SELECT hobby FROM user_hobbies WHERE user_id = ?";
+                    try (PreparedStatement hobbyStmt = conn.prepareStatement(hobbySql)) {
+                        hobbyStmt.setInt(1, userId);
+                        try (ResultSet hobbyRs = hobbyStmt.executeQuery()) {
+                            List<String> hobbies = new ArrayList<>();
+                            while (hobbyRs.next()) {
+                                hobbies.add(hobbyRs.getString("hobby"));
+                            }
+                            profile.setHobbies(hobbies);
+                        }
+                    }
+                }
+            }
+        }
+
+        // If no profile exists return empty profile so view still opens for editing
+        if (profile == null) {
+            profile = new UserProfile();
+        }
+        return profile;
     }
 } 

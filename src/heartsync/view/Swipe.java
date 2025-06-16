@@ -36,6 +36,8 @@ public class Swipe extends JFrame {
     private final RoundedButton rejectButton;
     private final RoundedButton closeButton;
     private final RoundedButton messageButton;
+    private final RoundedButton myProfileButton;
+    private final RoundedButton searchButton;
     private final ArrayList<ProfileData> profiles;
     private int currentIndex;
     
@@ -130,7 +132,7 @@ public class Swipe extends JFrame {
         mainPanel.setOpaque(false);
         
         // Add close button
-        closeButton = new RoundedButton("×", CLOSE_BUTTON_COLOR) {
+        closeButton = new RoundedButton("X", CLOSE_BUTTON_COLOR) {
             private boolean isHovered = false;
 
             {
@@ -159,8 +161,9 @@ public class Swipe extends JFrame {
                 } else {
                     g2.setColor(CLOSE_BUTTON_COLOR);
                 }
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), getHeight(), getHeight());
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), getHeight(), getHeight()); // Make it circular
                 
+                // Add hover effect
                 if (isHovered) {
                     g2.setColor(BUTTON_HOVER_OVERLAY);
                     g2.fillRoundRect(0, 0, getWidth(), getHeight(), getHeight(), getHeight());
@@ -173,55 +176,22 @@ public class Swipe extends JFrame {
         closeButton.setFont(new Font("Segoe UI", Font.BOLD, 16));
         closeButton.addActionListener(e -> dispose());
         mainPanel.add(closeButton);
-
-        // Add message button
-        messageButton = new RoundedButton("💬", new Color(233, 54, 128)) {
-            private boolean isHovered = false;
-
-            {
-                addMouseListener(new MouseAdapter() {
-                    @Override
-                    public void mouseEntered(MouseEvent e) {
-                        isHovered = true;
-                        repaint();
-                    }
-
-                    @Override
-                    public void mouseExited(MouseEvent e) {
-                        isHovered = false;
-                        repaint();
-                    }
-                });
-            }
-
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g;
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                
-                if (isHovered) {
-                    g2.setColor(new Color(233, 54, 128).darker());
-                } else {
-                    g2.setColor(new Color(233, 54, 128));
-                }
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), getHeight(), getHeight());
-                
-                if (isHovered) {
-                    g2.setColor(BUTTON_HOVER_OVERLAY);
-                    g2.fillRoundRect(0, 0, getWidth(), getHeight(), getHeight(), getHeight());
-                }
-                
-                super.paintComponent(g);
-            }
-        };
-        messageButton.setBounds(610, 10, 30, 30);
-        messageButton.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        messageButton.addActionListener(e -> {
-            FrontPage frontPage = new FrontPage();
-            frontPage.setVisible(true);
-            dispose();
-        });
+        
+        // Add top buttons with text and emojis
+        messageButton = new RoundedButton("💬 Messages", new Color(64, 158, 255));
+        messageButton.setBounds(520, 10, 120, 35);
+        messageButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
         mainPanel.add(messageButton);
+
+        myProfileButton = new RoundedButton("👤 My Profile", new Color(147, 112, 219));
+        myProfileButton.setBounds(380, 10, 120, 35);
+        myProfileButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        mainPanel.add(myProfileButton);
+
+        searchButton = new RoundedButton("🔍 Search", new Color(52, 152, 219));
+        searchButton.setBounds(240, 10, 120, 35);
+        searchButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        mainPanel.add(searchButton);
         
         // Card panel for profile display
         cardPanel = new JPanel(null);
@@ -261,7 +231,7 @@ public class Swipe extends JFrame {
         
         likeButton = new RoundedButton("♥ Like", LIKE_COLOR);
         likeButton.setBounds(470, 700, 120, 45);
-        
+
         // Add components
         cardPanel.add(imageLabel);
         cardPanel.add(nameLabel);
@@ -335,6 +305,9 @@ public class Swipe extends JFrame {
         backButton.addActionListener(e -> showPreviousProfile());
         likeButton.addActionListener(e -> likeCurrentProfile());
         rejectButton.addActionListener(e -> rejectCurrentProfile());
+        messageButton.addActionListener(e -> openChatSystem());
+        myProfileButton.addActionListener(e -> openMyProfile());
+        searchButton.addActionListener(e -> openSearchDialog());
     }
     
     private void showCurrentProfile() {
@@ -413,6 +386,39 @@ public class Swipe extends JFrame {
             "Passed",
             JOptionPane.INFORMATION_MESSAGE);
         showNextProfile();
+    }
+    
+    private void openChatSystem() {
+        // Hide current window
+        this.setVisible(false);
+        
+        // Create and show chat system
+        SwingUtilities.invokeLater(() -> {
+            ChatSystem chatSystem = new ChatSystem();
+            chatSystem.setVisible(true);
+            
+            // Dispose this window when chat system is closed
+            chatSystem.addWindowListener(new WindowAdapter() {
+                @Override
+                public void windowClosed(WindowEvent e) {
+                    Swipe.this.dispose();
+                }
+            });
+        });
+    }
+    
+    private void openMyProfile() {
+        JOptionPane.showMessageDialog(this,
+            "Opening your profile...\nProfile view coming soon!",
+            "My Profile",
+            JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    private void openSearchDialog() {
+        JOptionPane.showMessageDialog(this,
+            "Profile search coming soon!",
+            "Search Profiles",
+            JOptionPane.INFORMATION_MESSAGE);
     }
     
     public static void main(String args[]) {

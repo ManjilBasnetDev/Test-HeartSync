@@ -1,46 +1,29 @@
+// User.java - Model class for User entity
 package heartsync.model;
 
-import java.time.LocalDate;
+import java.util.Date;
 
 public class User {
     private int id;
     private String username;
     private String password;
-    private String userType;
     private String email;
-    private String phoneNumber;
-    private LocalDate dateOfBirth;
-    private String gender;
-    private String interests;
-    private String bio;
+    private String userType;
+    private Date createdAt;
     
     // Default constructor
     public User() {
     }
     
-    // Constructor for basic user creation
-    public User(String username, String password, String userType) {
+    // Constructor with parameters
+    public User(String username, String password, String email) {
         this.username = username;
         this.password = password;
-        this.userType = userType;
-    }
-    
-    // Full constructor
-    public User(int id, String username, String password, String userType, String email,
-               String phoneNumber, LocalDate dateOfBirth, String gender, String interests, String bio) {
-        this.id = id;
-        this.username = username;
-        this.password = password;
-        this.userType = userType;
         this.email = email;
-        this.phoneNumber = phoneNumber;
-        this.dateOfBirth = dateOfBirth;
-        this.gender = gender;
-        this.interests = interests;
-        this.bio = bio;
+        this.createdAt = new Date();
     }
     
-    // Getters and setters
+    // Getters and Setters
     public int getId() {
         return id;
     }
@@ -65,14 +48,6 @@ public class User {
         this.password = password;
     }
     
-    public String getUserType() {
-        return userType;
-    }
-    
-    public void setUserType(String userType) {
-        this.userType = userType;
-    }
-    
     public String getEmail() {
         return email;
     }
@@ -81,55 +56,42 @@ public class User {
         this.email = email;
     }
     
-    public String getPhoneNumber() {
-        return phoneNumber;
+    public Date getCreatedAt() {
+        return createdAt;
+    }
+
+    public String getUserType() {
+        return userType;
+    }
+
+    public void setUserType(String userType) {
+        this.userType = userType;
     }
     
-    public void setPhoneNumber(String phoneNumber) {
-        this.phoneNumber = phoneNumber;
-    }
-    
-    public LocalDate getDateOfBirth() {
-        return dateOfBirth;
-    }
-    
-    public void setDateOfBirth(LocalDate dateOfBirth) {
-        this.dateOfBirth = dateOfBirth;
-    }
-    
-    public String getGender() {
-        return gender;
-    }
-    
-    public void setGender(String gender) {
-        this.gender = gender;
-    }
-    
-    public String getInterests() {
-        return interests;
-    }
-    
-    public void setInterests(String interests) {
-        this.interests = interests;
-    }
-    
-    public String getBio() {
-        return bio;
-    }
-    
-    public void setBio(String bio) {
-        this.bio = bio;
+    public void setCreatedAt(Date createdAt) {
+        this.createdAt = createdAt;
     }
     
     @Override
     public String toString() {
-        return "User{" + "id=" + id + 
-               ", username='" + username + '\'' +
-               ", userType='" + userType + '\'' +
-               ", email='" + email + '\'' +
-               ", phoneNumber='" + phoneNumber + '\'' +
-               ", dateOfBirth='" + dateOfBirth + '\'' +
-               ", gender='" + gender + '\'' +
-               '}';
+        return "User{" +
+                "id=" + id +
+                ", username='" + username + '\'' +
+                ", email='" + email + '\'' +
+                ", createdAt=" + createdAt +
+                '}';
     }
-} 
+    
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        User user = (User) obj;
+        return id == user.id;
+    }
+    
+    @Override
+    public int hashCode() {
+        return Integer.hashCode(id);
+    }
+}

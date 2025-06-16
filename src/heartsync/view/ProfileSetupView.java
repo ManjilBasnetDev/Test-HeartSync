@@ -1,9 +1,8 @@
 package heartsync.view;
 
-import heartsync.controller.UserProfileController;
-import heartsync.model.UserProfile;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -19,7 +18,9 @@ import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
+
 import javax.swing.BorderFactory;
+import javax.swing.DefaultListCellRenderer;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -27,24 +28,26 @@ import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSlider;
 import javax.swing.JTextArea;
-import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+
+import heartsync.controller.UserProfileController;
 
 public class ProfileSetupView extends JFrame {
     private UserProfileController controller;
-    private JTextField nameField;
+    private JTextArea nameField;
     private JSlider heightSlider;
     private JSlider weightSlider;
-    private JSlider ageSlider;
-    private JTextField countryField;
-    private JTextField addressField;
-    private JTextField phoneField;
+    private JTextArea countryField;
+    private JTextArea addressField;
+    private JTextArea phoneField;
     private JComboBox<String> qualificationComboBox;
     private JComboBox<String> genderComboBox;
     private JComboBox<String> preferencesComboBox;
@@ -53,7 +56,6 @@ public class ProfileSetupView extends JFrame {
     private String profilePicPath;
     private JLabel heightValueLabel;
     private JLabel weightValueLabel;
-    private JLabel ageValueLabel;
 
     public ProfileSetupView(UserProfileController controller) {
         this.controller = controller;
@@ -61,6 +63,17 @@ public class ProfileSetupView extends JFrame {
     }
 
     private void initializeUI() {
+        // Set Metal Look and Feel defaults
+        UIManager.put("ComboBox.background", Color.WHITE);
+        UIManager.put("ComboBox.foreground", new Color(33, 33, 33));
+        UIManager.put("ComboBox.selectionBackground", new Color(219, 112, 147));
+        UIManager.put("ComboBox.selectionForeground", Color.WHITE);
+        UIManager.put("ComboBox.buttonBackground", Color.WHITE);
+        UIManager.put("ComboBox.buttonHighlight", Color.WHITE);
+        UIManager.put("ComboBox.buttonShadow", Color.WHITE);
+        UIManager.put("ComboBox.buttonDarkShadow", Color.WHITE);
+        UIManager.put("ComboBox.border", BorderFactory.createLineBorder(new Color(219, 112, 147), 1));
+
         setTitle("HeartSync - Profile Setup");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setPreferredSize(new Dimension(800, 600));
@@ -100,6 +113,7 @@ public class ProfileSetupView extends JFrame {
         // Header
         JLabel headerLabel = new JLabel("CREATE YOUR PROFILE", SwingConstants.CENTER);
         headerLabel.setFont(new Font("Arial", Font.BOLD, 32));
+        headerLabel.setForeground(Color.BLACK);
         formPanel.add(headerLabel, gbc);
 
         // Profile picture section
@@ -136,15 +150,6 @@ public class ProfileSetupView extends JFrame {
         weightValueLabel = new JLabel(weightSlider.getValue() + " kg");
         weightValueLabel.setFont(new Font("Arial", Font.PLAIN, 14));
         weightSlider.addChangeListener(e -> weightValueLabel.setText(weightSlider.getValue() + " kg"));
-
-        // Age Slider with value label
-        ageSlider = createStyledSlider(18, 75, 25);
-        ageValueLabel = new JLabel(ageSlider.getValue() + " years");
-        ageValueLabel.setFont(new Font("Arial", Font.PLAIN, 14));
-        ageSlider.addChangeListener(e -> {
-            int age = ageSlider.getValue();
-            ageValueLabel.setText(age + " years");
-        });
         
         countryField = createStyledTextField("Country");
         addressField = createStyledTextField("Address");
@@ -175,6 +180,8 @@ public class ProfileSetupView extends JFrame {
         aboutMeArea = new JTextArea(4, 20);
         aboutMeArea.setLineWrap(true);
         aboutMeArea.setWrapStyleWord(true);
+        aboutMeArea.setForeground(new Color(33, 33, 33));
+        aboutMeArea.setBackground(Color.WHITE);
         aboutMeArea.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(219, 112, 147), 1),
             BorderFactory.createEmptyBorder(5, 5, 5, 5)
@@ -197,13 +204,6 @@ public class ProfileSetupView extends JFrame {
         weightPanel.add(weightSlider, BorderLayout.CENTER);
         weightPanel.add(weightValueLabel, BorderLayout.EAST);
         addFormField(formPanel, "Weight:", weightPanel, gbc);
-
-        // Add age slider with value label
-        JPanel agePanel = new JPanel(new BorderLayout(10, 0));
-        agePanel.setOpaque(false);
-        agePanel.add(ageSlider, BorderLayout.CENTER);
-        agePanel.add(ageValueLabel, BorderLayout.EAST);
-        addFormField(formPanel, "Age:", agePanel, gbc);
         
         addFormField(formPanel, "Country:", countryField, gbc);
         addFormField(formPanel, "Address:", addressField, gbc);
@@ -254,13 +254,17 @@ public class ProfileSetupView extends JFrame {
         }
     }
 
-    private JTextField createStyledTextField(String placeholder) {
-        JTextField field = new JTextField(20);
+    private JTextArea createStyledTextField(String placeholder) {
+        JTextArea field = new JTextArea(1, 20);
         field.setFont(new Font("Arial", Font.PLAIN, 14));
+        field.setForeground(Color.BLACK);
+        field.setBackground(Color.WHITE);
         field.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(219, 112, 147), 1),
-            BorderFactory.createEmptyBorder(5, 5, 5, 5)
+            BorderFactory.createEmptyBorder(10, 15, 10, 15)
         ));
+        field.setLineWrap(true);
+        field.setWrapStyleWord(true);
         return field;
     }
 
@@ -287,16 +291,55 @@ public class ProfileSetupView extends JFrame {
     }
 
     private void styleComboBox(JComboBox<?> comboBox) {
+        try {
+            // Set Metal Look and Feel just for this component
+            UIManager.setLookAndFeel("javax.swing.plaf.metal.MetalLookAndFeel");
+            SwingUtilities.updateComponentTreeUI(comboBox);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        // Basic properties
+        comboBox.setBackground(Color.WHITE);
+        comboBox.setForeground(new Color(33, 33, 33));
         comboBox.setFont(new Font("Arial", Font.PLAIN, 14));
+        
+        // Make everything white
+        comboBox.getEditor().getEditorComponent().setBackground(Color.WHITE);
+        
+        // Custom renderer for consistent white background
+        comboBox.setRenderer(new DefaultListCellRenderer() {
+            {
+                setOpaque(true);
+            }
+            
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value,
+                    int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                
+                if (isSelected) {
+                    setBackground(new Color(219, 112, 147));
+                    setForeground(Color.WHITE);
+                } else {
+                    setBackground(Color.WHITE);
+                    setForeground(new Color(33, 33, 33));
+                }
+                return this;
+            }
+        });
+
+        // Pink border with padding
         comboBox.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(219, 112, 147), 1),
-            BorderFactory.createEmptyBorder(5, 5, 5, 5)
+            BorderFactory.createEmptyBorder(8, 10, 8, 10)
         ));
     }
 
     private void addFormField(JPanel panel, String labelText, JComponent field, GridBagConstraints gbc) {
         JLabel label = new JLabel(labelText);
         label.setFont(new Font("Arial", Font.BOLD, 14));
+        label.setForeground(new Color(33, 33, 33));
         gbc.insets = new Insets(10, 0, 5, 0);
         panel.add(label, gbc);
 
@@ -363,10 +406,10 @@ public class ProfileSetupView extends JFrame {
         // Update model through controller
         try {
             controller.updateBasicInfo(
+                controller.getCurrentUsername(),
                 nameField.getText().trim(),
                 heightSlider.getValue(),
                 weightSlider.getValue(),
-                ageSlider.getValue(),
                 countryField.getText().trim(),
                 addressField.getText().trim(),
                 phoneField.getText().trim(),
@@ -398,30 +441,5 @@ public class ProfileSetupView extends JFrame {
         slider.setFont(new Font("Arial", Font.PLAIN, 12));
         return slider;
     }
-
-    public static void main(String[] args) {
-        // Use SwingUtilities to ensure thread safety
-        SwingUtilities.invokeLater(() -> {
-            try {
-                // Create a dummy user profile for testing
-                UserProfile dummyProfile = new UserProfile();
-                
-                // Create controller with dummy profile
-                UserProfileController controller = new UserProfileController(dummyProfile);
-                
-                // Create and show the profile setup view
-                ProfileSetupView profileSetup = new ProfileSetupView(controller);
-                profileSetup.setVisible(true);
-                
-                // Center the window on screen
-                profileSetup.setLocationRelativeTo(null);
-            } catch (Exception e) {
-                e.printStackTrace();
-                JOptionPane.showMessageDialog(null,
-                    "Error starting Profile Setup: " + e.getMessage(),
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE);
-            }
-        });
-    }
-} 
+}
+    

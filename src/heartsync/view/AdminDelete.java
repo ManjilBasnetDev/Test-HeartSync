@@ -392,48 +392,50 @@ public class AdminDelete extends javax.swing.JFrame {
 
     private void styleDeletePanel() {
         // Style the main panel
-        jPanel1.setBackground(new Color(255, 198, 209));
-        jPanel1.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        jPanel1.setBackground(new Color(255, 228, 236)); // Lighter pink background
+        jPanel1.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
         
         // Style the title
-        jLabel1.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        jLabel1.setFont(new Font("Segoe UI", Font.BOLD, 36));
         jLabel1.setForeground(new Color(44, 44, 84));
         
         // Style the warning panel
-        jPanel2.setBackground(new Color(255, 182, 193));
+        jPanel2.setBackground(new Color(255, 255, 255));
         jPanel2.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(255, 105, 180), 2),
-            BorderFactory.createEmptyBorder(10, 10, 10, 10)
+            BorderFactory.createLineBorder(new Color(255, 105, 180), 2, true),
+            BorderFactory.createEmptyBorder(15, 15, 15, 15)
         ));
         
         // Style the warning labels
-        jLabel2.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        jLabel3.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        jLabel2.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        jLabel3.setFont(new Font("Segoe UI", Font.BOLD, 16));
         jLabel2.setForeground(new Color(44, 44, 84));
         jLabel3.setForeground(new Color(44, 44, 84));
         
         // Style the username label and field
-        jLabel4.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        jLabel4.setFont(new Font("Segoe UI", Font.BOLD, 16));
         jLabel4.setForeground(new Color(44, 44, 84));
         
-        jTextField1.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        jTextField1.setFont(new Font("Segoe UI", Font.PLAIN, 16));
         jTextField1.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(255, 105, 180), 2),
-            BorderFactory.createEmptyBorder(5, 10, 5, 10)
+            BorderFactory.createLineBorder(new Color(255, 105, 180), 2, true),
+            BorderFactory.createEmptyBorder(8, 12, 8, 12)
         ));
         jTextField1.setBackground(Color.WHITE);
+        jTextField1.setPreferredSize(new Dimension(300, 40));
         
         // Style the delete button
-        jButton1.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        jButton1.setFont(new Font("Segoe UI", Font.BOLD, 16));
         jButton1.setBackground(new Color(255, 99, 99));
         jButton1.setForeground(Color.WHITE);
         jButton1.setBorderPainted(false);
         jButton1.setFocusPainted(false);
         jButton1.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        jButton1.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        jButton1.setBorder(BorderFactory.createEmptyBorder(12, 25, 12, 25));
+        jButton1.setPreferredSize(new Dimension(300, 45));
         
         // Style the confirmation message
-        jLabel5.setFont(new Font("Segoe UI", Font.ITALIC, 12));
+        jLabel5.setFont(new Font("Segoe UI", Font.ITALIC, 14));
         jLabel5.setForeground(new Color(44, 44, 84));
         
         // Add hover effect to the delete button
@@ -473,12 +475,14 @@ public class AdminDelete extends javax.swing.JFrame {
     }
 
     private JPanel createVerifyPanel() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBackground(new Color(255, 198, 209));
+        JPanel panel = new JPanel(new BorderLayout(15, 15));
+        panel.setBackground(new Color(255, 228, 236));
+        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         
         // Title
         JLabel titleLabel = new JLabel("Verify User Profiles", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        titleLabel.setForeground(new Color(44, 44, 84));
         panel.add(titleLabel, BorderLayout.NORTH);
 
         // Create table model with columns
@@ -486,42 +490,48 @@ public class AdminDelete extends javax.swing.JFrame {
         verifyTableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return column == 4; // Only allow editing of the Actions column
+                return column == 4;
             }
         };
         
         // Create table
         verifyTable = new JTable(verifyTableModel);
-        verifyTable.setRowHeight(35);
+        verifyTable.setRowHeight(40);
+        verifyTable.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        verifyTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 14));
+        verifyTable.getTableHeader().setBackground(new Color(255, 198, 209));
+        verifyTable.getTableHeader().setForeground(new Color(44, 44, 84));
+        verifyTable.setGridColor(new Color(255, 182, 193));
+        verifyTable.setShowGrid(true);
+        verifyTable.setBackground(Color.WHITE);
         
         // Create button column
         TableColumn actionColumn = verifyTable.getColumnModel().getColumn(4);
         actionColumn.setCellRenderer(new ButtonRenderer("Delete"));
         actionColumn.setCellEditor(new ButtonEditor(new JCheckBox(), "verify"));
 
-        // Add some sample data (replace with actual data later)
-        verifyTableModel.addRow(new Object[]{"1", "john_doe", "john@example.com", "Pending", "Delete"});
-        verifyTableModel.addRow(new Object[]{"2", "jane_smith", "jane@example.com", "Pending", "Delete"});
-
         // Add table to scroll pane
         JScrollPane scrollPane = new JScrollPane(verifyTable);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        scrollPane.getViewport().setBackground(Color.WHITE);
         panel.add(scrollPane, BorderLayout.CENTER);
         
         return panel;
     }
 
     private JPanel createRespondPanel() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBackground(new Color(255, 198, 209));
+        JPanel panel = new JPanel(new BorderLayout(15, 15));
+        panel.setBackground(new Color(255, 228, 236));
+        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         
         // Header Panel with Title and Refresh Button
-        JPanel headerPanel = new JPanel(new BorderLayout(10, 10));
-        headerPanel.setBackground(new Color(255, 198, 209));
+        JPanel headerPanel = new JPanel(new BorderLayout(15, 15));
+        headerPanel.setBackground(new Color(255, 228, 236));
         
         // Title
         JLabel titleLabel = new JLabel("Reported Users", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 36));
-        titleLabel.setForeground(new Color(44, 44, 84));  // Dark blue color
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        titleLabel.setForeground(new Color(44, 44, 84));
         headerPanel.add(titleLabel, BorderLayout.CENTER);
         
         // Refresh Button
@@ -530,25 +540,25 @@ public class AdminDelete extends javax.swing.JFrame {
         refreshButton.setBackground(Color.WHITE);
         refreshButton.setForeground(new Color(44, 44, 84));
         refreshButton.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(Color.WHITE),
-            BorderFactory.createEmptyBorder(5, 15, 5, 15)
+            BorderFactory.createLineBorder(new Color(255, 105, 180), 2, true),
+            BorderFactory.createEmptyBorder(8, 15, 8, 15)
         ));
         refreshButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         refreshButton.addActionListener(e -> refreshReportedUsers());
         
         JPanel refreshPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        refreshPanel.setBackground(new Color(255, 198, 209));
+        refreshPanel.setBackground(new Color(255, 228, 236));
         refreshPanel.add(refreshButton);
         headerPanel.add(refreshPanel, BorderLayout.EAST);
         
         panel.add(headerPanel, BorderLayout.NORTH);
 
         // Create table model with columns
-        String[] columns = {"Username", "Reported By", "Report Date", "Reason", ""};  // Empty string for delete column
+        String[] columns = {"Username", "Reported By", "Report Date", "Reason", ""};
         reportedTableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return column == 4; // Only allow editing of the delete column
+                return column == 4;
             }
             @Override
             public Class<?> getColumnClass(int column) {
@@ -558,7 +568,7 @@ public class AdminDelete extends javax.swing.JFrame {
         
         // Create table
         reportedTable = new JTable(reportedTableModel);
-        reportedTable.setRowHeight(40);
+        reportedTable.setRowHeight(45);
         reportedTable.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         reportedTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 14));
         reportedTable.getTableHeader().setBackground(new Color(255, 198, 209));
@@ -568,28 +578,21 @@ public class AdminDelete extends javax.swing.JFrame {
         reportedTable.setBackground(Color.WHITE);
         
         // Set column widths
-        reportedTable.getColumnModel().getColumn(0).setPreferredWidth(150); // Username
-        reportedTable.getColumnModel().getColumn(1).setPreferredWidth(150); // Reported By
-        reportedTable.getColumnModel().getColumn(2).setPreferredWidth(150); // Report Date
-        reportedTable.getColumnModel().getColumn(3).setPreferredWidth(200); // Reason
-        reportedTable.getColumnModel().getColumn(4).setPreferredWidth(100); // Delete button
+        reportedTable.getColumnModel().getColumn(0).setPreferredWidth(150);
+        reportedTable.getColumnModel().getColumn(1).setPreferredWidth(150);
+        reportedTable.getColumnModel().getColumn(2).setPreferredWidth(150);
+        reportedTable.getColumnModel().getColumn(3).setPreferredWidth(200);
+        reportedTable.getColumnModel().getColumn(4).setPreferredWidth(100);
         
         // Create button column
         TableColumn deleteColumn = reportedTable.getColumnModel().getColumn(4);
         deleteColumn.setCellRenderer(new DeleteButtonRenderer());
         deleteColumn.setCellEditor(new DeleteButtonEditor(new JCheckBox()));
 
-        // Add sample data as shown in the image
-        reportedTableModel.addRow(new Object[]{"user123", "alice", "04/09/2024", "Spam", ""});
-        reportedTableModel.addRow(new Object[]{"john_doe", "bob", "04/09/2024", "Harassment", ""});
-        reportedTableModel.addRow(new Object[]{"test456", "charlie", "04/07/2024", "Inappropriate content", ""});
-        reportedTableModel.addRow(new Object[]{"janedoe", "david", "04/06/2024", "Spam", ""});
-
-        // Add table to scroll pane with custom styling
+        // Add table to scroll pane
         JScrollPane scrollPane = new JScrollPane(reportedTable);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
         scrollPane.getViewport().setBackground(Color.WHITE);
-        
         panel.add(scrollPane, BorderLayout.CENTER);
         
         return panel;

@@ -81,17 +81,20 @@ public class DatabaseConnection {
     }
     
     /**
-     * Verifies a password against a stored hash
-     * @param password The password to verify
-     * @param storedHash The stored hash to verify against
-     * @return true if the password matches the hash, false otherwise
+     * Verifies if a plain text password matches a hashed password
+     * @param plainPassword The plain text password to verify
+     * @param hashedPassword The hashed password to compare against
+     * @return true if the passwords match, false otherwise
      */
-    public static boolean verifyPassword(String password, String storedHash) {
-        if (password == null || storedHash == null) {
+    public static boolean verifyPassword(String plainPassword, String hashedPassword) {
+        if (plainPassword == null || hashedPassword == null) {
             return false;
         }
-        String hashedPassword = hashPassword(password);
-        return hashedPassword.equals(storedHash);
+        String hashedInput = hashPassword(plainPassword);
+        return MessageDigest.isEqual(
+            hashedInput.getBytes(StandardCharsets.UTF_8),
+            hashedPassword.getBytes(StandardCharsets.UTF_8)
+        );
     }
     
     private static void initializeDatabase() throws SQLException {
@@ -233,31 +236,15 @@ public class DatabaseConnection {
                     """;
                     stmt.executeUpdate(createMessagesTableSQL);
 
-                    // Insert default admin user if not exists
+                    // Insert default admin user
                     String insertAdminSQL = """
                         INSERT INTO users (username, password, user_type, email)
-                        SELECT * FROM (SELECT 'Admin', ?, 'ADMIN', 'admin@heartsync.com') AS tmp
+                        SELECT * FROM (SELECT 'admin', 'admin123', 'ADMIN', 'admin@heartsync.com') AS tmp
                         WHERE NOT EXISTS (
-                            SELECT username FROM users WHERE username = 'Admin'
+                            SELECT username FROM users WHERE username = 'admin'
                         ) LIMIT 1
                     """;
-                    try (var pstmt = conn.prepareStatement(insertAdminSQL)) {
-                        pstmt.setString(1, hashPassword("Admin@123"));
-                        pstmt.executeUpdate();
-                    }
-                    
-                    // Insert default regular user if not exists
-                    String insertUserSQL = """
-                        INSERT INTO users (username, password, user_type, email)
-                        SELECT * FROM (SELECT 'User', ?, 'USER', 'user@heartsync.com') AS tmp
-                        WHERE NOT EXISTS (
-                            SELECT username FROM users WHERE username = 'User'
-                        ) LIMIT 1
-                    """;
-                    try (var pstmt = conn.prepareStatement(insertUserSQL)) {
-                        pstmt.setString(1, hashPassword("User@123"));
-                        pstmt.executeUpdate();
-                    }
+                    stmt.executeUpdate(insertAdminSQL);
                     
                     System.out.println("Database and tables initialized successfully");
                 }

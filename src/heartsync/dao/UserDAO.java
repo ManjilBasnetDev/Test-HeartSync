@@ -2,7 +2,6 @@ package heartsync.dao;
 
 import heartsync.model.User;
 import heartsync.database.MySqlConnection;
-import heartsync.database.DatabaseConnection;
 import java.sql.*;
 
 public class UserDAO {
@@ -28,41 +27,24 @@ public class UserDAO {
         }
     }
 
-    // Default credentials
-    private static final String DEFAULT_USERNAME = "User";
-    private static final String DEFAULT_PASSWORD = "User@123";
-    
     // Authenticate user login
     public User authenticateUser(String username, String password) {
-        // First check for default user
-        if (DEFAULT_USERNAME.equals(username) && DEFAULT_PASSWORD.equals(password)) {
-            User defaultUser = new User();
-            defaultUser.setId(0);
-            defaultUser.setUsername(DEFAULT_USERNAME);
-            defaultUser.setEmail("user@example.com");
-            defaultUser.setCreatedAt(new java.sql.Timestamp(System.currentTimeMillis()));
-            return defaultUser;
-        }
-        
-        // If not default user, check database
-        String sql = "SELECT * FROM users WHERE username = ?";
+        String sql = "SELECT * FROM users WHERE username = ? AND password = ?";
         
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, username);
+            pstmt.setString(2, password);
+            
             ResultSet rs = pstmt.executeQuery();
             
             if (rs.next()) {
-                String storedHash = rs.getString("password");
-                // Verify the password against the stored hash
-                if (DatabaseConnection.verifyPassword(password, storedHash)) {
-                    User user = new User();
-                    user.setId(rs.getInt("id"));
-                    user.setUsername(rs.getString("username"));
-                    user.setPassword(storedHash);
-                    user.setEmail(rs.getString("email"));
-                    user.setCreatedAt(rs.getTimestamp("created_at"));
-                    return user;
-                }
+                User user = new User();
+                user.setId(rs.getInt("id"));
+                user.setUsername(rs.getString("username"));
+                user.setPassword(rs.getString("password"));
+                user.setEmail(rs.getString("email"));
+                user.setCreatedAt(rs.getTimestamp("created_at"));
+                return user;
             }
         } catch (SQLException e) {
             System.err.println("Authentication error: " + e.getMessage());

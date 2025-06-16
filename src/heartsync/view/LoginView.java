@@ -6,6 +6,7 @@ package heartsync.view;
 
 import heartsync.controller.LoginController;
 import heartsync.view.ForgotPassword;
+import javax.swing.ImageIcon;
 
 /**
  *
@@ -21,8 +22,25 @@ public class LoginView extends javax.swing.JFrame {
     public LoginView() {
         initComponents();
         styleButtons();
+        
+        // Set application icon
+        try {
+            ImageIcon icon = new ImageIcon(getClass().getResource("/heartsync/assets/logo.png"));
+            setIconImage(icon.getImage());
+        } catch (Exception e) {
+            System.err.println("Could not load application icon: " + e.getMessage());
+        }
+        
         // --- Back Button Logic ---
-        jButton1.addActionListener(evt -> dispose());
+        jButton1.addActionListener(evt -> {
+            // Let the controller handle the back action
+            if (controller != null) {
+                controller.handleBack();
+            } else {
+                dispose();
+            }
+        });
+        
         // --- Show/Hide Toggle Logic ---
         jPasswordField1.setEchoChar('\u2022');
         jToggleButton1.setText("Show");
@@ -37,38 +55,44 @@ public class LoginView extends javax.swing.JFrame {
                 }
             }
         });
+        
         // --- Make Forgot Password Clickable ---
         jLabel5.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
-                // Store a reference to this login view
-                LoginView currentLoginView = LoginView.this;
-                
-                // Hide the login window
+                // Hide this window instead of disposing it
                 setVisible(false);
                 
-                // Show the forgot password window using the singleton pattern
+                // Show forgot password dialog
                 ForgotPassword.showForgotPassword();
-                
-                // Add a window listener to the application's window to handle coming back to login
-                java.awt.Window[] windows = java.awt.Window.getWindows();
-                for (java.awt.Window window : windows) {
-                    if (window.isShowing() && window instanceof ForgotPassword) {
-                        window.addWindowListener(new java.awt.event.WindowAdapter() {
-                            @Override
-                            public void windowClosed(java.awt.event.WindowEvent e) {
-                                // Show the login window again when forgot password is closed
-                                currentLoginView.setVisible(true);
-                                currentLoginView.toFront();
-                                window.removeWindowListener(this);
-                            }
-                        });
-                        break;
-                    }
-                }
             }
         });
-        // Login button's action is handled by controller; no listener here.
+        
+        // Handle window closing
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosed(java.awt.event.WindowEvent e) {
+                // Notify controller that this window is closing
+                if (controller != null) {
+                    controller = null;
+                }
+            }
+            
+            @Override
+            public void windowClosing(java.awt.event.WindowEvent e) {
+                // Ensure cleanup happens even if window is force-closed
+                controller = null;
+            }
+        });
+    }
+    
+    // Reference to the controller
+    private heartsync.controller.LoginController controller;
+    
+    // Method to set the controller
+    public void setController(heartsync.controller.LoginController controller) {
+        this.controller = controller;
     }
 
     // Helper for showing popups
@@ -368,18 +392,10 @@ jToggleButton1.setPreferredSize(new java.awt.Dimension(70, 32));
         jPasswordField1.setText("");
         jTextField1.requestFocusInWindow();
     }
-    
-    /**
-     * Gets the login button instance
-     * @return The login button
-     */
-    public javax.swing.JButton getLoginButton() {
-        return jButton2;
-    }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton jButton1;
-    private javax.swing.JButton jButton2; // Login Button
+    private javax.swing.JButton jButton2;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;

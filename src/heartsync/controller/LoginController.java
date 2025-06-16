@@ -35,6 +35,9 @@ public class LoginController {
         this.view = view;
         this.loginModel = new LoginModel();
         
+        // Set this controller in the view
+        view.setController(this);
+        
         // Initialize UserDAO with proper error handling
         try {
             this.userDAO = new UserDAO();
@@ -110,20 +113,26 @@ public class LoginController {
     private static Swipe currentSwipeView = null;
     
     private void handleLogin() {
-        // Get credentials
-        final String username = view.getUsername();
-        final String password = view.getPassword();
+        String username = view.getUsername();
+        String password = view.getPassword();
         
-        // Basic validation before proceeding
-        if (username.isEmpty() || password.isEmpty()) {
-            view.showMessage("Please enter both username and password", 
-                "Login Error", JOptionPane.ERROR_MESSAGE);
+        // Set values in model
+        loginModel.setUsername(username);
+        loginModel.setPassword(password);
+        
+        // Validate using model
+        String validationError = loginModel.validate();
+        if (validationError != null) {
+            view.showMessage(validationError, "Login Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
         
-        // Disable login button to prevent multiple clicks
-        javax.swing.JButton loginButton = view.getLoginButton();
-        loginButton.setEnabled(false);
+        // Check if UserDAO is initialized
+        if (userDAO == null) {
+            view.showMessage("Database connection not available. Please restart the application.", 
+                "Database Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
         
         // Show loading cursor
         view.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
@@ -132,67 +141,58 @@ public class LoginController {
         SwingWorker<User, Void> worker = new SwingWorker<User, Void>() {
             @Override
             protected User doInBackground() throws Exception {
-                // Directly authenticate user without artificial delay
+                // Simulate network delay (remove in production)
+                Thread.sleep(500);
                 return userDAO.authenticateUser(username, password);
             }
             
             @Override
             protected void done() {
+                // Reset cursor
+                view.setCursor(Cursor.getDefaultCursor());
+                
                 try {
-                    // Get the authentication result
-                    final User authenticatedUser = get();
+                    User authenticatedUser = get();
                     
-                    // Schedule UI updates on the EDT
-                    SwingUtilities.invokeLater(() -> {
-                        try {
-                            if (authenticatedUser != null) {
-                                // Successful login
-                                view.showMessage(
-                                    "Welcome back, " + authenticatedUser.getUsername() + "!",
-                                    "Login Successful",
-                                    JOptionPane.INFORMATION_MESSAGE
-                                );
-                                
-                                // Close login window
-                                view.dispose();
-                                
-                                // Show existing Swipe view or create a new one
-                                if (currentSwipeView == null || !currentSwipeView.isDisplayable()) {
-                                    currentSwipeView = new Swipe();
-                                    currentSwipeView.setUser(authenticatedUser);
-                                    currentSwipeView.setVisible(true);
-                                } else {
-                                    currentSwipeView.setExtendedState(JFrame.NORMAL);
-                                    currentSwipeView.toFront();
-                                    currentSwipeView.requestFocus();
-                                }
-                            } else {
-                                // Authentication failed
-                                view.showMessage(
-                                    "Invalid username or password. Please try again.",
-                                    "Login Failed",
-                                    JOptionPane.ERROR_MESSAGE
-                                );
-                                view.clearFields();
-                            }
-                        } finally {
-                            // Always re-enable the login button and reset cursor
-                            view.getLoginButton().setEnabled(true);
-                            view.setCursor(Cursor.getDefaultCursor());
-                        }
-                    });
-                    
-                } catch (Exception e) {
-                    // Handle any exceptions on the EDT
-                    SwingUtilities.invokeLater(() -> {
+                    if (authenticatedUser != null) {
+                        // Successful login
                         view.showMessage(
-                            "An error occurred during login: " + e.getMessage(),
-                            "Login Error",
+                            "Welcome back, " + authenticatedUser.getUsername() + "!",
+                            "Login Successful",
+                            JOptionPane.INFORMATION_MESSAGE
+                        );
+                        
+                        // Close login window
+                        view.dispose();
+                        
+                        // Show existing Swipe view or create a new one
+                        SwingUtilities.invokeLater(() -> {
+                            if (currentSwipeView == null || !currentSwipeView.isDisplayable()) {
+                                currentSwipeView = new Swipe();
+                                currentSwipeView.setUser(authenticatedUser);
+                                currentSwipeView.setVisible(true);
+                            } else {
+                                currentSwipeView.setExtendedState(JFrame.NORMAL);
+                                currentSwipeView.toFront();
+                                currentSwipeView.requestFocus();
+                            }
+                        });
+                        
+                    } else {
+                        // Authentication failed
+                        view.showMessage(
+                            "Invalid username or password. Please try again.",
+                            "Login Failed",
                             JOptionPane.ERROR_MESSAGE
                         );
-                        view.getLoginButton().setEnabled(true);
-                        view.setCursor(Cursor.getDefaultCursor());
-                    });
+                        view.clearFields();
+                    }
+                } catch (Exception e) {
+                    view.showMessage(
+                        "An error occurred during login: " + e.getMessage(),
+                        "Login Error",
+                        JOptionPane.ERROR_MESSAGE
+                    );
                     e.printStackTrace();
                 }
             }
@@ -203,26 +203,44 @@ public class LoginController {
     
     private static HomePage homePageInstance = null;
     
-    private void handleBack() {
-        // Close the login view
-        view.dispose();
+    public void handleBack() {
+        // Hide the login view instead of disposing it
+        view.setVisible(false);
+        
         // Show existing HomePage or create a new one if it doesn't exist
         SwingUtilities.invokeLater(() -> {
-            if (homePageInstance == null || !homePageInstance.isDisplayable()) {
-                homePageInstance = new heartsync.view.HomePage();
-                homePageInstance.setVisible(true);
-            } else {
-                homePageInstance.setExtendedState(JFrame.NORMAL);
-                homePageInstance.toFront();
-                homePageInstance.requestFocus();
+            try {
+                if (homePageInstance == null || !homePageInstance.isDisplayable()) {
+                    homePageInstance = new heartsync.view.HomePage();
+                    homePageInstance.setLocationRelativeTo(null);
+                    homePageInstance.setVisible(true);
+                } else {
+                    homePageInstance.setExtendedState(JFrame.NORMAL);
+                    homePageInstance.toFront();
+                    homePageInstance.requestFocus();
+                }
+            } catch (Exception e) {
+                System.err.println("Error showing home page: " + e.getMessage());
+                e.printStackTrace();
+                // If there's an error, just close the login view
+                view.dispose();
             }
         });
     }
     
-    private void handleForgotPassword() {
-        // Dispose current login view and open ForgotPassword window using singleton
-        view.dispose();
-        heartsync.view.ForgotPassword.showForgotPassword();
+    public void handleForgotPassword() {
+        // Hide current login view instead of disposing it
+        view.setVisible(false);
+        
+        // Show forgot password dialog
+        try {
+            heartsync.view.ForgotPassword.showForgotPassword();
+        } catch (Exception e) {
+            System.err.println("Error showing forgot password: " + e.getMessage());
+            e.printStackTrace();
+            // If there's an error, show the login view again
+            view.setVisible(true);
+        }
     }
     
     /**
@@ -237,6 +255,7 @@ public class LoginController {
             if (currentLoginView != null) {
                 if (currentLoginView.isDisplayable()) {
                     currentLoginView.setExtendedState(JFrame.NORMAL);
+                    currentLoginView.setVisible(true);
                     currentLoginView.toFront();
                     currentLoginView.requestFocus();
                     return;
@@ -246,28 +265,33 @@ public class LoginController {
                 }
             }
             
-            // Create new login view and controller
-            currentLoginView = new LoginView();
-            new LoginController(currentLoginView);
-            
-            // Add window listener to clean up reference when closed
-            currentLoginView.addWindowListener(new java.awt.event.WindowAdapter() {
-                @Override
-                public void windowClosed(java.awt.event.WindowEvent e) {
-                    // Clean up the reference when window is closed
-                    currentLoginView = null;
-                }
+            try {
+                // Create new login view and controller
+                currentLoginView = new LoginView();
+                new LoginController(currentLoginView);
                 
-                @Override
-                public void windowClosing(java.awt.event.WindowEvent e) {
-                    // Ensure cleanup happens even if window is force-closed
-                    currentLoginView = null;
-                }
-            });
-            
-            // Center and show the view
-            currentLoginView.setLocationRelativeTo(null);
-            currentLoginView.setVisible(true);
+                // Add window listener to clean up reference when closed
+                currentLoginView.addWindowListener(new java.awt.event.WindowAdapter() {
+                    @Override
+                    public void windowClosed(java.awt.event.WindowEvent e) {
+                        // Clean up the reference when window is closed
+                        currentLoginView = null;
+                    }
+                    
+                    @Override
+                    public void windowClosing(java.awt.event.WindowEvent e) {
+                        // Ensure cleanup happens even if window is force-closed
+                        currentLoginView = null;
+                    }
+                });
+                
+                // Center and show the view
+                currentLoginView.setLocationRelativeTo(null);
+                currentLoginView.setVisible(true);
+            } catch (Exception e) {
+                System.err.println("Error creating login view: " + e.getMessage());
+                e.printStackTrace();
+            }
         });
     }
 }

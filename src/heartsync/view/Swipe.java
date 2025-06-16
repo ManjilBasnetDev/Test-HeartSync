@@ -36,9 +36,7 @@ public class Swipe extends JFrame {
     private final RoundedButton likeButton;
     private final RoundedButton rejectButton;
     private final RoundedButton closeButton;
-    private final RoundedButton messageButton;
-    private final RoundedButton myProfileButton;
-    private final RoundedButton searchButton;
+    private final RoundedButton logoutButton;
     private final ArrayList<ProfileData> profiles;
     private int currentIndex;
     private User currentUser; // Add field to store the current user
@@ -207,25 +205,9 @@ public class Swipe extends JFrame {
             }
         };
         closeButton.setBounds(650, 10, 30, 30);
-        closeButton.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        closeButton.setFont(new Font("Segoe UI", Font.BOLD, 16)); // Slightly larger font
         closeButton.addActionListener(e -> dispose());
         mainPanel.add(closeButton);
-        
-        // Add top buttons with text and emojis
-        messageButton = new RoundedButton("💬 Messages", new Color(64, 158, 255));
-        messageButton.setBounds(520, 10, 120, 35);
-        messageButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        mainPanel.add(messageButton);
-
-        myProfileButton = new RoundedButton("👤 My Profile", new Color(147, 112, 219));
-        myProfileButton.setBounds(380, 10, 120, 35);
-        myProfileButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        mainPanel.add(myProfileButton);
-
-        searchButton = new RoundedButton("🔍 Search", new Color(52, 152, 219));
-        searchButton.setBounds(240, 10, 120, 35);
-        searchButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        mainPanel.add(searchButton);
         
         // Card panel for profile display
         cardPanel = new JPanel(null);
@@ -265,7 +247,7 @@ public class Swipe extends JFrame {
         
         likeButton = new RoundedButton("♥ Like", LIKE_COLOR);
         likeButton.setBounds(470, 700, 120, 45);
-
+        
         // Add components
         cardPanel.add(imageLabel);
         cardPanel.add(nameLabel);
@@ -339,9 +321,6 @@ public class Swipe extends JFrame {
         backButton.addActionListener(e -> showPreviousProfile());
         likeButton.addActionListener(e -> likeCurrentProfile());
         rejectButton.addActionListener(e -> rejectCurrentProfile());
-        messageButton.addActionListener(e -> openChatSystem());
-        myProfileButton.addActionListener(e -> openMyProfile());
-        searchButton.addActionListener(e -> openSearchDialog());
     }
     
     private void showCurrentProfile() {
@@ -420,39 +399,6 @@ public class Swipe extends JFrame {
             "Passed",
             JOptionPane.INFORMATION_MESSAGE);
         showNextProfile();
-    }
-    
-    private void openChatSystem() {
-        // Hide current window
-        this.setVisible(false);
-        
-        // Create and show chat system
-        SwingUtilities.invokeLater(() -> {
-            ChatSystem chatSystem = new ChatSystem();
-            chatSystem.setVisible(true);
-            
-            // Dispose this window when chat system is closed
-            chatSystem.addWindowListener(new WindowAdapter() {
-                @Override
-                public void windowClosed(WindowEvent e) {
-                    Swipe.this.dispose();
-                }
-            });
-        });
-    }
-    
-    private void openMyProfile() {
-        JOptionPane.showMessageDialog(this,
-            "Opening your profile...\nProfile view coming soon!",
-            "My Profile",
-            JOptionPane.INFORMATION_MESSAGE);
-    }
-
-    private void openSearchDialog() {
-        JOptionPane.showMessageDialog(this,
-            "Profile search coming soon!",
-            "Search Profiles",
-            JOptionPane.INFORMATION_MESSAGE);
     }
     
     public static void main(String args[]) {

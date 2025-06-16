@@ -110,26 +110,20 @@ public class LoginController {
     private static Swipe currentSwipeView = null;
     
     private void handleLogin() {
-        String username = view.getUsername();
-        String password = view.getPassword();
+        // Get credentials
+        final String username = view.getUsername();
+        final String password = view.getPassword();
         
-        // Set values in model
-        loginModel.setUsername(username);
-        loginModel.setPassword(password);
-        
-        // Validate using model
-        String validationError = loginModel.validate();
-        if (validationError != null) {
-            view.showMessage(validationError, "Login Error", JOptionPane.ERROR_MESSAGE);
+        // Basic validation before proceeding
+        if (username.isEmpty() || password.isEmpty()) {
+            view.showMessage("Please enter both username and password", 
+                "Login Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
         
-        // Check if UserDAO is initialized
-        if (userDAO == null) {
-            view.showMessage("Database connection not available. Please restart the application.", 
-                "Database Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
+        // Disable login button to prevent multiple clicks
+        javax.swing.JButton loginButton = view.getLoginButton();
+        loginButton.setEnabled(false);
         
         // Show loading cursor
         view.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
@@ -138,58 +132,67 @@ public class LoginController {
         SwingWorker<User, Void> worker = new SwingWorker<User, Void>() {
             @Override
             protected User doInBackground() throws Exception {
-                // Simulate network delay (remove in production)
-                Thread.sleep(500);
+                // Directly authenticate user without artificial delay
                 return userDAO.authenticateUser(username, password);
             }
             
             @Override
             protected void done() {
-                // Reset cursor
-                view.setCursor(Cursor.getDefaultCursor());
-                
                 try {
-                    User authenticatedUser = get();
+                    // Get the authentication result
+                    final User authenticatedUser = get();
                     
-                    if (authenticatedUser != null) {
-                        // Successful login
-                        view.showMessage(
-                            "Welcome back, " + authenticatedUser.getUsername() + "!",
-                            "Login Successful",
-                            JOptionPane.INFORMATION_MESSAGE
-                        );
-                        
-                        // Close login window
-                        view.dispose();
-                        
-                        // Show existing Swipe view or create a new one
-                        SwingUtilities.invokeLater(() -> {
-                            if (currentSwipeView == null || !currentSwipeView.isDisplayable()) {
-                                currentSwipeView = new Swipe();
-                                currentSwipeView.setUser(authenticatedUser);
-                                currentSwipeView.setVisible(true);
+                    // Schedule UI updates on the EDT
+                    SwingUtilities.invokeLater(() -> {
+                        try {
+                            if (authenticatedUser != null) {
+                                // Successful login
+                                view.showMessage(
+                                    "Welcome back, " + authenticatedUser.getUsername() + "!",
+                                    "Login Successful",
+                                    JOptionPane.INFORMATION_MESSAGE
+                                );
+                                
+                                // Close login window
+                                view.dispose();
+                                
+                                // Show existing Swipe view or create a new one
+                                if (currentSwipeView == null || !currentSwipeView.isDisplayable()) {
+                                    currentSwipeView = new Swipe();
+                                    currentSwipeView.setUser(authenticatedUser);
+                                    currentSwipeView.setVisible(true);
+                                } else {
+                                    currentSwipeView.setExtendedState(JFrame.NORMAL);
+                                    currentSwipeView.toFront();
+                                    currentSwipeView.requestFocus();
+                                }
                             } else {
-                                currentSwipeView.setExtendedState(JFrame.NORMAL);
-                                currentSwipeView.toFront();
-                                currentSwipeView.requestFocus();
+                                // Authentication failed
+                                view.showMessage(
+                                    "Invalid username or password. Please try again.",
+                                    "Login Failed",
+                                    JOptionPane.ERROR_MESSAGE
+                                );
+                                view.clearFields();
                             }
-                        });
-                        
-                    } else {
-                        // Authentication failed
+                        } finally {
+                            // Always re-enable the login button and reset cursor
+                            view.getLoginButton().setEnabled(true);
+                            view.setCursor(Cursor.getDefaultCursor());
+                        }
+                    });
+                    
+                } catch (Exception e) {
+                    // Handle any exceptions on the EDT
+                    SwingUtilities.invokeLater(() -> {
                         view.showMessage(
-                            "Invalid username or password. Please try again.",
-                            "Login Failed",
+                            "An error occurred during login: " + e.getMessage(),
+                            "Login Error",
                             JOptionPane.ERROR_MESSAGE
                         );
-                        view.clearFields();
-                    }
-                } catch (Exception e) {
-                    view.showMessage(
-                        "An error occurred during login: " + e.getMessage(),
-                        "Login Error",
-                        JOptionPane.ERROR_MESSAGE
-                    );
+                        view.getLoginButton().setEnabled(true);
+                        view.setCursor(Cursor.getDefaultCursor());
+                    });
                     e.printStackTrace();
                 }
             }

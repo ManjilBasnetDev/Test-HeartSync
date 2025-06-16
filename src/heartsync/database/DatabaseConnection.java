@@ -80,6 +80,20 @@ public class DatabaseConnection {
         }
     }
     
+    /**
+     * Verifies a password against a stored hash
+     * @param password The password to verify
+     * @param storedHash The stored hash to verify against
+     * @return true if the password matches the hash, false otherwise
+     */
+    public static boolean verifyPassword(String password, String storedHash) {
+        if (password == null || storedHash == null) {
+            return false;
+        }
+        String hashedPassword = hashPassword(password);
+        return hashedPassword.equals(storedHash);
+    }
+    
     private static void initializeDatabase() throws SQLException {
         if (!driverLoaded) {
             return;
@@ -219,15 +233,31 @@ public class DatabaseConnection {
                     """;
                     stmt.executeUpdate(createMessagesTableSQL);
 
-                    // Insert default admin user
+                    // Insert default admin user if not exists
                     String insertAdminSQL = """
                         INSERT INTO users (username, password, user_type, email)
-                        SELECT * FROM (SELECT 'admin', 'admin123', 'ADMIN', 'admin@heartsync.com') AS tmp
+                        SELECT * FROM (SELECT 'Admin', ?, 'ADMIN', 'admin@heartsync.com') AS tmp
                         WHERE NOT EXISTS (
-                            SELECT username FROM users WHERE username = 'admin'
+                            SELECT username FROM users WHERE username = 'Admin'
                         ) LIMIT 1
                     """;
-                    stmt.executeUpdate(insertAdminSQL);
+                    try (var pstmt = conn.prepareStatement(insertAdminSQL)) {
+                        pstmt.setString(1, hashPassword("Admin@123"));
+                        pstmt.executeUpdate();
+                    }
+                    
+                    // Insert default regular user if not exists
+                    String insertUserSQL = """
+                        INSERT INTO users (username, password, user_type, email)
+                        SELECT * FROM (SELECT 'User', ?, 'USER', 'user@heartsync.com') AS tmp
+                        WHERE NOT EXISTS (
+                            SELECT username FROM users WHERE username = 'User'
+                        ) LIMIT 1
+                    """;
+                    try (var pstmt = conn.prepareStatement(insertUserSQL)) {
+                        pstmt.setString(1, hashPassword("User@123"));
+                        pstmt.executeUpdate();
+                    }
                     
                     System.out.println("Database and tables initialized successfully");
                 }

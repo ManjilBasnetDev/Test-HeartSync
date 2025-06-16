@@ -368,10 +368,18 @@ jToggleButton1.setPreferredSize(new java.awt.Dimension(70, 32));
         jPasswordField1.setText("");
         jTextField1.requestFocusInWindow();
     }
+    
+    /**
+     * Gets the login button instance
+     * @return The login button
+     */
+    public javax.swing.JButton getLoginButton() {
+        return jButton2;
+    }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton jButton1;
-    private javax.swing.JButton jButton2;
+    private javax.swing.JButton jButton2; // Login Button
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;

@@ -44,6 +44,7 @@ import heartsync.dao.UserRegisterDAO;
 import heartsync.model.User;
 import heartsync.model.UserProfile;
 import heartsync.view.ProfileSetupView;
+import heartsync.dao.UserDAO;
 
 public class Register extends JFrame {
     private JPanel mainPanel;
@@ -392,18 +393,29 @@ public class Register extends JFrame {
         // Username field focus listeners
         usernameField.addFocusListener(new FocusAdapter() {
             @Override
+            public void focusLost(FocusEvent e) {
+                String username = usernameField.getText().trim();
+                if (!username.equals("USERNAME") && !username.isEmpty()) {
+                    if (!isUsernameAvailable(username)) {
+                        JOptionPane.showMessageDialog(Register.this,
+                            "Username already exists. Please choose a different username.",
+                            "Username Unavailable",
+                            JOptionPane.ERROR_MESSAGE);
+                        continueButton.setEnabled(false);
+                    } else {
+                        continueButton.setEnabled(true);
+                    }
+                }
+                if (usernameField.getText().isEmpty()) {
+                    usernameField.setForeground(Color.GRAY);
+                    usernameField.setText("USERNAME");
+                }
+            }
+            @Override
             public void focusGained(FocusEvent e) {
                 if (usernameField.getText().equals("USERNAME")) {
                     usernameField.setText("");
                     usernameField.setForeground(Color.BLACK);
-                }
-            }
-            
-            @Override
-            public void focusLost(FocusEvent e) {
-                if (usernameField.getText().isEmpty()) {
-                    usernameField.setForeground(Color.GRAY);
-                    usernameField.setText("USERNAME");
                 }
             }
         });
@@ -631,6 +643,7 @@ public class Register extends JFrame {
                     if (role.equals("USER")) {
                         // Open profile setup for regular users
                         UserProfile model = new UserProfile();
+                        model.setDateOfBirth(user.getDateOfBirth());
                         UserProfileController controller = new UserProfileController(model, username);
                         ProfileSetupView view = new ProfileSetupView(controller);
                         view.setLocationRelativeTo(null);
@@ -802,6 +815,15 @@ public class Register extends JFrame {
         }
 
         return true;
+    }
+    
+    private boolean isUsernameAvailable(String username) {
+        try {
+            UserDAO userDAO = new UserDAO();
+            return userDAO.getUser(username) == null;
+        } catch (Exception e) {
+            return false;
+        }
     }
     
     public static void main(String[] args) {

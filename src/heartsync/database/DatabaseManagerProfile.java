@@ -38,9 +38,6 @@ public class DatabaseManagerProfile {
     }
 
     private void initializeTables() {
-        // Drop existing tables first
-        dropExistingTables();
-        
         try (Connection conn = DatabaseConnection.getConnection()) {
             // Create user_profiles table with all required fields
             try (PreparedStatement stmt = conn.prepareStatement(
@@ -60,6 +57,11 @@ public class DatabaseManagerProfile {
                 "about_me TEXT NOT NULL, " +
                 "profile_pic_path VARCHAR(500), " +
                 "relation_choice VARCHAR(50) NOT NULL, " +
+                "date_of_birth DATE, " +
+                "email VARCHAR(255), " +
+                "occupation VARCHAR(100), " +
+                "religion VARCHAR(100), " +
+                "ethnicity VARCHAR(100), " +
                 "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE" +
                 ")"
             )) {
@@ -77,6 +79,18 @@ public class DatabaseManagerProfile {
             )) {
                 stmt.execute();
             }
+
+            // Create user_languages table if it doesn't exist
+            try (PreparedStatement stmt = conn.prepareStatement(
+                "CREATE TABLE IF NOT EXISTS user_languages (" +
+                "id INT AUTO_INCREMENT PRIMARY KEY, " +
+                "user_id INT NOT NULL, " +
+                "language VARCHAR(100) NOT NULL, " +
+                "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE" +
+                ")"
+            )) {
+                stmt.execute();
+            }
         } catch (SQLException e) {
             System.err.println("Error initializing database tables: " + e.getMessage());
             throw new RuntimeException("Failed to initialize database tables", e);
@@ -87,7 +101,8 @@ public class DatabaseManagerProfile {
                              String address, String phone, String qualification, 
                              String gender, String preferences, String aboutMe, 
                              String profilePicPath, String relationChoice, 
-                             List<String> hobbies) throws SQLException {
+                             List<String> hobbies, int age, String dateOfBirth, String email,
+                             String occupation, String religion, String ethnicity, List<String> languages) throws SQLException {
         Connection conn = null;
         try {
             conn = DatabaseConnection.getConnection();
@@ -106,19 +121,40 @@ public class DatabaseManagerProfile {
                 }
             }
 
-            // Insert user profile with the correct user_id
-            String insertUserSQL = """
-                INSERT INTO user_profiles (user_id, full_name, height, age, weight, country, address, 
-                                      phone, qualification, gender, preferences, 
-                                      about_me, profile_pic_path, relation_choice)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            // Insert or update user profile
+            String upsertSQL = """
+                INSERT INTO user_profiles (
+                    user_id, full_name, height, age, weight, country, address, 
+                    phone, qualification, gender, preferences, about_me, 
+                    profile_pic_path, relation_choice, date_of_birth, email, 
+                    occupation, religion, ethnicity
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE
+                    full_name = VALUES(full_name),
+                    height = VALUES(height),
+                    age = VALUES(age),
+                    weight = VALUES(weight),
+                    country = VALUES(country),
+                    address = VALUES(address),
+                    phone = VALUES(phone),
+                    qualification = VALUES(qualification),
+                    gender = VALUES(gender),
+                    preferences = VALUES(preferences),
+                    about_me = VALUES(about_me),
+                    profile_pic_path = VALUES(profile_pic_path),
+                    relation_choice = VALUES(relation_choice),
+                    date_of_birth = VALUES(date_of_birth),
+                    email = VALUES(email),
+                    occupation = VALUES(occupation),
+                    religion = VALUES(religion),
+                    ethnicity = VALUES(ethnicity)
             """;
 
-            try (PreparedStatement pstmt = conn.prepareStatement(insertUserSQL, Statement.RETURN_GENERATED_KEYS)) {
+            try (PreparedStatement pstmt = conn.prepareStatement(upsertSQL)) {
                 pstmt.setInt(1, userId);
                 pstmt.setString(2, fullName);
                 pstmt.setInt(3, height);
-                pstmt.setNull(4, java.sql.Types.INTEGER); // TODO: Replace with actual age if available
+                pstmt.setInt(4, age);
                 pstmt.setInt(5, weight);
                 pstmt.setString(6, country);
                 pstmt.setString(7, address);
@@ -129,19 +165,49 @@ public class DatabaseManagerProfile {
                 pstmt.setString(12, aboutMe);
                 pstmt.setString(13, profilePicPath);
                 pstmt.setString(14, relationChoice);
+                pstmt.setString(15, dateOfBirth);
+                pstmt.setString(16, email);
+                pstmt.setString(17, occupation);
+                pstmt.setString(18, religion);
+                pstmt.setString(19, ethnicity);
 
                 pstmt.executeUpdate();
             }
 
+            // Delete existing hobbies and languages for this user
+            try (PreparedStatement pstmt = conn.prepareStatement("DELETE FROM user_hobbies WHERE user_id = ?")) {
+                pstmt.setInt(1, userId);
+                pstmt.executeUpdate();
+            }
+            try (PreparedStatement pstmt = conn.prepareStatement("DELETE FROM user_languages WHERE user_id = ?")) {
+                pstmt.setInt(1, userId);
+                pstmt.executeUpdate();
+            }
+
             // Insert hobbies
-            String insertHobbySQL = "INSERT INTO user_hobbies (user_id, hobby) VALUES (?, ?)";
-            try (PreparedStatement pstmt = conn.prepareStatement(insertHobbySQL)) {
-                for (String hobby : hobbies) {
-                    pstmt.setInt(1, userId);
-                    pstmt.setString(2, hobby);
-                    pstmt.addBatch();
+            if (hobbies != null && !hobbies.isEmpty()) {
+                String insertHobbySQL = "INSERT INTO user_hobbies (user_id, hobby) VALUES (?, ?)";
+                try (PreparedStatement pstmt = conn.prepareStatement(insertHobbySQL)) {
+                    for (String hobby : hobbies) {
+                        pstmt.setInt(1, userId);
+                        pstmt.setString(2, hobby);
+                        pstmt.addBatch();
+                    }
+                    pstmt.executeBatch();
                 }
-                pstmt.executeBatch();
+            }
+
+            // Insert languages
+            if (languages != null && !languages.isEmpty()) {
+                String insertLanguageSQL = "INSERT INTO user_languages (user_id, language) VALUES (?, ?)";
+                try (PreparedStatement pstmt = conn.prepareStatement(insertLanguageSQL)) {
+                    for (String language : languages) {
+                        pstmt.setInt(1, userId);
+                        pstmt.setString(2, language);
+                        pstmt.addBatch();
+                    }
+                    pstmt.executeBatch();
+                }
             }
 
             conn.commit();
@@ -177,7 +243,8 @@ public class DatabaseManagerProfile {
         String sql = """
             SELECT u.id AS user_id, up.full_name, up.height, up.weight, up.country, up.address, up.phone,
                    up.qualification, up.gender, up.preferences, up.about_me, up.profile_pic_path,
-                   up.relation_choice
+                   up.relation_choice, up.date_of_birth, up.email, up.occupation, up.religion, up.ethnicity,
+                   up.age
             FROM users u
             LEFT JOIN user_profiles up ON u.id = up.user_id
             WHERE u.username = ?
@@ -202,6 +269,12 @@ public class DatabaseManagerProfile {
                     profile.setAboutMe(rs.getString("about_me"));
                     profile.setProfilePicPath(rs.getString("profile_pic_path"));
                     profile.setRelationshipGoal(rs.getString("relation_choice"));
+                    profile.setDateOfBirth(rs.getString("date_of_birth"));
+                    profile.setEmail(rs.getString("email"));
+                    profile.setOccupation(rs.getString("occupation"));
+                    profile.setReligion(rs.getString("religion"));
+                    profile.setEthnicity(rs.getString("ethnicity"));
+                    profile.setAge(rs.getInt("age"));
 
                     // Load hobbies if they exist
                     int userId = rs.getInt("user_id");
@@ -216,6 +289,19 @@ public class DatabaseManagerProfile {
                             profile.setHobbies(hobbies);
                         }
                     }
+
+                    // Load languages if they exist
+                    String languageSql = "SELECT language FROM user_languages WHERE user_id = ?";
+                    try (PreparedStatement langStmt = conn.prepareStatement(languageSql)) {
+                        langStmt.setInt(1, userId);
+                        try (ResultSet langRs = langStmt.executeQuery()) {
+                            List<String> languages = new ArrayList<>();
+                            while (langRs.next()) {
+                                languages.add(langRs.getString("language"));
+                            }
+                            profile.setLanguages(languages);
+                        }
+                    }
                 }
             }
         }
@@ -225,5 +311,72 @@ public class DatabaseManagerProfile {
             profile = new UserProfile();
         }
         return profile;
+    }
+
+    public List<UserProfile> getAllUserProfilesExcept(String excludeUsername) throws SQLException {
+        List<UserProfile> profiles = new ArrayList<>();
+        String sql = """
+            SELECT u.id AS user_id, up.full_name, up.height, up.weight, up.country, up.address, up.phone,
+                   up.qualification, up.gender, up.preferences, up.about_me, up.profile_pic_path,
+                   up.relation_choice, up.date_of_birth, up.email, up.occupation, up.religion, up.ethnicity,
+                   up.age, u.username
+            FROM users u
+            LEFT JOIN user_profiles up ON u.id = up.user_id
+            WHERE u.username != ?
+        """;
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, excludeUsername);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    UserProfile profile = new UserProfile();
+                    profile.setFullName(rs.getString("full_name"));
+                    profile.setHeight(rs.getInt("height"));
+                    profile.setWeight(rs.getInt("weight"));
+                    profile.setCountry(rs.getString("country"));
+                    profile.setAddress(rs.getString("address"));
+                    profile.setPhoneNumber(rs.getString("phone"));
+                    profile.setQualification(rs.getString("qualification"));
+                    profile.setGender(rs.getString("gender"));
+                    profile.setPreferences(rs.getString("preferences"));
+                    profile.setAboutMe(rs.getString("about_me"));
+                    profile.setProfilePicPath(rs.getString("profile_pic_path"));
+                    profile.setRelationshipGoal(rs.getString("relation_choice"));
+                    profile.setDateOfBirth(rs.getString("date_of_birth"));
+                    profile.setEmail(rs.getString("email"));
+                    profile.setOccupation(rs.getString("occupation"));
+                    profile.setReligion(rs.getString("religion"));
+                    profile.setEthnicity(rs.getString("ethnicity"));
+                    profile.setAge(rs.getInt("age"));
+                    // Load hobbies
+                    int userId = rs.getInt("user_id");
+                    String hobbySql = "SELECT hobby FROM user_hobbies WHERE user_id = ?";
+                    try (PreparedStatement hobbyStmt = conn.prepareStatement(hobbySql)) {
+                        hobbyStmt.setInt(1, userId);
+                        try (ResultSet hobbyRs = hobbyStmt.executeQuery()) {
+                            List<String> hobbies = new ArrayList<>();
+                            while (hobbyRs.next()) {
+                                hobbies.add(hobbyRs.getString("hobby"));
+                            }
+                            profile.setHobbies(hobbies);
+                        }
+                    }
+                    // Load languages
+                    String languageSql = "SELECT language FROM user_languages WHERE user_id = ?";
+                    try (PreparedStatement langStmt = conn.prepareStatement(languageSql)) {
+                        langStmt.setInt(1, userId);
+                        try (ResultSet langRs = langStmt.executeQuery()) {
+                            List<String> languages = new ArrayList<>();
+                            while (langRs.next()) {
+                                languages.add(langRs.getString("language"));
+                            }
+                            profile.setLanguages(languages);
+                        }
+                    }
+                    profiles.add(profile);
+                }
+            }
+        }
+        return profiles;
     }
 } 

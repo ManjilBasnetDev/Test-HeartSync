@@ -35,6 +35,7 @@ import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 
 import heartsync.controller.LoginController;
 import heartsync.controller.UserProfileController;
@@ -457,6 +458,7 @@ public class MoreInfoView extends JFrame {
         try {
             UserProfile profile = controller.getModel();
             DatabaseManagerProfile dbManager = DatabaseManagerProfile.getInstance();
+            boolean isEdit = profile.getFullName() != null && !profile.getFullName().isEmpty();
             int userId = dbManager.saveUserProfile(
                 controller.getCurrentUsername(),
                 profile.getFullName(),
@@ -471,16 +473,44 @@ public class MoreInfoView extends JFrame {
                 profile.getAboutMe(),
                 profile.getProfilePicPath(),
                 selectedRelation,
-                selectedHobbies
+                selectedHobbies,
+                profile.getAge(),
+                profile.getDateOfBirth(),
+                profile.getEmail(),
+                profile.getOccupation(),
+                profile.getReligion(),
+                profile.getEthnicity(),
+                profile.getLanguages()
             );
 
             if (userId != -1) {
-                JOptionPane.showMessageDialog(this,
-                    "Profile created successfully!\nYour User ID is: " + userId,
-                    "Success",
-                    JOptionPane.INFORMATION_MESSAGE);
-                this.dispose();
-                LoginController.createAndShowLoginView();
+                if (isEdit) {
+                    JOptionPane.showMessageDialog(this,
+                        "Profile updated successfully!",
+                        "Success",
+                        JOptionPane.INFORMATION_MESSAGE);
+                    this.dispose();
+                    // Refresh My Profile section if open
+                    UserProfile.setCurrentUser(null);
+                    java.awt.Window[] windows = java.awt.Window.getWindows();
+                    for (java.awt.Window w : windows) {
+                        if (w instanceof heartsync.view.Swipe) {
+                            ((heartsync.view.Swipe) w).showProfile();
+                        }
+                    }
+                } else {
+                    JOptionPane.showMessageDialog(this,
+                        "Profile created successfully!\nYour User ID is: " + userId,
+                        "Success",
+                        JOptionPane.INFORMATION_MESSAGE);
+                    this.dispose();
+                    // Open HomePage instead of LoginView
+                    SwingUtilities.invokeLater(() -> {
+                        HomePage homePage = new HomePage();
+                        homePage.setLocationRelativeTo(null);
+                        homePage.setVisible(true);
+                    });
+                }
             } else {
                 JOptionPane.showMessageDialog(this,
                     "Failed to save profile. Please try again.",

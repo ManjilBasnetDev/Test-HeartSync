@@ -4,6 +4,8 @@ package heartsync.model;
 import java.util.Date;
 
 public class User {
+    private static User currentUser;
+    
     private int id;
     private String username;
     private String password;
@@ -19,6 +21,16 @@ public class User {
     private String bio;
     private String favoriteColor;
     private String firstSchool;
+    private String fullName;
+    
+    // Static methods for current user management
+    public static User getCurrentUser() {
+        return currentUser;
+    }
+    
+    public static void setCurrentUser(User user) {
+        currentUser = user;
+    }
     
     // Default constructor
     public User() {
@@ -161,6 +173,14 @@ public class User {
 
     public void setFirstSchool(String firstSchool) {
         this.firstSchool = firstSchool;
+    }
+    
+    public String getFullName() {
+        return fullName;
+    }
+
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
     }
     
     @Override

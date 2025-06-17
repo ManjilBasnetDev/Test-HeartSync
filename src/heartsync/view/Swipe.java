@@ -20,6 +20,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import heartsync.controller.UserProfileController;
 import heartsync.model.UserProfile;
 import java.awt.image.BufferedImage;
+import heartsync.database.DatabaseManagerProfile;
 
 /**
  * Modern swipe interface for browsing through potential matches.
@@ -43,7 +44,7 @@ public class Swipe extends JFrame {
     private static final int IMAGE_CONTAINER_WIDTH = 450;  // Fixed width for image container
     private static final int IMAGE_CONTAINER_HEIGHT = 600; // Fixed height for image container
     private static final int CARD_WIDTH = 400;  // Card width
-    private static final int CARD_HEIGHT = 600; // Card height
+    private static final int CARD_HEIGHT = 750; // Increased height for more vertical space
     private static final int PHOTO_HEIGHT = 450; // Slightly reduced height for better containment
     private static final Color CARD_SHADOW = new Color(0, 0, 0, 30);
     private static final Color OVERLAY_COLOR = new Color(0, 0, 0, 60);
@@ -90,12 +91,13 @@ public class Swipe extends JFrame {
     private static class RoundedButton extends JButton {
         private boolean isHovered = false;
         private final Color baseColor;
-        private static final int RADIUS = 25; // More rounded corners
+        private static final int RADIUS = 22; // Slightly smaller
 
         public RoundedButton(String text, Color color) {
             super(text);
             this.baseColor = color;
             setupButton();
+            setPreferredSize(new Dimension(90, 45)); // Slightly smaller buttons
         }
 
         private void setupButton() {
@@ -677,6 +679,7 @@ public class Swipe extends JFrame {
     }
 
     private void showNextPhoto() {
+        if (profiles.isEmpty()) return;
         ProfileData currentProfile = profiles.get(currentIndex);
         if (currentProfile.currentPhotoIndex < currentProfile.photos.size() - 1) {
             currentProfile.currentPhotoIndex++;
@@ -685,6 +688,7 @@ public class Swipe extends JFrame {
     }
 
     private void showPreviousPhoto() {
+        if (profiles.isEmpty()) return;
         ProfileData currentProfile = profiles.get(currentIndex);
         if (currentProfile.currentPhotoIndex > 0) {
             currentProfile.currentPhotoIndex--;
@@ -693,28 +697,44 @@ public class Swipe extends JFrame {
     }
 
     private void updateProfilePhoto() {
+        if (profiles.isEmpty()) return;
         ProfileData profile = profiles.get(currentIndex);
+        if (profile.photos.isEmpty()) {
+            imageLabel.setIcon(null);
+            imageLabel.setText("");
+            return;
+        }
         String photoPath = profile.photos.get(profile.currentPhotoIndex);
         try {
-            ImageIcon imageIcon = new ImageIcon(getClass().getResource(photoPath));
-            Image image = imageIcon.getImage();
-            
-            // Calculate dimensions to maintain aspect ratio
-            int originalWidth = image.getWidth(null);
-            int originalHeight = image.getHeight(null);
-            
-            // Calculate scaling factors
-            double widthScale = (double) (CARD_WIDTH - 40) / originalWidth;
-            double heightScale = (double) (PHOTO_HEIGHT - 10) / originalHeight;
-            double scale = Math.max(widthScale, heightScale); // Use max to ensure image covers the area
-            
-            int scaledWidth = (int) (originalWidth * scale);
-            int scaledHeight = (int) (originalHeight * scale);
-            
-            // Create scaled image
-            Image scaledImage = image.getScaledInstance(scaledWidth, scaledHeight, Image.SCALE_SMOOTH);
-            imageLabel.setIcon(new ImageIcon(scaledImage));
-            
+            Image image;
+            if (photoPath.startsWith("/")) {
+                // Try as file path
+                File file = new File(photoPath);
+                if (file.exists()) {
+                    image = ImageIO.read(file);
+                } else {
+                    image = null;
+                }
+            } else {
+                // Try as resource
+                ImageIcon imageIcon = new ImageIcon(getClass().getResource(photoPath));
+                image = imageIcon.getImage();
+            }
+            if (image != null) {
+                int originalWidth = image.getWidth(null);
+                int originalHeight = image.getHeight(null);
+                double widthScale = (double) (CARD_WIDTH - 40) / originalWidth;
+                double heightScale = (double) (PHOTO_HEIGHT - 10) / originalHeight;
+                double scale = Math.max(widthScale, heightScale);
+                int scaledWidth = (int) (originalWidth * scale);
+                int scaledHeight = (int) (originalHeight * scale);
+                Image scaledImage = image.getScaledInstance(scaledWidth, scaledHeight, Image.SCALE_SMOOTH);
+                imageLabel.setIcon(new ImageIcon(scaledImage));
+                imageLabel.setText("");
+            } else {
+                imageLabel.setIcon(null);
+                imageLabel.setText("Error loading image");
+            }
         } catch (Exception e) {
             e.printStackTrace();
             imageLabel.setIcon(null);
@@ -723,47 +743,59 @@ public class Swipe extends JFrame {
     }
 
     private void showCurrentProfile() {
+        if (profiles.isEmpty()) {
+            nameLabel.setText("");
+            ageLabel.setText("");
+            bioLabel.setText("<html><div style='text-align:center;width:300px;'>No profiles to explore yet!</div></html>");
+            imageLabel.setIcon(null);
+            imageLabel.setText("");
+            return;
+        }
         if (currentIndex >= 0 && currentIndex < profiles.size()) {
             ProfileData profile = profiles.get(currentIndex);
             nameLabel.setText(profile.name);
             ageLabel.setText(profile.age + " years");
-            
-            // Center-align the bio text with proper width and wrapping
-            String htmlBio = "<html><div style='text-align: center; width: " + (CARD_WIDTH - 80) + "px;'>" 
-                          + profile.bio.replace(". ", ".<br><br>") + "</div></html>";
+            // Center-align the bio text visually and horizontally
+            String htmlBio = "<html><div style='text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:center;height:100%;width:" + (CARD_WIDTH - 80) + "px;'>"
+                + profile.bio.replace(". ", ".<br><br>") + "</div></html>";
             bioLabel.setText(htmlBio);
-            
+            bioLabel.setHorizontalAlignment(SwingConstants.CENTER);
             updateProfilePhoto();
         }
     }
 
     private void showNextProfile() {
+        if (profiles.isEmpty()) return;
+        if (profiles.size() == 1) {
+            showCurrentProfile();
+            return;
+        }
         if (currentIndex < profiles.size() - 1) {
             currentIndex++;
-            profiles.get(currentIndex).currentPhotoIndex = 0;  // Reset photo index for new profile
-            showCurrentProfile();
         } else {
-            JOptionPane.showMessageDialog(this,
-                "No more profiles to show!",
-                "End of List",
-                JOptionPane.INFORMATION_MESSAGE);
+            currentIndex = 0; // Loop to first
         }
+        profiles.get(currentIndex).currentPhotoIndex = 0;
+        showCurrentProfile();
     }
 
     private void showPreviousProfile() {
+        if (profiles.isEmpty()) return;
+        if (profiles.size() == 1) {
+            showCurrentProfile();
+            return;
+        }
         if (currentIndex > 0) {
             currentIndex--;
-            profiles.get(currentIndex).currentPhotoIndex = 0;  // Reset photo index for new profile
-            showCurrentProfile();
         } else {
-            JOptionPane.showMessageDialog(this,
-                "This is the first profile!",
-                "First Profile",
-                JOptionPane.INFORMATION_MESSAGE);
+            currentIndex = profiles.size() - 1; // Loop to last
         }
+        profiles.get(currentIndex).currentPhotoIndex = 0;
+        showCurrentProfile();
     }
 
     private void likeCurrentProfile() {
+        if (profiles.isEmpty()) return;
         ProfileData profile = profiles.get(currentIndex);
         JOptionPane.showMessageDialog(this,
             "You liked " + profile.name + "!\nMatch functionality coming soon.",
@@ -773,7 +805,7 @@ public class Swipe extends JFrame {
     }
 
     private void rejectCurrentProfile() {
-        ProfileData profile = profiles.get(currentIndex);
+        if (profiles.isEmpty()) return;
         showNextProfile();
     }
 
@@ -784,13 +816,9 @@ public class Swipe extends JFrame {
                 super.paintComponent(g);
                 Graphics2D g2 = (Graphics2D) g;
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-                // Create circular clipping
                 Ellipse2D.Double circle = new Ellipse2D.Double(0, 0, getWidth() - 1, getHeight() - 1);
                 g2.setClip(circle);
-
-                // Draw placeholder or actual image
-                String profilePicPath = UserProfile.getCurrentUser().getProfilePicturePath();
+                String profilePicPath = UserProfile.getCurrentUser().getProfilePicPath();
                 if (profilePicPath != null && !profilePicPath.isEmpty()) {
                     try {
                         BufferedImage img = ImageIO.read(new File(profilePicPath));
@@ -798,35 +826,14 @@ public class Swipe extends JFrame {
                             g2.drawImage(img, 0, 0, getWidth(), getHeight(), null);
                         }
                     } catch (IOException e) {
-                        drawPlaceholder(g2);
+                        g2.setColor(new Color(219, 112, 147));
+                        g2.fill(circle);
                     }
                 } else {
-                    drawPlaceholder(g2);
+                    g2.setColor(new Color(219, 112, 147));
+                    g2.fill(circle);
                 }
-
-                // Draw border
-                g2.setColor(new Color(103, 58, 183));
-                g2.setStroke(new BasicStroke(2));
-                g2.draw(circle);
-            }
-
-            private void drawPlaceholder(Graphics2D g2) {
-                // Draw gradient background
-                GradientPaint gradient = new GradientPaint(
-                    0, 0, new Color(103, 58, 183, 50),
-                    getWidth(), getHeight(), new Color(103, 58, 183, 100)
-                );
-                g2.setPaint(gradient);
-                g2.fillRect(0, 0, getWidth(), getHeight());
-
-                // Draw placeholder icon
-                g2.setColor(new Color(103, 58, 183));
-                int iconSize = getWidth() / 3;
-                int x = (getWidth() - iconSize) / 2;
-                int y = (getHeight() - iconSize) / 2;
-                g2.fillOval(x, y, iconSize, iconSize);
-                g2.setColor(Color.WHITE);
-                g2.fillOval(x + iconSize/4, y + iconSize/4, iconSize/2, iconSize/2);
+                // No border
             }
         };
 
@@ -849,11 +856,9 @@ public class Swipe extends JFrame {
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g;
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                
                 // Draw shadow
                 g2.setColor(CARD_SHADOW);
                 g2.fillRoundRect(5, 5, getWidth() - 10, getHeight() - 10, CARD_RADIUS, CARD_RADIUS);
-                
                 // Draw card background
                 g2.setColor(CARD_BG);
                 g2.fillRoundRect(0, 0, getWidth() - 5, getHeight() - 5, CARD_RADIUS, CARD_RADIUS);
@@ -867,22 +872,48 @@ public class Swipe extends JFrame {
         JPanel userInfoPanel = new JPanel();
         userInfoPanel.setLayout(new BoxLayout(userInfoPanel, BoxLayout.Y_AXIS));
         userInfoPanel.setOpaque(false);
-        
-        // Profile picture
-        JLabel profilePicture = createProfilePicture();
-        
+
+        // Profile picture (use actual image if available)
+        JLabel profilePicture = new JLabel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g;
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                Ellipse2D.Double circle = new Ellipse2D.Double(0, 0, getWidth() - 1, getHeight() - 1);
+                g2.setClip(circle);
+                String profilePicPath = UserProfile.getCurrentUser().getProfilePicPath();
+                if (profilePicPath != null && !profilePicPath.isEmpty()) {
+                    try {
+                        BufferedImage img = ImageIO.read(new File(profilePicPath));
+                        if (img != null) {
+                            g2.drawImage(img, 0, 0, getWidth(), getHeight(), null);
+                        }
+                    } catch (IOException e) {
+                        g2.setColor(new Color(219, 112, 147));
+                        g2.fill(circle);
+                    }
+                } else {
+                    g2.setColor(new Color(219, 112, 147));
+                    g2.fill(circle);
+                }
+                // No border
+            }
+        };
+        profilePicture.setPreferredSize(new Dimension(150, 150));
+        profilePicture.setMaximumSize(new Dimension(150, 150));
+        profilePicture.setAlignmentX(Component.CENTER_ALIGNMENT);
+
         // User details
         JLabel nameLabel = new JLabel(UserProfile.getCurrentUser().getFullName());
         nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
         nameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        
         // Calculate age from date of birth
         String dob = UserProfile.getCurrentUser().getDateOfBirth();
         int age = calculateAge(dob);
         JLabel ageLabel = new JLabel(age + " years");
         ageLabel.setFont(new Font("Segoe UI", Font.PLAIN, 18));
         ageLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        
         // Add components to user info panel
         userInfoPanel.add(profilePicture);
         userInfoPanel.add(Box.createVerticalStrut(15));
@@ -941,6 +972,21 @@ public class Swipe extends JFrame {
         buttonPanel.setOpaque(false);
 
         JButton editProfileBtn = createProfileButton("✎ Edit Profile");
+        editProfileBtn.addActionListener(e -> {
+            UserProfileController controller = new UserProfileController(UserProfile.getCurrentUser(), heartsync.model.User.getCurrentUser().getUsername());
+            ProfileSetupView profileSetup = new ProfileSetupView(controller);
+            profileSetup.setLocationRelativeTo(this);
+            profileSetup.setVisible(true);
+            profileSetup.addWindowListener(new java.awt.event.WindowAdapter() {
+                @Override
+                public void windowClosed(java.awt.event.WindowEvent e) {
+                    UserProfile.setCurrentUser(null);
+                    contentCards.remove(1);
+                    contentCards.add(createProfilePanel(), "profile");
+                    showProfile();
+                }
+            });
+        });
         JButton viewProfileBtn = createProfileButton("👁 View Profile");
         JButton postPicturesBtn = createProfileButton("📷 Post Pictures");
 
@@ -1038,17 +1084,22 @@ public class Swipe extends JFrame {
     private UserProfile loadUserProfile(String username) {
         UserProfile profile = new UserProfile();
         try {
-            // TODO: Implement database connection and query
-            // For now, return an empty profile
-            return profile;
+            DatabaseManagerProfile dbManager = DatabaseManagerProfile.getInstance();
+            profile = dbManager.getUserProfile(username);
+            if (profile == null) {
+                JOptionPane.showMessageDialog(this,
+                    "Profile not found for user: " + username,
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+            }
         } catch (Exception e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this,
                 "Error loading profile: " + e.getMessage(),
                 "Error",
                 JOptionPane.ERROR_MESSAGE);
-            return null;
         }
+        return profile;
     }
 
     private void openProfileEditor() {
@@ -1088,7 +1139,7 @@ public class Swipe extends JFrame {
         cardLayout.show(contentCards, "explore");
     }
 
-    private void showProfile() {
+    public void showProfile() {
         profileLabel.setForeground(NAV_ACTIVE_COLOR);
         profileLabel.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, NAV_ACTIVE_COLOR));
         exploreLabel.setForeground(NAV_COLOR);
@@ -1100,20 +1151,22 @@ public class Swipe extends JFrame {
     
     private void setupProfiles() {
         profiles = new ArrayList<>();
-        
-        // Example profile with multiple photos
-        List<String> rajeshPhotos = Arrays.asList(
-            "/ImagePicker/RajeshHamalPhoto.png",
-            "/ImagePicker/RajeshHamalPhoto2.jpg"
-        );
-        
-        profiles.add(new ProfileData(
-            "Rajesh Hamal",
-            45,
-            "Mahanayak of Nepali Film Industry. Actor, Model, and Philanthropist.",
-            rajeshPhotos
-        ));
-        
+        try {
+            String currentUsername = heartsync.model.User.getCurrentUser().getUsername();
+            List<UserProfile> otherProfiles = heartsync.database.DatabaseManagerProfile.getInstance().getAllUserProfilesExcept(currentUsername);
+            for (UserProfile userProfile : otherProfiles) {
+                String name = userProfile.getFullName() != null ? userProfile.getFullName() : "Unknown";
+                int age = userProfile.getAge() > 0 ? userProfile.getAge() : calculateAge(userProfile.getDateOfBirth());
+                String bio = userProfile.getAboutMe() != null ? userProfile.getAboutMe() : "";
+                List<String> photos = new ArrayList<>();
+                if (userProfile.getProfilePicPath() != null && !userProfile.getProfilePicPath().isEmpty()) {
+                    photos.add(userProfile.getProfilePicPath());
+                }
+                profiles.add(new ProfileData(name, age, bio, photos));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         currentIndex = 0;
     }
     

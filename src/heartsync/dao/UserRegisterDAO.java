@@ -24,23 +24,27 @@ public class UserRegisterDAO {
             throw new SQLException("Username already exists");
         }
 
-        // Include security questions in the initial insert if provided
+        // Calculate age from dob
+        int age = 0;
+        String dob = user.getDateOfBirth();
+        if (dob != null && !dob.isEmpty()) {
+            age = DatabaseConnection.calculateAge(java.time.LocalDate.parse(dob));
+        }
+
+        // Insert into users (NO date_of_birth field)
         boolean hasSecurityQuestions = user.getFavoriteColor() != null && user.getFirstSchool() != null;
-        String sql = "INSERT INTO users (username, password, user_type" +
-                    (hasSecurityQuestions ? ", favorite_color, first_school" : "") + 
-                    ") VALUES (?, ?, ?" + (hasSecurityQuestions ? ", ?, ?" : "") + ")";
+        String sql = "INSERT INTO users (username, password, user_type, first_school, favorite_color, age, date_of_birth) " +
+                     "VALUES (?, ?, ?, ?, ?, ?, ?)";
         
         try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             int paramIndex = 1;
             statement.setString(paramIndex++, user.getUsername());
             statement.setString(paramIndex++, DatabaseConnection.hashPassword(user.getPassword()));
             statement.setString(paramIndex++, user.getUserType() != null ? user.getUserType() : "USER");
-            
-            // Set security questions if provided
-            if (hasSecurityQuestions) {
-                statement.setString(paramIndex++, user.getFavoriteColor());
-                statement.setString(paramIndex, user.getFirstSchool());
-            }
+            statement.setString(paramIndex++, user.getFirstSchool());
+            statement.setString(paramIndex++, user.getFavoriteColor());
+            statement.setInt(paramIndex++, age);
+            statement.setString(paramIndex++, dob);
             
             int rowsInserted = statement.executeUpdate();
             
@@ -49,17 +53,23 @@ public class UserRegisterDAO {
                 try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
                     if (generatedKeys.next()) {
                         user.setId(generatedKeys.getInt(1));
-                        
-                        // Update additional user info if provided (excluding security questions)
-                        if (user.getEmail() != null || user.getPhoneNumber() != null || 
-                            user.getDateOfBirth() != null) {
-                            updateUserAdditionalInfo(user);
-                        }
+                        // Do NOT create user profile here. It will be created after profile setup.
+                        return true;
                     }
                 }
-                return true;
             }
             return false;
+        }
+    }
+    
+    private void createUserProfile(User user, String dob, int age) throws SQLException {
+        String sql = "INSERT INTO user_profiles (user_id, full_name, date_of_birth, age) VALUES (?, ?, ?, ?)";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setInt(1, user.getId());
+            stmt.setString(2, user.getFullName());
+            stmt.setString(3, dob);
+            stmt.setInt(4, age);
+            stmt.executeUpdate();
         }
     }
     

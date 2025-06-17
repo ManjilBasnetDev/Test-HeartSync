@@ -38,6 +38,17 @@ public class UserProfileController {
         model.setGender(gender);
         model.setPreferences(preferences);
         model.setAboutMe(aboutMe);
+        
+        // Calculate and set age if date of birth is available
+        if (model.getDateOfBirth() != null && !model.getDateOfBirth().isEmpty()) {
+            try {
+                java.time.LocalDate dob = java.time.LocalDate.parse(model.getDateOfBirth());
+                int age = java.time.Period.between(dob, java.time.LocalDate.now()).getYears();
+                model.setAge(age);
+            } catch (Exception e) {
+                System.err.println("Error calculating age: " + e.getMessage());
+            }
+        }
     }
 
     // Additional info methods

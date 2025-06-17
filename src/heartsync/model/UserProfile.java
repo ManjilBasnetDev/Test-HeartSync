@@ -2,6 +2,8 @@ package heartsync.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import heartsync.database.DatabaseManagerProfile;
+import heartsync.model.User;
 
 public class UserProfile {
     private static UserProfile currentUser;
@@ -54,38 +56,22 @@ public class UserProfile {
     // Static method to get current user
     public static UserProfile getCurrentUser() {
         if (currentUser == null) {
-            // TODO: In the future, load this from database
-            // For now, return dummy data for testing
-            currentUser = new UserProfile();
-            currentUser.setFullName("John Doe");
-            currentUser.setHeight(175);
-            currentUser.setWeight(70);
-            currentUser.setCountry("Nepal");
-            currentUser.setAddress("Kathmandu");
-            currentUser.setPhoneNumber("+977 9876543210");
-            currentUser.setQualification("Bachelor's Degree");
-            currentUser.setGender("Male");
-            currentUser.setPreferences("Women");
-            currentUser.setAboutMe("Looking for meaningful connections and shared adventures.");
-            currentUser.setProfilePicPath("/path/to/profile.jpg");
-            currentUser.setRelationshipGoal("Long-term Relationship");
-            currentUser.setOccupation("Software Developer");
-            currentUser.setReligion("Hindu");
-            currentUser.setEthnicity("Asian");
-            
-            List<String> languages = new ArrayList<>();
-            languages.add("English");
-            languages.add("Nepali");
-            currentUser.setLanguages(languages);
-            
-            List<String> hobbies = new ArrayList<>();
-            hobbies.add("Reading");
-            hobbies.add("Hiking");
-            hobbies.add("Photography");
-            currentUser.setHobbies(hobbies);
-            
-            currentUser.setDateOfBirth("1998-01-01");
-            currentUser.setEmail("john.doe@example.com");
+            try {
+                // Get the currently logged in username from the User model
+                String username = User.getCurrentUser().getUsername();
+                
+                // Load the profile from database
+                DatabaseManagerProfile dbManager = DatabaseManagerProfile.getInstance();
+                currentUser = dbManager.getUserProfile(username);
+                
+                // If no profile exists yet, create an empty one
+                if (currentUser == null) {
+                    currentUser = new UserProfile();
+                }
+            } catch (Exception e) {
+                System.err.println("Error loading user profile: " + e.getMessage());
+                currentUser = new UserProfile(); // Return empty profile on error
+            }
         }
         return currentUser;
     }

@@ -138,22 +138,29 @@ public class ProfileSetupView extends JFrame {
 
         // Create form fields
         nameField = createStyledTextField("Full Name");
+        // Pre-fill name
+        if (controller.getModel().getFullName() != null) nameField.setText(controller.getModel().getFullName());
         
         // Height Slider with value label
-        heightSlider = createStyledSlider(140, 220, 170);
+        int initialHeight = controller.getModel().getHeight() > 0 ? controller.getModel().getHeight() : 170;
+        heightSlider = createStyledSlider(140, 220, initialHeight);
         heightValueLabel = new JLabel(heightSlider.getValue() + " cm");
         heightValueLabel.setFont(new Font("Arial", Font.PLAIN, 14));
         heightSlider.addChangeListener(e -> heightValueLabel.setText(heightSlider.getValue() + " cm"));
         
         // Weight Slider with value label
-        weightSlider = createStyledSlider(40, 150, 70);
+        int initialWeight = controller.getModel().getWeight() > 0 ? controller.getModel().getWeight() : 70;
+        weightSlider = createStyledSlider(40, 150, initialWeight);
         weightValueLabel = new JLabel(weightSlider.getValue() + " kg");
         weightValueLabel.setFont(new Font("Arial", Font.PLAIN, 14));
         weightSlider.addChangeListener(e -> weightValueLabel.setText(weightSlider.getValue() + " kg"));
         
         countryField = createStyledTextField("Country");
+        if (controller.getModel().getCountry() != null) countryField.setText(controller.getModel().getCountry());
         addressField = createStyledTextField("Address");
+        if (controller.getModel().getAddress() != null) addressField.setText(controller.getModel().getAddress());
         phoneField = createStyledTextField("Phone Number");
+        if (controller.getModel().getPhoneNumber() != null) phoneField.setText(controller.getModel().getPhoneNumber());
 
         // Qualification dropdown
         String[] qualifications = {
@@ -168,14 +175,17 @@ public class ProfileSetupView extends JFrame {
         };
         qualificationComboBox = new JComboBox<>(qualifications);
         styleComboBox(qualificationComboBox);
+        if (controller.getModel().getQualification() != null) qualificationComboBox.setSelectedItem(controller.getModel().getQualification());
 
         String[] genders = {"Male", "Female", "Other"};
         genderComboBox = new JComboBox<>(genders);
         styleComboBox(genderComboBox);
+        if (controller.getModel().getGender() != null) genderComboBox.setSelectedItem(controller.getModel().getGender());
 
         String[] preferences = {"Men", "Women", "Both"};
         preferencesComboBox = new JComboBox<>(preferences);
         styleComboBox(preferencesComboBox);
+        if (controller.getModel().getPreferences() != null) preferencesComboBox.setSelectedItem(controller.getModel().getPreferences());
 
         aboutMeArea = new JTextArea(4, 20);
         aboutMeArea.setLineWrap(true);
@@ -187,6 +197,19 @@ public class ProfileSetupView extends JFrame {
             BorderFactory.createEmptyBorder(5, 5, 5, 5)
         ));
         aboutMeArea.setFont(new Font("Arial", Font.PLAIN, 14));
+        if (controller.getModel().getAboutMe() != null) aboutMeArea.setText(controller.getModel().getAboutMe());
+
+        // Pre-fill profile picture if available
+        if (controller.getModel().getProfilePicPath() != null && !controller.getModel().getProfilePicPath().isEmpty()) {
+            profilePicPath = controller.getModel().getProfilePicPath();
+            try {
+                ImageIcon imageIcon = new ImageIcon(profilePicPath);
+                Image image = imageIcon.getImage().getScaledInstance(150, 150, Image.SCALE_SMOOTH);
+                profilePicLabel.setIcon(new ImageIcon(image));
+            } catch (Exception e) {
+                setDefaultProfilePic();
+            }
+        }
 
         // Add form fields with labels
         addFormField(formPanel, "Full Name:", nameField, gbc);
@@ -221,7 +244,8 @@ public class ProfileSetupView extends JFrame {
         formPanel.add(new JScrollPane(aboutMeArea), gbc);
 
         // Next button
-        JButton nextButton = new JButton("NEXT");
+        String buttonText = (controller.getModel().getFullName() != null && !controller.getModel().getFullName().isEmpty()) ? "Update Profile" : "NEXT";
+        JButton nextButton = new JButton(buttonText);
         styleButton(nextButton);
         nextButton.setPreferredSize(new Dimension(200, 50));
         nextButton.addActionListener(this::handleNext);
@@ -421,6 +445,13 @@ public class ProfileSetupView extends JFrame {
 
             // Show next view
             this.setVisible(false);
+            // If editing, show update message
+            if (controller.getModel().getFullName() != null && !controller.getModel().getFullName().isEmpty()) {
+                JOptionPane.showMessageDialog(this,
+                    "Profile updated successfully!",
+                    "Success",
+                    JOptionPane.INFORMATION_MESSAGE);
+            }
             controller.showMoreInfoView();
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this,

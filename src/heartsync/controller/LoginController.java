@@ -3,6 +3,7 @@ package heartsync.controller;
 
 import heartsync.model.User;
 import heartsync.model.LoginModel;
+import heartsync.model.UserProfile;
 import heartsync.dao.UserDAO;
 import heartsync.view.*;
 import heartsync.navigation.WindowManager;
@@ -195,6 +196,10 @@ public class LoginController {
     private void openUserView(User user) {
         SwingUtilities.invokeLater(() -> {
             try {
+                // Set the current user in both models
+                User.setCurrentUser(user);
+                UserProfile.setCurrentUser(null); // This will force reload from DB on next access
+                
                 if ((user.getUserType() != null && user.getUserType().equalsIgnoreCase("admin")) || user.getUsername().equalsIgnoreCase("admin")) {
                     // Open admin dashboard
                     // Use the static method to show admin dashboard

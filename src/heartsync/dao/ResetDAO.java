@@ -175,6 +175,39 @@ public class ResetDAO {
         }
     }
     
+    public boolean verifySecurityAnswers(String username, String firstSchool, String favoriteColor) {
+        String sql = "SELECT * FROM users WHERE username = ? AND first_school = ? AND favorite_color = ?";
+        
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, username);
+            pstmt.setString(2, firstSchool);
+            pstmt.setString(3, favoriteColor);
+            
+            ResultSet rs = pstmt.executeQuery();
+            return rs.next(); // Returns true if user exists with matching security answers
+        } catch (SQLException e) {
+            System.out.println("Error verifying security answers: " + e.getMessage());
+            return false;
+        }
+    }
+    
+    public boolean resetPassword(String username, String newPassword) {
+        String sql = "UPDATE users SET password = ? WHERE username = ?";
+        
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, DatabaseConnection.hashPassword(newPassword));
+            pstmt.setString(2, username);
+            
+            int rowsAffected = pstmt.executeUpdate();
+            return rowsAffected > 0;
+        } catch (SQLException e) {
+            System.out.println("Error resetting password: " + e.getMessage());
+            return false;
+        }
+    }
+    
     private User extractUserFromResultSet(ResultSet rs) throws SQLException {
         User user = new User();
         user.setId(rs.getInt("id"));

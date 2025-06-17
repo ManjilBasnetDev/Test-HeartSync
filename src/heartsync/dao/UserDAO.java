@@ -205,4 +205,9 @@ public class UserDAO {
             return false;
         }
     }
+    
+    // Get user by username
+    public User getUser(String username) {
+        return getUserByUsername(username);
+    }
 }

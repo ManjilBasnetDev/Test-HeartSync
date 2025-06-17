@@ -64,6 +64,7 @@ public class Swipe extends JFrame {
     private RoundedButton likeButton;
     private RoundedButton rejectButton;
     private ArrayList<ProfileData> profiles;
+    private ArrayList<ProfileData> allProfiles;
     private int currentIndex;
     private JLabel profileLabel;
     private JLabel exploreLabel;
@@ -159,6 +160,7 @@ public class Swipe extends JFrame {
         ageLabel = new JLabel();
         bioLabel = new JLabel();
         profiles = new ArrayList<>();
+        allProfiles = new ArrayList<>();
         
         // Initialize buttons
         nextButton = new RoundedButton("Next →", NAV_ACTIVE_COLOR);
@@ -342,6 +344,11 @@ public class Swipe extends JFrame {
         
         setContentPane(mainPanel);
         showExplore(); // Show explore by default
+        setupProfiles();
+        allProfiles.clear();
+        allProfiles.addAll(profiles);
+        setupSearchLogic();
+        showCurrentProfile();
     }
 
     private void setupUI() {
@@ -824,7 +831,13 @@ public class Swipe extends JFrame {
         if (profiles.isEmpty()) {
             nameLabel.setText("");
             ageLabel.setText("");
-            bioLabel.setText("<html><div style='text-align:center;width:300px;'>No profiles to explore yet!</div></html>");
+            // Improved empty state message with visible emoji and wrapped text
+            String icon = "<div style='font-size:40px;font-weight:bold;line-height:1;'>:(</div>"; // Text-based sad face
+            String msg = "<div style='font-size:17px;margin-top:10px;max-width:220px;word-break:break-word;margin-left:auto;margin-right:auto;'>No profiles found!<br>Try adjusting your search or filters.</div>";
+            String html = "<html><div style='text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;width:100%;'>"
+                + icon + msg + "</div></html>";
+            bioLabel.setText(html);
+            bioLabel.setHorizontalAlignment(SwingConstants.CENTER);
             imageLabel.setIcon(null);
             imageLabel.setText("");
             return;
@@ -1380,6 +1393,43 @@ public class Swipe extends JFrame {
                 }
             }
         };
+    }
+
+    private void setupSearchLogic() {
+        if (searchField == null) return;
+        searchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { filterProfiles(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { filterProfiles(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { filterProfiles(); }
+        });
+    }
+
+    private void filterProfiles() {
+        if (allProfiles == null) return;
+        String query = searchField.getText().trim().toLowerCase();
+        if (query.isEmpty() || query.equals("search by name, age, or interests...")) {
+            profiles.clear();
+            profiles.addAll(allProfiles);
+        } else {
+            profiles.clear();
+            for (ProfileData p : allProfiles) {
+                boolean matches = false;
+                // Name match
+                if (p.name != null && p.name.toLowerCase().contains(query)) matches = true;
+                // Bio/interests match
+                if (!matches && p.bio != null && p.bio.toLowerCase().contains(query)) matches = true;
+                // Age match (if query is a number)
+                if (!matches) {
+                    try {
+                        int ageQuery = Integer.parseInt(query);
+                        if (p.age == ageQuery) matches = true;
+                    } catch (NumberFormatException ignored) {}
+                }
+                if (matches) profiles.add(p);
+            }
+        }
+        currentIndex = 0;
+        showCurrentProfile();
     }
 
     public static void main(String args[]) {

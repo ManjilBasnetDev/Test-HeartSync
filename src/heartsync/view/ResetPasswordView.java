@@ -115,7 +115,7 @@ public class ResetPasswordView extends JPanel {
 
         try {
             // Verify security answers
-            if (resetDAO.verifySecurityAnswers(username, firstSchool, favoriteColor)) {
+            if (resetDAO.validateSecurityAnswer(username, firstSchool)) {
                 // Reset password
                 if (resetDAO.resetPassword(username, newPassword)) {
                     showSuccess("Password reset successful");

@@ -154,9 +154,6 @@ public class MatchNotif extends javax.swing.JFrame {
      * @param args the command line arguments
      */
     public static void main(String args[]) {
-        // Add a dummy notification for demo/testing
-        heartsync.controller.NotificationController notifCtrl = new heartsync.controller.NotificationController();
-        notifCtrl.notifyMatch("Demo User");
         /* Set the Nimbus look and feel */
         //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
         /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.

@@ -347,9 +347,7 @@ public class ResetPassword extends JFrame {
             e.printStackTrace();
         }
 
-        SwingUtilities.invokeLater(() -> {
-            // For testing purposes only
-            new ResetPassword(1, "testuser").setVisible(true);
-        });
+        // For testing purposes only
+        // new ResetPassword(1, "testuser").setVisible(true);
     }
 }

@@ -122,7 +122,6 @@ public class ProfileSetupView extends JFrame {
         profilePicLabel = new JLabel();
         profilePicLabel.setPreferredSize(new Dimension(150, 150));
         profilePicLabel.setBorder(BorderFactory.createLineBorder(new Color(219, 112, 147), 2));
-        setDefaultProfilePic();
         picPanel.add(profilePicLabel);
 
         JButton uploadButton = new JButton("Upload Picture");
@@ -198,18 +197,6 @@ public class ProfileSetupView extends JFrame {
         ));
         aboutMeArea.setFont(new Font("Arial", Font.PLAIN, 14));
         if (controller.getModel().getAboutMe() != null) aboutMeArea.setText(controller.getModel().getAboutMe());
-
-        // Pre-fill profile picture if available
-        if (controller.getModel().getProfilePicPath() != null && !controller.getModel().getProfilePicPath().isEmpty()) {
-            profilePicPath = controller.getModel().getProfilePicPath();
-            try {
-                ImageIcon imageIcon = new ImageIcon(profilePicPath);
-                Image image = imageIcon.getImage().getScaledInstance(150, 150, Image.SCALE_SMOOTH);
-                profilePicLabel.setIcon(new ImageIcon(image));
-            } catch (Exception e) {
-                setDefaultProfilePic();
-            }
-        }
 
         // Add form fields with labels
         addFormField(formPanel, "Full Name:", nameField, gbc);
@@ -369,15 +356,6 @@ public class ProfileSetupView extends JFrame {
 
         gbc.insets = new Insets(0, 0, 10, 0);
         panel.add(field, gbc);
-    }
-
-    private void setDefaultProfilePic() {
-        ImageIcon defaultIcon = new ImageIcon(new BufferedImage(150, 150, BufferedImage.TYPE_INT_RGB));
-        Graphics2D g = (Graphics2D) defaultIcon.getImage().getGraphics();
-        g.setColor(new Color(219, 112, 147));
-        g.fillRect(0, 0, 150, 150);
-        g.dispose();
-        profilePicLabel.setIcon(defaultIcon);
     }
 
     private void handlePictureUpload() {

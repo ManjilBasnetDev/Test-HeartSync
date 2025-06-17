@@ -4,10 +4,8 @@
  */
 package heartsync.view;
 
-import heartsync.database.DatabaseConnection;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-
 import heartsync.controller.LoginController;
 import heartsync.view.ForgotPassword;
 import javax.swing.ImageIcon;
@@ -19,8 +17,6 @@ import javax.swing.ImageIcon;
 public class LoginView extends javax.swing.JFrame {
     
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(LoginView.class.getName());
-    // Ensures we warm the DB connection only once per application run
-    private static boolean dbWarmed = false;
     // Simple placeholders
     private static final String PLACEHOLDER_USERNAME = "USERNAME";
 
@@ -32,22 +28,6 @@ public class LoginView extends javax.swing.JFrame {
         styleButtons();
         setLoginButtonEnabled(false);
         setupLiveValidation();
-        // ----- Warm-up DB Connection to remove initial login lag -----
-        if (!dbWarmed) {
-            dbWarmed = true;
-            new javax.swing.SwingWorker<Void, Void>() {
-                @Override
-                protected Void doInBackground() {
-                    try {
-                        // Establish connection once in background
-                        DatabaseConnection.getConnection();
-                    } catch (Exception ex) {
-                        logger.warning("Database warm-up failed: " + ex.getMessage());
-                    }
-                    return null;
-                }
-            }.execute();
-        }
         
         // Set application icon
         try {

@@ -5,8 +5,7 @@
 package heartsync.view;
 
 import heartsync.navigation.WindowManager;
-
-import heartsync.navigation.WindowManager;
+import heartsync.model.User;
 
 import java.awt.*;
 import java.awt.event.*;
@@ -40,12 +39,14 @@ public class HomePage extends JFrame {
     // Keep track of current navigation
     private JLabel currentNavItem;
 
+    private final User currentUser;
+
     /**
      * Creates new form ProfileSetup
      */
-    public HomePage() {
-        // Register this instance so WindowManager is aware of it
-        WindowManager.getWindow(HomePage.class, () -> this);
+    public HomePage(User user) {
+        this.currentUser = user;
+        // Initialize the frame
         setTitle("HeartSync - Find Love");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1200, 900);
@@ -70,12 +71,12 @@ public class HomePage extends JFrame {
         contentCards.add(createHomePanel(), "home");
         contentCards.add(createAboutPanel(), "about");
         contentCards.add(createFeaturesPanel(), "features");
-        contentCards.add(new ContactsPage(), "contact");
+        contentCards.add(new ContactsPage(currentUser), "contact");
         
         mainPanel.add(contentCards, BorderLayout.CENTER);
         
-        // Add mainPanel to the frame
-        add(mainPanel);
+        // Add mainPanel to the frame's content pane
+        getContentPane().add(mainPanel);
         
         // Set home as current by default
         setCurrentNavItem(homeLabel);
@@ -203,8 +204,8 @@ public class HomePage extends JFrame {
         loginButton.addActionListener(e -> {
             // Use the static method to ensure consistent login view initialization
             LoginController.createAndShowLoginView();
-            // Minimize the home page instead of closing it
-            setExtendedState(JFrame.ICONIFIED);
+            // Minimize the home page when login view opens
+            setState(JFrame.ICONIFIED);
         });
         
         return navPanel;
@@ -339,8 +340,8 @@ public class HomePage extends JFrame {
         loginButton.addActionListener(e -> {
             // Use the static method to ensure consistent login view initialization
             LoginController.createAndShowLoginView();
-            // Minimize the home page instead of closing it
-            setExtendedState(JFrame.ICONIFIED);
+            // Minimize the home page when login view opens
+            setState(JFrame.ICONIFIED);
         });
         
         createAccountButton.addActionListener(e -> {
@@ -792,28 +793,9 @@ public class HomePage extends JFrame {
         return button;
     }
     
-    public static void main(String[] args) {
-        try {
-            // Use cross-platform look and feel
-            UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
-            
-            // Set button UI defaults
-            UIManager.put("Button.background", new Color(70, 130, 180));
-            UIManager.put("Button.foreground", Color.WHITE);
-            UIManager.put("Button.font", new Font("Arial", Font.BOLD, 14));
-            
-            // Set panel UI defaults
-            UIManager.put("Panel.background", new Color(255, 240, 245));
-            UIManager.put("Label.font", new Font("Arial", Font.BOLD, 14));
-            UIManager.put("TextField.font", new Font("Arial", Font.PLAIN, 14));
-            UIManager.put("TextArea.font", new Font("Arial", Font.PLAIN, 14));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        
-        SwingUtilities.invokeLater(() -> {
-            HomePage frame = new HomePage();
-            frame.setVisible(true);
-        });
+    private void btnContactsActionPerformed(java.awt.event.ActionEvent evt) {                                           
+        ContactsPage contactsPage = new ContactsPage(currentUser);
+        contactsPage.setVisible(true);
+        this.dispose();
     }
 }

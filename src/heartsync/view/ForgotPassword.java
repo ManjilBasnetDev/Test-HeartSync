@@ -34,6 +34,7 @@ import heartsync.dao.UserDAOForgot;
 import heartsync.navigation.WindowManager;
 import heartsync.model.UserForgot;
 import heartsync.view.HomePage;
+import heartsync.dao.ResetDAO;
 
 public class ForgotPassword extends javax.swing.JFrame {
 
@@ -67,6 +68,7 @@ public class ForgotPassword extends javax.swing.JFrame {
     private JButton resetButton;
     private JButton backButton;
     private JLabel validationLabel;
+    private final ResetDAO resetDAO;
 
     public ForgotPassword() {
         try {
@@ -84,6 +86,7 @@ public class ForgotPassword extends javax.swing.JFrame {
             e.printStackTrace();
         }
         
+        resetDAO = new ResetDAO();
         initComponents();
         setLocationRelativeTo(null);
         resetController = new ResetController();
@@ -307,7 +310,8 @@ public class ForgotPassword extends javax.swing.JFrame {
         backButton = createStyledButton("Back", new Color(108, 117, 125));
         backButton.setPreferredSize(new Dimension(170, 45));
         backButton.addActionListener(e -> {
-            WindowManager.show(HomePage.class, HomePage::new, this);
+            LoginView.showLoginView();
+            this.dispose();
         });
         buttonPanel.add(backButton);
 
@@ -429,9 +433,9 @@ public class ForgotPassword extends javax.swing.JFrame {
                     "Validation Failed",
                     JOptionPane.ERROR_MESSAGE);
             }
-        } catch (SQLException ex) {
+        } catch (Exception ex) {
             JOptionPane.showMessageDialog(this,
-                "Database error: " + ex.getMessage(),
+                "Error: " + ex.getMessage(),
                 "Error",
                 JOptionPane.ERROR_MESSAGE);
         }

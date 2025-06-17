@@ -9,10 +9,11 @@ public class UserProfile {
     private static UserProfile currentUser;
     
     // User details
+    private String username;
     private String fullName;
     private int age;
     private String location;
-    private String interests;
+    private List<String> interests;
     private String bio;
     private String education;
     private String occupation;
@@ -42,15 +43,14 @@ public class UserProfile {
     }
 
     // Constructor with all fields
-    public UserProfile(String fullName, int age, String location, String interests, 
-                      String bio, String education, String occupation) {
+    public UserProfile(String username, String fullName, int age, String gender, String location, String bio, List<String> interests) {
+        this.username = username;
         this.fullName = fullName;
         this.age = age;
+        this.gender = gender;
         this.location = location;
-        this.interests = interests;
         this.bio = bio;
-        this.education = education;
-        this.occupation = occupation;
+        this.interests = interests;
     }
 
     // Static method to get current user
@@ -82,6 +82,10 @@ public class UserProfile {
     }
 
     // Getter methods
+    public String getUsername() {
+        return username;
+    }
+
     public String getFullName() {
         return fullName;
     }
@@ -94,11 +98,8 @@ public class UserProfile {
         return location;
     }
 
-    public String getInterests() {
-        if (hobbies != null && !hobbies.isEmpty()) {
-            return String.join(", ", hobbies);
-        }
-        return "";
+    public List<String> getInterests() {
+        return interests;
     }
 
     public String getBio() {
@@ -186,6 +187,10 @@ public class UserProfile {
     }
 
     // Setter methods
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
     public void setFullName(String fullName) {
         this.fullName = fullName;
     }
@@ -198,7 +203,7 @@ public class UserProfile {
         this.location = location;
     }
 
-    public void setInterests(String interests) {
+    public void setInterests(List<String> interests) {
         this.interests = interests;
     }
 

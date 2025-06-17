@@ -74,9 +74,9 @@ public class ProfileSetupView extends JFrame {
         UIManager.put("ComboBox.buttonDarkShadow", Color.WHITE);
         UIManager.put("ComboBox.border", BorderFactory.createLineBorder(new Color(219, 112, 147), 1));
 
-        setTitle("HeartSync - Profile Setup");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setPreferredSize(new Dimension(800, 600));
+        setTitle("Profile Setup");
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setSize(800, 900);
         setLocationRelativeTo(null);
 
         // Create the main scrollable panel

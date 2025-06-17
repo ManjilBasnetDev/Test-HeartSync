@@ -15,61 +15,81 @@ import java.net.http.HttpResponse;
 
 public class FirebaseConfig {
     private static final String DATABASE_URL = "https://heartsync-96435-default-rtdb.asia-southeast1.firebasedatabase.app/";
-    private static final String FIREBASE_AUTH = "YOUR_FIREBASE_AUTH"; // Replace with your Firebase auth token
+    private static final String JSON_EXT = ".json?auth=null"; // Allow unauthenticated access during development
     private static final Gson gson = new Gson();
     private static final HttpClient client = HttpClient.newHttpClient();
 
-    // Generic GET
-    public static <T> T get(String path, Class<T> clazz) throws IOException {
-        String url = DATABASE_URL + path + ".json";
-        HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
-        conn.setRequestMethod("GET");
-        conn.setDoInput(true);
-        int responseCode = conn.getResponseCode();
-        if (responseCode == 200) {
-            try (InputStream in = conn.getInputStream()) {
-                String json = new String(in.readAllBytes(), StandardCharsets.UTF_8);
-                return gson.fromJson(json, clazz);
-            }
-        }
-        return null;
+    public static String getUserPath(String userId) {
+        return "users/" + userId;
     }
 
-    // Generic GET for TypeToken (for lists/maps)
-    public static <T> T get(String path, Type typeOfT) throws IOException {
-        String url = DATABASE_URL + path + ".json";
-        HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
+    public static <T> T get(String path, Type type) throws IOException {
+        URL url = new URL(DATABASE_URL + path + JSON_EXT);
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("GET");
-        conn.setDoInput(true);
+        
         int responseCode = conn.getResponseCode();
-        if (responseCode == 200) {
-            try (InputStream in = conn.getInputStream()) {
-                String json = new String(in.readAllBytes(), StandardCharsets.UTF_8);
-                return gson.fromJson(json, typeOfT);
+        if (responseCode == HttpURLConnection.HTTP_OK) {
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                StringBuilder response = new StringBuilder();
+                String line;
+                while ((line = br.readLine()) != null) {
+                    response.append(line);
+                }
+                return gson.fromJson(response.toString(), type);
             }
+        } else {
+            throw new IOException("HTTP error code: " + responseCode);
         }
-        return null;
     }
 
-    // PUT (create/replace at path)
     public static void put(String path, Object data) throws IOException {
-        String url = DATABASE_URL + path + ".json";
-        HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
+        URL url = new URL(DATABASE_URL + path + JSON_EXT);
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("PUT");
+        conn.setRequestProperty("Content-Type", "application/json");
         conn.setDoOutput(true);
-        String json = gson.toJson(data);
+
+        String jsonData = gson.toJson(data);
+        System.out.println("Sending data to: " + url.toString());
+        System.out.println("Data: " + jsonData);
+
         try (OutputStream os = conn.getOutputStream()) {
-            os.write(json.getBytes(StandardCharsets.UTF_8));
+            byte[] input = jsonData.getBytes(StandardCharsets.UTF_8);
+            os.write(input, 0, input.length);
         }
-        conn.getInputStream().close();
+
+        int responseCode = conn.getResponseCode();
+        if (responseCode != HttpURLConnection.HTTP_OK) {
+            StringBuilder errorResponse = new StringBuilder();
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getErrorStream()))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    errorResponse.append(line);
+                }
+            }
+            throw new IOException("Failed to write to database. Response code: " + responseCode + ", Error: " + errorResponse.toString());
+        }
+    }
+
+    public static void delete(String path) throws IOException {
+        URL url = new URL(DATABASE_URL + path + JSON_EXT);
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestMethod("DELETE");
+        
+        int responseCode = conn.getResponseCode();
+        if (responseCode != HttpURLConnection.HTTP_OK) {
+            throw new IOException("Failed to delete. Response code: " + responseCode);
+        }
     }
 
     // POST (push new child, returns key)
     public static String post(String path, Object data) throws IOException {
-        String url = DATABASE_URL + path + ".json";
+        String url = DATABASE_URL + path + JSON_EXT;
         HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
         conn.setRequestMethod("POST");
         conn.setDoOutput(true);
+        conn.setRequestProperty("Content-Type", "application/json");
         String json = gson.toJson(data);
         try (OutputStream os = conn.getOutputStream()) {
             os.write(json.getBytes(StandardCharsets.UTF_8));
@@ -83,10 +103,11 @@ public class FirebaseConfig {
 
     // PATCH (update fields at path)
     public static void patch(String path, Object data) throws IOException {
-        String url = DATABASE_URL + path + ".json";
+        String url = DATABASE_URL + path + JSON_EXT;
         HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
         conn.setRequestMethod("PATCH");
         conn.setDoOutput(true);
+        conn.setRequestProperty("Content-Type", "application/json");
         String json = gson.toJson(data);
         try (OutputStream os = conn.getOutputStream()) {
             os.write(json.getBytes(StandardCharsets.UTF_8));
@@ -94,22 +115,11 @@ public class FirebaseConfig {
         conn.getInputStream().close();
     }
 
-    // DELETE
-    public static void delete(String path) throws IOException {
-        String url = DATABASE_URL + path + ".json";
-        HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
-        conn.setRequestMethod("DELETE");
-        conn.getInputStream().close();
-    }
-
-    // Helper for /users/{userId}
-    public static String getUserPath(String userId) {
-        return "users/" + userId;
-    }
     // Helper for /chats/{chatId}
     public static String getChatPath(String chatId) {
         return "chats/" + chatId + "/messages";
     }
+    
     // Helper for /matches/{userId}/{otherUserId}
     public static String getMatchPath(String userId, String otherUserId) {
         return "matches/" + userId + "/" + otherUserId;
@@ -119,13 +129,15 @@ public class FirebaseConfig {
         try {
             String json = gson.toJson(data);
             HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(DATABASE_URL + "/" + path + ".json"))
-                .header("Authorization", "Bearer " + FIREBASE_AUTH)
+                .uri(URI.create(DATABASE_URL + path + JSON_EXT))
                 .header("Content-Type", "application/json")
                 .PUT(HttpRequest.BodyPublishers.ofString(json))
                 .build();
 
-            client.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() != 200) {
+                throw new RuntimeException("Failed to set data: " + response.body());
+            }
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException("Failed to set data: " + e.getMessage());

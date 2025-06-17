@@ -185,18 +185,27 @@ public class LoginController {
                 User.setCurrentUser(user);
                 UserProfile.setCurrentUser(null); // This will force reload from DB on next access
                 
-                if ((user.getUserType() != null && user.getUserType().equalsIgnoreCase("admin")) || user.getUsername().equalsIgnoreCase("admin")) {
-                    // Open admin dashboard
-                    // Use the static method to show admin dashboard
-                    WindowManager.show(AdminDashboard.class, AdminDashboard::new, view);
-                } else {
-                    // Open regular user view (Swipe)
-                    WindowManager.show(Swipe.class, Swipe::new, view);
+                // Close the login window
+                if (view != null) {
+                    view.dispose();
                 }
+                
+                // First show HomePage for all users
+                HomePage homePage = new HomePage();
+                homePage.setVisible(true);
+                
+                // Then, if it's an admin, also show the admin dashboard
+                if ((user.getUserType() != null && user.getUserType().equalsIgnoreCase("admin")) 
+                    || user.getUsername().equalsIgnoreCase("admin")) {
+                    WindowManager.show(AdminDashboard.class, AdminDashboard::new, null);
+                }
+                
             } catch (Exception e) {
                 logger.log(Level.SEVERE, "Error opening user view", e);
-                view.showMessage("Error initializing application view: " + e.getMessage(),
-                               "Initialization Error", JOptionPane.ERROR_MESSAGE);
+                if (view != null) {
+                    view.showMessage("Error initializing application view: " + e.getMessage(),
+                                   "Initialization Error", JOptionPane.ERROR_MESSAGE);
+                }
             }
         });
     }

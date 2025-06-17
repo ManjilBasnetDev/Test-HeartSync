@@ -585,107 +585,48 @@ public class Register extends JFrame {
                 return;
             }
 
-            String username = usernameField.getText().trim();
-            String password = actualPassword;
-            String role = userRadio.isSelected() ? "USER" : "ADMIN";
+            // Show security questions dialog
+            SecurityQuestionsDialog securityDialog = new SecurityQuestionsDialog(this);
+            securityDialog.setVisible(true);
 
-            // Create user object with basic info
-            User user = new User();
-            user.setUsername(username);
-            user.setPassword(password);
-            user.setUserType(role);
+            // If user confirmed security questions
+            if (securityDialog.isConfirmed()) {
+                try {
+                    // Create user object with all required information
+                    User user = new User();
+                    user.setUsername(usernameField.getText().trim());
+                    user.setPassword(actualPassword);
+                    user.setUserType(userRadio.isSelected() ? "user" : "admin");
+                    
+                    // Set security questions and answers
+                    user.setSecurityQuestion("What is your favorite color?");
+                    user.setSecurityAnswer(securityDialog.getFavoriteColor().trim());
+                    user.setSecurityQuestion2("What was the name of your first school?");
+                    user.setSecurityAnswer2(securityDialog.getFirstSchool().trim());
 
-            try {
-                // For users, verify age first
-                if (role.equals("USER")) {
-                    DOBVerificationDialog dobDialog = new DOBVerificationDialog(this);
-                    dobDialog.setVisible(true);
-                    
-                    if (!dobDialog.isConfirmed()) {
-                        return; // User cancelled the DOB dialog
-                    }
-                    
-                    int age = dobDialog.getAge();
-                    if (age < 18) {
-                        JOptionPane.showMessageDialog(this,
-                            "You must be at least 18 years old to create an account.",
-                            "Age Restriction",
-                            JOptionPane.ERROR_MESSAGE);
-                        return;
-                    }
-                    
-                    // Set DOB if available
-                    user.setDateOfBirth(dobDialog.getDateOfBirth());
-                }
-
-                // Show security questions dialog for all users
-                SecurityQuestionsDialog securityDialog = new SecurityQuestionsDialog(this);
-                securityDialog.setVisible(true);
-                
-                if (!securityDialog.isConfirmed()) {
-                    return; // User cancelled the security questions dialog
-                }
-                
-                // Set security questions in the user object
-                user.setFavoriteColor(securityDialog.getFavoriteColor());
-                user.setFirstSchool(securityDialog.getFirstSchool());
-                
-                // Attempt to create the user with security questions
-                UserRegisterDAO dao = new UserRegisterDAO();
-                if (dao.createUser(user)) {
-                    // Show success message
-                    JOptionPane.showMessageDialog(this,
-                        "Account created successfully!",
-                        "Success",
-                        JOptionPane.INFORMATION_MESSAGE);
-                    
-                    // Proceed based on user type
-                    if (role.equals("USER")) {
-                        // Open profile setup for regular users
-                        UserProfile model = new UserProfile();
-                        model.setDateOfBirth(user.getDateOfBirth());
-                        UserProfileController controller = new UserProfileController(model, username);
-                        ProfileSetupView view = new ProfileSetupView(controller);
-                        view.setLocationRelativeTo(null);
-                        dispose();
-                        view.setVisible(true);
+                    // Create user in database
+                    UserRegisterDAO userDAO = new UserRegisterDAO();
+                    if (userDAO.createUser(user)) {
+                        if (userRadio.isSelected()) {
+                            // For regular users, open profile setup
+                            dispose();
+                            UserProfileController profileController = new UserProfileController(new UserProfile(), user.getUsername());
+                            ProfileSetupView view = new ProfileSetupView(profileController);
+                            view.setVisible(true);
+                        } else {
+                            // For admin users, just close the window
+                            dispose();
+                            // Show success message
+                            JOptionPane.showMessageDialog(null, "Admin account created successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                        }
                     } else {
-                        // For admin users, just close the window
-                        dispose();
-                        // TODO: Open admin dashboard if needed
+                        // Show error message from DAO
+                        JOptionPane.showMessageDialog(this, userDAO.getLastError(), "Error", JOptionPane.ERROR_MESSAGE);
                     }
-                } else {
-                    throw new SQLException("Failed to create user account");
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    JOptionPane.showMessageDialog(this, "Error creating account: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
                 }
-            } catch (SQLException ex) {
-                // Handle specific SQL errors
-                String errorMessage = "Error creating account. ";
-                
-                if (ex.getMessage().contains("Duplicate entry") && ex.getMessage().contains("username")) {
-                    errorMessage = "Username already exists. Please choose a different username.";
-                } else if (ex.getMessage().contains("cannot be null")) {
-                    errorMessage = "Missing required information: " + ex.getMessage();
-                } else {
-                    errorMessage += ex.getMessage();
-                }
-                
-                JOptionPane.showMessageDialog(this,
-                    errorMessage,
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE);
-                
-                // Log the full error for debugging
-                System.err.println("Error creating user account: " + ex.getMessage());
-                ex.printStackTrace();
-            } catch (Exception ex) {
-                // Handle any other exceptions
-                JOptionPane.showMessageDialog(this,
-                    "An unexpected error occurred: " + ex.getMessage(),
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE);
-                
-                System.err.println("Unexpected error during registration: " + ex.getMessage());
-                ex.printStackTrace();
             }
         });
 
@@ -746,75 +687,97 @@ public class Register extends JFrame {
     }
 
     private boolean validateForm() {
-        // Check username
-        String username = usernameField.getText();
-        if (username.equals("USERNAME") || username.trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this,
-                "Please enter a username",
-                "Validation Error",
-                JOptionPane.ERROR_MESSAGE);
-            usernameField.requestFocus();
+        String username = usernameField.getText().trim();
+        String password = actualPassword.trim();
+        String confirm = actualConfirmPassword.trim();
+
+        // Reset validation label
+        validationLabel.setText("");
+        validationLabel.setForeground(Color.RED);
+
+        // Validate username
+        if (username.isEmpty() || username.equals("USERNAME")) {
+            validationLabel.setText("Please enter a username");
             return false;
         }
 
-        // Check password - use actualPassword instead of field text
-        if (actualPassword.isEmpty() || passwordField.getText().equals("PASSWORD")) {
-            JOptionPane.showMessageDialog(this,
-                "Please enter a password",
-                "Validation Error",
-                JOptionPane.ERROR_MESSAGE);
-            passwordField.requestFocus();
+        // Validate password
+        if (password.isEmpty() || password.equals("PASSWORD")) {
+            validationLabel.setText("Please enter a password");
             return false;
         }
 
-        // Check confirm password
-        if (actualConfirmPassword.isEmpty() || confirmField.getText().equals("CONFIRM")) {
-            JOptionPane.showMessageDialog(this,
-                "Please confirm your password",
-                "Validation Error",
-                JOptionPane.ERROR_MESSAGE);
-            confirmField.requestFocus();
+        // Validate confirm password
+        if (confirm.isEmpty() || confirm.equals("CONFIRM")) {
+            validationLabel.setText("Please confirm your password");
             return false;
         }
 
-        // Validate password requirements using actualPassword
-        if (!actualPassword.matches(".*[A-Z].*")) {
-            JOptionPane.showMessageDialog(this,
-                "Password must contain at least one uppercase letter",
-                "Validation Error",
-                JOptionPane.ERROR_MESSAGE);
-            passwordField.requestFocus();
+        // Check if passwords match
+        if (!password.equals(confirm)) {
+            validationLabel.setText("Passwords do not match");
             return false;
         }
 
-        if (!actualPassword.matches(".*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>/?].*")) {
-            JOptionPane.showMessageDialog(this,
-                "Password must contain at least one special character",
-                "Validation Error",
-                JOptionPane.ERROR_MESSAGE);
-            passwordField.requestFocus();
+        // Check username availability
+        if (!isUsernameAvailable(username)) {
+            validationLabel.setText("Username is already taken");
             return false;
         }
 
-        if (!actualPassword.matches(".*[0-9].*")) {
-            JOptionPane.showMessageDialog(this,
-                "Password must contain at least one number",
-                "Validation Error",
-                JOptionPane.ERROR_MESSAGE);
-            passwordField.requestFocus();
+        // If all validations pass, create the user
+        try {
+            UserRegisterDAO userDAO = new UserRegisterDAO();
+            User newUser = new User();
+            newUser.setUsername(username);
+            newUser.setPassword(password);
+            newUser.setUserType(userRadio.isSelected() ? "user" : "admin");
+
+            // Show security questions dialog
+            SecurityQuestionsDialog securityDialog = new SecurityQuestionsDialog(this);
+            securityDialog.setVisible(true);
+
+            if (securityDialog.isConfirmed()) {
+                // Get security questions and answers
+                newUser.setSecurityQuestion1(securityDialog.getSecurityQuestion1());
+                newUser.setSecurityAnswer1(securityDialog.getSecurityAnswer1());
+                newUser.setSecurityQuestion2(securityDialog.getSecurityQuestion2());
+                newUser.setSecurityAnswer2(securityDialog.getSecurityAnswer2());
+
+                // Register the user
+                boolean success = userDAO.registerUser(newUser);
+                if (success) {
+                    JOptionPane.showMessageDialog(this,
+                        "Account created successfully!",
+                        "Success",
+                        JOptionPane.INFORMATION_MESSAGE);
+                    
+                    // Set the current user
+                    User.setCurrentUser(newUser);
+                    
+                    // Close the registration window
+                    this.dispose();
+                    
+                    // Show the HomePage
+                    SwingUtilities.invokeLater(() -> {
+                        HomePage homePage = new HomePage();
+                        homePage.setVisible(true);
+                    });
+                    
+                    return true;
+                } else {
+                    validationLabel.setText("Failed to create account. Please try again.");
+                    return false;
+                }
+            } else {
+                validationLabel.setText("Security questions are required");
+                return false;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            validationLabel.setText("Error creating account: " + e.getMessage());
             return false;
         }
-
-        if (!actualPassword.equals(actualConfirmPassword)) {
-            JOptionPane.showMessageDialog(this,
-                "Passwords do not match",
-                "Validation Error",
-                JOptionPane.ERROR_MESSAGE);
-            confirmField.requestFocus();
-            return false;
-        }
-
-        return true;
     }
     
     private boolean isUsernameAvailable(String username) {

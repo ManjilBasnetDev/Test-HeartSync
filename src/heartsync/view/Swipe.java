@@ -59,6 +59,8 @@ public class Swipe extends JFrame {
     private JLabel nameLabel;
     private JLabel ageLabel;
     private JLabel bioLabel;
+    private JLabel locationLabel;
+    private JLabel interestsLabel;
     private RoundedButton nextButton;
     private RoundedButton backButton;
     private RoundedButton likeButton;
@@ -148,207 +150,36 @@ public class Swipe extends JFrame {
     }
 
     public Swipe() {
+        // Set up window properties
         setTitle("HeartSync - Find Love");
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setSize(800, 1000);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setSize(1200, 900);
         setLocationRelativeTo(null);
         setResizable(false);
+        setUndecorated(true);
         
         // Initialize components
-        imageLabel = new JLabel();
+        mainPanel = new JPanel(new BorderLayout());
+        mainPanel.setBackground(BACKGROUND_COLOR);
+        
+        // Initialize labels
         nameLabel = new JLabel();
         ageLabel = new JLabel();
         bioLabel = new JLabel();
+        locationLabel = new JLabel();  // Added missing label
+        interestsLabel = new JLabel(); // Added missing label
         profiles = new ArrayList<>();
         allProfiles = new ArrayList<>();
         
-        // Initialize buttons
-        nextButton = new RoundedButton("Next →", NAV_ACTIVE_COLOR);
-        backButton = new RoundedButton("← Back", NAV_ACTIVE_COLOR);
-        likeButton = new RoundedButton("♥ Like", LIKE_COLOR);
-        rejectButton = new RoundedButton("✕ Pass", REJECT_COLOR);
-        
-        // Main panel with padding
-        mainPanel = new JPanel(new BorderLayout(20, 20));
-        mainPanel.setBackground(new Color(255, 235, 245)); // Slightly darker pink background
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-
-        // Navigation panel at top
-        JPanel navPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 30, 10));
-        navPanel.setOpaque(false);
-        
-        // Create navigation labels
-        exploreLabel = new JLabel("Explore");
-        chatLabel = new JLabel("Chat");
-        profileLabel = new JLabel("My Profile");
-        JLabel matchedLabel = new JLabel("Matched Users");
-        JLabel myLikesLabel = new JLabel("My Likes");
-        JLabel myLikersLabel = new JLabel("My Likers");
-        JLabel logoutLabel = new JLabel("Logout");
-
-        // Style navigation labels
-        Font navFont = new Font("Segoe UI", Font.PLAIN, 16);
-        Color navTextColor = new Color(50, 50, 50);
-        for (JLabel label : new JLabel[]{exploreLabel, chatLabel, profileLabel, matchedLabel, myLikesLabel, myLikersLabel, logoutLabel}) {
-            label.setFont(navFont);
-            label.setForeground(navTextColor);
-            label.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            navPanel.add(label);
-        }
-        
-        // Add underline to Explore by default
-        exploreLabel.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, Color.PINK));
-        
-        // Add click listeners
-        exploreLabel.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                exploreLabel.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, Color.PINK));
-                chatLabel.setBorder(null);
-                profileLabel.setBorder(null);
-                matchedLabel.setBorder(null);
-                myLikesLabel.setBorder(null);
-                myLikersLabel.setBorder(null);
-                logoutLabel.setBorder(null);
-                showExplore();
-            }
-        });
-        chatLabel.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                chatLabel.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, Color.PINK));
-                exploreLabel.setBorder(null);
-                profileLabel.setBorder(null);
-                matchedLabel.setBorder(null);
-                myLikesLabel.setBorder(null);
-                myLikersLabel.setBorder(null);
-                logoutLabel.setBorder(null);
-                JOptionPane.showMessageDialog(Swipe.this,
-                    "Chat functionality coming soon!",
-                    "Coming Soon",
-                    JOptionPane.INFORMATION_MESSAGE);
-            }
-        });
-        profileLabel.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                profileLabel.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, Color.PINK));
-                exploreLabel.setBorder(null);
-                chatLabel.setBorder(null);
-                matchedLabel.setBorder(null);
-                myLikesLabel.setBorder(null);
-                myLikersLabel.setBorder(null);
-                logoutLabel.setBorder(null);
-                showProfile();
-            }
-        });
-        matchedLabel.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                matchedLabel.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, Color.PINK));
-                exploreLabel.setBorder(null);
-                chatLabel.setBorder(null);
-                profileLabel.setBorder(null);
-                myLikesLabel.setBorder(null);
-                myLikersLabel.setBorder(null);
-                logoutLabel.setBorder(null);
-                JOptionPane.showMessageDialog(Swipe.this,
-                    "Matched Users functionality coming soon!",
-                    "Coming Soon",
-                    JOptionPane.INFORMATION_MESSAGE);
-            }
-        });
-        myLikesLabel.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                myLikesLabel.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, Color.PINK));
-                exploreLabel.setBorder(null);
-                chatLabel.setBorder(null);
-                profileLabel.setBorder(null);
-                matchedLabel.setBorder(null);
-                myLikersLabel.setBorder(null);
-                logoutLabel.setBorder(null);
-                JOptionPane.showMessageDialog(Swipe.this,
-                    "My Likes functionality coming soon!",
-                    "Coming Soon",
-                    JOptionPane.INFORMATION_MESSAGE);
-            }
-        });
-        myLikersLabel.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                myLikersLabel.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, Color.PINK));
-                exploreLabel.setBorder(null);
-                chatLabel.setBorder(null);
-                profileLabel.setBorder(null);
-                matchedLabel.setBorder(null);
-                myLikesLabel.setBorder(null);
-                logoutLabel.setBorder(null);
-                JOptionPane.showMessageDialog(Swipe.this,
-                    "My Likers functionality coming soon!",
-                    "Coming Soon",
-                    JOptionPane.INFORMATION_MESSAGE);
-            }
-        });
-        logoutLabel.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                int confirm = JOptionPane.showConfirmDialog(Swipe.this,
-                    "Are you sure you want to logout?",
-                    "Logout",
-                    JOptionPane.YES_NO_OPTION);
-                if (confirm == JOptionPane.YES_OPTION) {
-                    // Clear session and return to login/home
-                    heartsync.model.User.setCurrentUser(null);
-                    heartsync.model.UserProfile.setCurrentUser(null);
-                    dispose();
-                    SwingUtilities.invokeLater(() -> {
-                        heartsync.controller.LoginController.createAndShowLoginView();
-                    });
-                }
-            }
-        });
-        
-        mainPanel.add(navPanel, BorderLayout.NORTH);
-
-        // Content cards for different views
-        cardLayout = new CardLayout();
-        contentCards = new JPanel(cardLayout);
-        contentCards.setOpaque(false);
-        
-        // Create search panel for explore view only
-        JPanel exploreContent = new JPanel(new BorderLayout(10, 10));
-        exploreContent.setOpaque(false);
-        
-        // Search panel
-        searchPanel = new JPanel(new BorderLayout(10, 0));
-        searchPanel.setOpaque(false);
-        searchPanel.setBorder(BorderFactory.createEmptyBorder(0, 50, 10, 50));
-        
-        // Search field with custom styling
-        searchField = createSearchField();
-        
-        // Filters button with better visibility
-        filterButton = createFiltersButton();
-        
-        searchPanel.add(searchField, BorderLayout.CENTER);
-        searchPanel.add(filterButton, BorderLayout.EAST);
-        
-        exploreContent.add(searchPanel, BorderLayout.NORTH);
-        exploreContent.add(createExplorePanel(), BorderLayout.CENTER);
-        
-        contentCards.add(exploreContent, "explore");
-        contentCards.add(createProfilePanel(), "profile");
-        
-        mainPanel.add(contentCards, BorderLayout.CENTER);
-        
-        setContentPane(mainPanel);
-        showExplore(); // Show explore by default
+        // Set up UI components
+        setupUI();
         setupProfiles();
-        allProfiles.clear();
-        allProfiles.addAll(profiles);
-        setupSearchLogic();
-        showCurrentProfile();
+        
+        // Add main panel to frame
+        add(mainPanel);
+        
+        // Show explore panel by default
+        showExplore();
     }
 
     private void setupUI() {
@@ -1048,7 +879,7 @@ public class Swipe extends JFrame {
         // Languages and Interests
         addSectionHeader(detailsPanel, "Languages & Interests", gbc);
         addDetailRow(detailsPanel, "Languages", String.join(", ", UserProfile.getCurrentUser().getLanguages()), gbc);
-        addDetailRow(detailsPanel, "Hobbies", UserProfile.getCurrentUser().getInterests(), gbc);
+        addDetailRow(detailsPanel, "Hobbies", String.join(", ", UserProfile.getCurrentUser().getInterests()), gbc);
         
         // Relationship Goals
         addSectionHeader(detailsPanel, "Looking For", gbc);
@@ -1443,5 +1274,15 @@ public class Swipe extends JFrame {
             Swipe frame = new Swipe();
             frame.setVisible(true);
         });
+    }
+
+    private void displayUserProfile(UserProfile profile) {
+        if (profile != null) {
+            nameLabel.setText(profile.getFullName());
+            ageLabel.setText(String.valueOf(profile.getAge()));
+            locationLabel.setText(profile.getLocation());
+            bioLabel.setText(profile.getBio());
+            interestsLabel.setText(String.join(", ", profile.getInterests()));
+        }
     }
 }

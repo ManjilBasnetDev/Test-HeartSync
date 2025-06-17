@@ -35,15 +35,7 @@ public class LoginController {
         this.loginModel = new LoginModel();
         
         // Initialize UserDAO
-        UserDAO tempDAO = null;
-        try {
-            tempDAO = new UserDAO();
-        } catch (Exception e) {
-            logger.log(Level.SEVERE, "Error initializing UserDAO", e);
-            view.showMessage("Failed to initialize database connection. Please try again later.", 
-                           "Initialization Error", JOptionPane.ERROR_MESSAGE);
-        }
-        this.userDAO = tempDAO;
+        this.userDAO = new UserDAO();
         
         // Set this controller in the view
         view.setController(this);
@@ -108,13 +100,6 @@ public class LoginController {
             return;
         }
         
-        // Check if UserDAO is initialized
-        if (userDAO == null) {
-            view.showMessage("Database connection not available. Please restart the application.", 
-                          "Database Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-        
         // Disable login button and show loading state
         view.setLoginButtonEnabled(false);
         view.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
@@ -129,7 +114,7 @@ public class LoginController {
                 try {
                     // Perform authentication in background
                     // Ensure DAO gets trimmed credentials
-        return userDAO.authenticateUser(username.trim(), password);
+                    return userDAO.authenticateUser(username.trim(), password);
                 } catch (Exception e) {
                     throw new Exception("Authentication failed: " + e.getMessage());
                 }
@@ -219,7 +204,12 @@ public class LoginController {
     private static HomePage homePageInstance = null;
     
     public void handleBack() {
-        WindowManager.show(heartsync.view.HomePage.class, heartsync.view.HomePage::new, view);
+        view.dispose();
+        // Restore the HomePage if it exists
+        if (homePageInstance != null && homePageInstance.isDisplayable()) {
+            homePageInstance.setState(JFrame.NORMAL);
+            homePageInstance.toFront();
+        }
     }
     
     public void handleForgotPassword() {
@@ -245,13 +235,14 @@ public class LoginController {
     public static void createAndShowLoginView() {
         // Ensure UI updates happen on the Event Dispatch Thread
         SwingUtilities.invokeLater(() -> {
+            // Store reference to the HomePage if it exists
+            homePageInstance = WindowManager.getWindow(HomePage.class, () -> new HomePage(null));
+
             // If a login view already exists and is visible, bring it to front and return
             if (currentLoginView != null) {
                 if (currentLoginView.isDisplayable()) {
                     currentLoginView.setExtendedState(JFrame.NORMAL);
                     currentLoginView.setVisible(true);
-                    currentLoginView.toFront();
-                    currentLoginView.requestFocus();
                     return;
                 } else {
                     // Clean up any disposed but not null reference
@@ -270,12 +261,22 @@ public class LoginController {
                     public void windowClosed(java.awt.event.WindowEvent e) {
                         // Clean up the reference when window is closed
                         currentLoginView = null;
+                        // Restore the HomePage if it exists
+                        if (homePageInstance != null && homePageInstance.isDisplayable()) {
+                            homePageInstance.setState(JFrame.NORMAL);
+                            homePageInstance.toFront();
+                        }
                     }
                     
                     @Override
                     public void windowClosing(java.awt.event.WindowEvent e) {
                         // Ensure cleanup happens even if window is force-closed
                         currentLoginView = null;
+                        // Restore the HomePage if it exists
+                        if (homePageInstance != null && homePageInstance.isDisplayable()) {
+                            homePageInstance.setState(JFrame.NORMAL);
+                            homePageInstance.toFront();
+                        }
                     }
                 });
                 

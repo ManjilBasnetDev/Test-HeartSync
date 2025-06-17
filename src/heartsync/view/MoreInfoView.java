@@ -15,6 +15,7 @@ import java.awt.Insets;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +42,8 @@ import heartsync.controller.LoginController;
 import heartsync.controller.UserProfileController;
 import heartsync.database.DatabaseManagerProfile;
 import heartsync.model.UserProfile;
+import heartsync.model.User;
+import heartsync.navigation.WindowManager;
 
 public class MoreInfoView extends JFrame {
     private UserProfileController controller;
@@ -49,12 +52,14 @@ public class MoreInfoView extends JFrame {
     private JButton hobbiesButton;
     private ButtonGroup relationButtonGroup;
     private JLabel selectedHobbiesLabel;
+    private final User currentUser;
 
     public MoreInfoView(UserProfileController controller) {
         this.controller = controller;
         this.hobbyCategories = new HashMap<>();
         initializeHobbyCategories();
         initializeUI();
+        this.currentUser = null; // Assuming currentUser is not available in the constructor
     }
 
     private void initializeHobbyCategories() {
@@ -459,63 +464,41 @@ public class MoreInfoView extends JFrame {
             UserProfile profile = controller.getModel();
             DatabaseManagerProfile dbManager = DatabaseManagerProfile.getInstance();
             boolean isEdit = profile.getFullName() != null && !profile.getFullName().isEmpty();
-            int userId = dbManager.saveUserProfile(
-                controller.getCurrentUsername(),
-                profile.getFullName(),
-                profile.getHeight(),
-                profile.getWeight(),
-                profile.getCountry(),
-                profile.getAddress(),
-                profile.getPhoneNumber(),
-                profile.getQualification(),
-                profile.getGender(),
-                profile.getPreferences(),
-                profile.getAboutMe(),
-                profile.getProfilePicPath(),
-                selectedRelation,
-                selectedHobbies,
-                profile.getAge(),
-                profile.getDateOfBirth(),
-                profile.getEmail(),
-                profile.getOccupation(),
-                profile.getReligion(),
-                profile.getEthnicity(),
-                profile.getLanguages()
-            );
+            
+            // Update the profile object with all fields
+            profile.setUsername(controller.getCurrentUsername());
+            profile.setHobbies(selectedHobbies);
+            profile.setRelationshipGoal(selectedRelation);
+            
+            // Save the profile
+            dbManager.saveUserProfile(profile);
 
-            if (userId != -1) {
-                if (isEdit) {
-                    JOptionPane.showMessageDialog(this,
-                        "Profile updated successfully!",
-                        "Success",
-                        JOptionPane.INFORMATION_MESSAGE);
-                    this.dispose();
-                    // Refresh My Profile section if open
-                    UserProfile.setCurrentUser(null);
-                    java.awt.Window[] windows = java.awt.Window.getWindows();
-                    for (java.awt.Window w : windows) {
-                        if (w instanceof heartsync.view.Swipe) {
-                            ((heartsync.view.Swipe) w).showProfile();
-                        }
+            if (isEdit) {
+                JOptionPane.showMessageDialog(this,
+                    "Profile updated successfully!",
+                    "Success",
+                    JOptionPane.INFORMATION_MESSAGE);
+                this.dispose();
+                // Refresh My Profile section if open
+                UserProfile.setCurrentUser(null);
+                java.awt.Window[] windows = java.awt.Window.getWindows();
+                for (java.awt.Window w : windows) {
+                    if (w instanceof heartsync.view.Swipe) {
+                        ((heartsync.view.Swipe) w).showProfile();
                     }
-                } else {
-                    JOptionPane.showMessageDialog(this,
-                        "Profile created successfully!\nYour User ID is: " + userId,
-                        "Success",
-                        JOptionPane.INFORMATION_MESSAGE);
-                    this.dispose();
-                    // Open HomePage instead of LoginView
-                    SwingUtilities.invokeLater(() -> {
-                        HomePage homePage = new HomePage();
-                        homePage.setLocationRelativeTo(null);
-                        homePage.setVisible(true);
-                    });
                 }
             } else {
                 JOptionPane.showMessageDialog(this,
-                    "Failed to save profile. Please try again.",
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE);
+                    "Profile created successfully!",
+                    "Success",
+                    JOptionPane.INFORMATION_MESSAGE);
+                this.dispose();
+                // Open HomePage instead of LoginView
+                SwingUtilities.invokeLater(() -> {
+                    HomePage homePage = new HomePage(User.getCurrentUser());
+                    homePage.setLocationRelativeTo(null);
+                    homePage.setVisible(true);
+                });
             }
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this,

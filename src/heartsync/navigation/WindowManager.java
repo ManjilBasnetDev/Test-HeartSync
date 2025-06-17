@@ -16,7 +16,12 @@ public final class WindowManager {
 
     /** Obtain existing window or create via factory. */
     public static <T extends JFrame> T getWindow(Class<T> clazz, Supplier<T> factory) {
-        return clazz.cast(WINDOWS.computeIfAbsent(clazz, k -> factory.get()));
+        JFrame window = WINDOWS.get(clazz);
+        if (window == null) {
+            window = factory.get();
+            WINDOWS.put(clazz, window);
+        }
+        return clazz.cast(window);
     }
 
     /** Hide current (may be null) & show target (centred, front). */

@@ -6,7 +6,6 @@ import heartsync.view.SecurityQuestionsView;
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-import java.sql.SQLException;
 
 public class SecurityQuestionsController {
     private final SecurityQuestionsView view;
@@ -48,8 +47,8 @@ public class SecurityQuestionsController {
             } else {
                 JOptionPane.showMessageDialog(view, "Unable to save, please try again", "Error", JOptionPane.ERROR_MESSAGE);
             }
-        } catch (SQLException ex) {
-            JOptionPane.showMessageDialog(view, "DB error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(view, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 

@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
- */
 package heartsync.view;
 
 import java.awt.*;
@@ -17,9 +13,16 @@ import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import java.awt.image.BufferedImage;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+
+// HeartSync imports
 import heartsync.controller.UserProfileController;
 import heartsync.model.UserProfile;
-import java.awt.image.BufferedImage;
+import heartsync.view.ChatSystem;
+import heartsync.view.ProfileSetupView;
+import heartsync.view.MessageBox;
 
 /**
  * Modern swipe interface for browsing through potential matches.
@@ -151,6 +154,29 @@ public class Swipe extends JFrame {
         setLocationRelativeTo(null);
         setResizable(false);
         
+        // Initialize current user if not already set
+        if (UserProfile.getCurrentUser() == null) {
+            UserProfile defaultUser = new UserProfile();
+            defaultUser.setFullName("John Doe");
+            defaultUser.setHeight(175);
+            defaultUser.setWeight(70);
+            defaultUser.setCountry("Nepal");
+            defaultUser.setAddress("Kathmandu");
+            defaultUser.setPhoneNumber("+977 9876543210");
+            defaultUser.setQualification("Bachelor's Degree");
+            defaultUser.setGender("Male");
+            defaultUser.setPreferences("Women");
+            defaultUser.setAboutMe("Looking for meaningful connections and shared adventures.");
+            defaultUser.setProfilePicPath("/path/to/profile.jpg");
+            defaultUser.setRelationshipGoal("Long-term Relationship");
+            defaultUser.setOccupation("Software Developer");
+            defaultUser.setReligion("Hindu");
+            defaultUser.setEthnicity("Asian");
+            defaultUser.setDateOfBirth("1998-01-01");
+            defaultUser.setEmail("john.doe@example.com");
+            UserProfile.setCurrentUser(defaultUser);
+        }
+        
         // Initialize components
         imageLabel = new JLabel();
         nameLabel = new JLabel();
@@ -209,11 +235,12 @@ public class Swipe extends JFrame {
                 chatLabel.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, Color.PINK));
                 exploreLabel.setBorder(null);
                 profileLabel.setBorder(null);
-                // TODO: Implement chat view
-                JOptionPane.showMessageDialog(Swipe.this,
-                    "Chat functionality coming soon!",
-                    "Coming Soon",
-                    JOptionPane.INFORMATION_MESSAGE);
+                // Open ChatSystem
+                SwingUtilities.invokeLater(() -> {
+                    ChatSystem chatSystem = new ChatSystem();
+                    chatSystem.setVisible(true);
+                    dispose(); // Close the Swipe window
+                });
             }
         });
         

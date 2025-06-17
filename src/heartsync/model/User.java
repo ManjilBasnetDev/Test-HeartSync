@@ -19,6 +19,8 @@ public class User {
     private String fullName;
     private String securityQuestion;
     private String securityAnswer;
+    private String securityQuestion2;
+    private String securityAnswer2;
     
     // Static methods for current user management
     public static User getCurrentUser() {
@@ -59,18 +61,14 @@ public class User {
     public void setFirstSchool(String firstSchool) { this.firstSchool = firstSchool; }
     public String getFullName() { return fullName; }
     public void setFullName(String fullName) { this.fullName = fullName; }
-    public String getSecurityQuestion() {
-        return securityQuestion;
-    }
-    public void setSecurityQuestion(String securityQuestion) {
-        this.securityQuestion = securityQuestion;
-    }
-    public String getSecurityAnswer() {
-        return securityAnswer;
-    }
-    public void setSecurityAnswer(String securityAnswer) {
-        this.securityAnswer = securityAnswer;
-    }
+    public String getSecurityQuestion() { return securityQuestion; }
+    public void setSecurityQuestion(String securityQuestion) { this.securityQuestion = securityQuestion; }
+    public String getSecurityAnswer() { return securityAnswer; }
+    public void setSecurityAnswer(String securityAnswer) { this.securityAnswer = securityAnswer; }
+    public String getSecurityQuestion2() { return securityQuestion2; }
+    public void setSecurityQuestion2(String securityQuestion2) { this.securityQuestion2 = securityQuestion2; }
+    public String getSecurityAnswer2() { return securityAnswer2; }
+    public void setSecurityAnswer2(String securityAnswer2) { this.securityAnswer2 = securityAnswer2; }
     
     @Override
     public String toString() {

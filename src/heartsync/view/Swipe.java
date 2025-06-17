@@ -19,14 +19,19 @@ import javax.swing.border.EmptyBorder;
 public class Swipe extends JFrame {
     private static final int WINDOW_RADIUS = 20;
     private static final Color BACKGROUND_COLOR = new Color(255, 216, 227); // Pink background
+    private static final Color PRIMARY_COLOR = new Color(255, 64, 129); // Material Design Pink
+    private static final Color SECONDARY_COLOR = new Color(68, 138, 255); // Material Design Blue
     private static final Color BUTTON_COLOR = new Color(229, 89, 36); // Orange
     private static final Color LIKE_COLOR = new Color(46, 204, 113); // Green
     private static final Color REJECT_COLOR = new Color(231, 76, 60); // Red
     private static final Color BUTTON_HOVER_OVERLAY = new Color(0, 0, 0, 40); // Semi-transparent black for hover
     private static final Color CLOSE_BUTTON_COLOR = new Color(231, 76, 60); // Red for close button
+    private static final Color NAV_BACKGROUND = new Color(255, 255, 255, 230); // Semi-transparent white
     
     private final JPanel mainPanel;
     private final JPanel cardPanel;
+    private final JPanel navigationPanel;
+    private final CardLayout cardLayout;
     private final JLabel imageLabel;
     private final JLabel nameLabel;
     private final JLabel ageLabel;
@@ -36,7 +41,9 @@ public class Swipe extends JFrame {
     private final RoundedButton likeButton;
     private final RoundedButton rejectButton;
     private final RoundedButton closeButton;
-    private final RoundedButton logoutButton;
+    private final RoundedButton messageButton;
+    private final RoundedButton myProfileButton;
+    private final RoundedButton searchButton;
     private final ArrayList<ProfileData> profiles;
     private int currentIndex;
     private User currentUser; // Add field to store the current user
@@ -124,12 +131,29 @@ public class Swipe extends JFrame {
     public Swipe() {
         setTitle("HeartSync - Find Matches");
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setSize(700, 900);
+        setSize(900, 700);
         setLocationRelativeTo(null);
         setUndecorated(true);
         
+        // Initialize CardLayout
+        cardLayout = new CardLayout();
+        
+        // Initialize UI components
+        imageLabel = new JLabel();
+        nameLabel = new JLabel();
+        ageLabel = new JLabel();
+        bioLabel = new JLabel();
+        rejectButton = new RoundedButton("✕", REJECT_COLOR);
+        backButton = new RoundedButton("←", BUTTON_COLOR);
+        nextButton = new RoundedButton("→", BUTTON_COLOR);
+        likeButton = new RoundedButton("♥", LIKE_COLOR);
+        closeButton = new RoundedButton("×", CLOSE_BUTTON_COLOR);
+        messageButton = new RoundedButton("💬 Messages", PRIMARY_COLOR);
+        myProfileButton = new RoundedButton("👤 My Profile", PRIMARY_COLOR);
+        searchButton = new RoundedButton("🔍 Search", SECONDARY_COLOR);
+        
         // Main panel with rounded corners
-        mainPanel = new JPanel(null) {
+        mainPanel = new JPanel(new BorderLayout()) {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g;
@@ -140,144 +164,73 @@ public class Swipe extends JFrame {
         };
         mainPanel.setOpaque(false);
         
-        // --- Navigation bar ---
-        JPanel navBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 10));
-        navBar.setOpaque(false);
-
-        RoundedButton profileBtn = new RoundedButton("My Profile", BUTTON_COLOR);
-        RoundedButton searchBtn = new RoundedButton("Search", BUTTON_COLOR);
-        RoundedButton messagesBtn = new RoundedButton("Messages", BUTTON_COLOR);
-
-        profileBtn.addActionListener(e -> openMyProfile());
-        searchBtn.addActionListener(e -> JOptionPane.showMessageDialog(this,
-                "Search feature coming soon!","Coming Soon",JOptionPane.INFORMATION_MESSAGE));
-        messagesBtn.addActionListener(e -> JOptionPane.showMessageDialog(this,
-                "Messaging feature coming soon!","Coming Soon",JOptionPane.INFORMATION_MESSAGE));
-
-        navBar.add(profileBtn);
-        navBar.add(searchBtn);
-        navBar.add(messagesBtn);
-        navBar.setBounds(20,10,400,50);
-        mainPanel.add(navBar);
-
-        // Logout button (keep existing color)
-        logoutButton = new RoundedButton("Logout", new Color(108, 117, 125));
-        logoutButton.setBounds(500, 10, 100, 30);
-        logoutButton.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        logoutButton.addActionListener(e -> {
-            int confirm = JOptionPane.showConfirmDialog(
-                this,
-                "Are you sure you want to logout?",
-                "Confirm Logout",
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.QUESTION_MESSAGE
-            );
-            
-            if (confirm == JOptionPane.YES_OPTION) {
-                dispose();
-                // Clear the current user
-                currentUser = null;
-                // Use the static method to ensure consistent login view initialization
-                heartsync.controller.LoginController.createAndShowLoginView();
-            }
-        });
-        mainPanel.add(logoutButton);
+        // Create top navigation panel
+        navigationPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
+        navigationPanel.setBackground(NAV_BACKGROUND);
+        navigationPanel.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
         
-        closeButton = new RoundedButton("X", CLOSE_BUTTON_COLOR) {
-            private boolean isHovered = false;
-
-            {
-                addMouseListener(new MouseAdapter() {
-                    @Override
-                    public void mouseEntered(MouseEvent e) {
-                        isHovered = true;
-                        repaint();
-                    }
-
-                    @Override
-                    public void mouseExited(MouseEvent e) {
-                        isHovered = false;
-                        repaint();
-                    }
-                });
-            }
-
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g;
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                
-                if (isHovered) {
-                    g2.setColor(CLOSE_BUTTON_COLOR.darker());
-                } else {
-                    g2.setColor(CLOSE_BUTTON_COLOR);
-                }
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), getHeight(), getHeight()); // Make it circular
-                
-                // Add hover effect
-                if (isHovered) {
-                    g2.setColor(BUTTON_HOVER_OVERLAY);
-                    g2.fillRoundRect(0, 0, getWidth(), getHeight(), getHeight(), getHeight());
-                }
-                
-                super.paintComponent(g);
-            }
-        };
-        closeButton.setBounds(650, 10, 30, 30);
-        closeButton.setFont(new Font("Segoe UI", Font.BOLD, 16)); // Slightly larger font
+        // Create additional navigation buttons
+        RoundedButton matchesButton = new RoundedButton("❤️ Matches", SECONDARY_COLOR);
+        RoundedButton settingsButton = new RoundedButton("⚙️ Settings", PRIMARY_COLOR);
+        
+        // Style navigation buttons
+        Dimension navButtonSize = new Dimension(150, 40);
+        Font navButtonFont = new Font("Segoe UI", Font.BOLD, 14);
+        
+        for (RoundedButton btn : new RoundedButton[]{myProfileButton, searchButton, messageButton, matchesButton, settingsButton}) {
+            btn.setPreferredSize(navButtonSize);
+            btn.setFont(navButtonFont);
+        }
+        
+        // Add buttons to navigation panel
+        navigationPanel.add(myProfileButton);
+        navigationPanel.add(searchButton);
+        navigationPanel.add(messageButton);
+        navigationPanel.add(matchesButton);
+        navigationPanel.add(settingsButton);
+        
+        // Add window control buttons
+        JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 5));
+        controlPanel.setOpaque(false);
+        
+        closeButton.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        closeButton.setPreferredSize(new Dimension(35, 35));
         closeButton.addActionListener(e -> dispose());
-        mainPanel.add(closeButton);
         
-        // Card panel for profile display
-        cardPanel = new JPanel(null);
+        RoundedButton minimizeButton = new RoundedButton("−", SECONDARY_COLOR);
+        minimizeButton.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        minimizeButton.setPreferredSize(new Dimension(35, 35));
+        minimizeButton.addActionListener(e -> setState(Frame.ICONIFIED));
+        
+        controlPanel.add(minimizeButton);
+        controlPanel.add(closeButton);
+        
+        // Create card panel for different views
+        cardPanel = new JPanel(cardLayout);
         cardPanel.setOpaque(false);
-        cardPanel.setBounds(50, 50, 600, 800);
         
-        // Profile image
-        imageLabel = new JLabel();
-        imageLabel.setBounds(50, 20, 500, 500);
-        imageLabel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        // Create swipe view panel
+        JPanel swipeView = createSwipeView();
+        JPanel profileView = createProfileView();
+        JPanel searchView = createSearchView();
+        JPanel chatView = createChatView();
         
-        // Profile info
-        nameLabel = new JLabel();
-        nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
-        nameLabel.setForeground(new Color(51, 51, 51));
-        nameLabel.setBounds(50, 540, 300, 30);
+        // Add views to card panel
+        cardPanel.add(swipeView, "SWIPE");
+        cardPanel.add(profileView, "PROFILE");
+        cardPanel.add(searchView, "SEARCH");
+        cardPanel.add(chatView, "CHAT");
         
-        ageLabel = new JLabel();
-        ageLabel.setFont(new Font("Segoe UI", Font.PLAIN, 18));
-        ageLabel.setForeground(new Color(102, 102, 102));
-        ageLabel.setBounds(50, 575, 100, 25);
+        // Add components to main panel
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setOpaque(false);
+        topPanel.add(navigationPanel, BorderLayout.CENTER);
+        topPanel.add(controlPanel, BorderLayout.EAST);
         
-        bioLabel = new JLabel();
-        bioLabel.setFont(new Font("Segoe UI", Font.PLAIN, 16));
-        bioLabel.setForeground(new Color(102, 102, 102));
-        bioLabel.setBounds(50, 610, 500, 60);
+        mainPanel.add(topPanel, BorderLayout.NORTH);
+        mainPanel.add(cardPanel, BorderLayout.CENTER);
         
-        // Position all buttons with wider spacing
-        rejectButton = new RoundedButton("✕ Pass", REJECT_COLOR);
-        rejectButton.setBounds(50, 700, 120, 45);
-        
-        backButton = new RoundedButton("← Back", BUTTON_COLOR);
-        backButton.setBounds(190, 700, 120, 45);
-        
-        nextButton = new RoundedButton("Next →", BUTTON_COLOR);
-        nextButton.setBounds(330, 700, 120, 45);
-        
-        likeButton = new RoundedButton("♥ Like", LIKE_COLOR);
-        likeButton.setBounds(470, 700, 120, 45);
-        
-        // Add components
-        cardPanel.add(imageLabel);
-        cardPanel.add(nameLabel);
-        cardPanel.add(ageLabel);
-        cardPanel.add(bioLabel);
-        cardPanel.add(nextButton);
-        cardPanel.add(backButton);
-        cardPanel.add(likeButton);
-        cardPanel.add(rejectButton);
-        
-        mainPanel.add(cardPanel);
+        // Set content pane
         setContentPane(mainPanel);
         
         // Setup window shape
@@ -290,6 +243,73 @@ public class Swipe extends JFrame {
         showCurrentProfile();
     }
     
+    private JPanel createSwipeView() {
+        JPanel panel = new JPanel(null);
+        panel.setOpaque(false);
+        
+        // Profile image
+        imageLabel.setBounds(50, 20, 500, 500);
+        imageLabel.setBorder(BorderFactory.createLineBorder(Color.WHITE, 2, true));
+        
+        // Profile info
+        nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        nameLabel.setForeground(new Color(51, 51, 51));
+        nameLabel.setBounds(50, 540, 300, 30);
+        
+        ageLabel.setFont(new Font("Segoe UI", Font.PLAIN, 18));
+        ageLabel.setForeground(new Color(102, 102, 102));
+        ageLabel.setBounds(50, 575, 100, 25);
+        
+        bioLabel.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        bioLabel.setForeground(new Color(102, 102, 102));
+        bioLabel.setBounds(50, 610, 500, 60);
+        
+        // Action buttons
+        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
+        actionPanel.setOpaque(false);
+        actionPanel.setBounds(50, 680, 500, 60);
+        
+        Dimension actionButtonSize = new Dimension(50, 50);
+        for (RoundedButton btn : new RoundedButton[]{rejectButton, backButton, nextButton, likeButton}) {
+            btn.setPreferredSize(actionButtonSize);
+            btn.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        }
+        
+        actionPanel.add(rejectButton);
+        actionPanel.add(backButton);
+        actionPanel.add(nextButton);
+        actionPanel.add(likeButton);
+        
+        panel.add(imageLabel);
+        panel.add(nameLabel);
+        panel.add(ageLabel);
+        panel.add(bioLabel);
+        panel.add(actionPanel);
+        
+        return panel;
+    }
+    
+    private JPanel createProfileView() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setOpaque(false);
+        panel.add(new JLabel("Profile View Coming Soon!", SwingConstants.CENTER));
+        return panel;
+    }
+    
+    private JPanel createSearchView() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setOpaque(false);
+        panel.add(new JLabel("Search View Coming Soon!", SwingConstants.CENTER));
+        return panel;
+    }
+    
+    private JPanel createChatView() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setOpaque(false);
+        panel.add(new JLabel("Chat View Coming Soon!", SwingConstants.CENTER));
+        return panel;
+    }
+
     private void setupProfiles() {
         // Add sample profiles - in a real app, these would come from a database
         profiles.add(new ProfileData(
@@ -335,7 +355,12 @@ public class Swipe extends JFrame {
         mainPanel.addMouseListener(dragListener);
         mainPanel.addMouseMotionListener(dragListener);
         
-        // Button actions
+        // Navigation button actions
+        myProfileButton.addActionListener(e -> cardLayout.show(cardPanel, "PROFILE"));
+        searchButton.addActionListener(e -> cardLayout.show(cardPanel, "SEARCH"));
+        messageButton.addActionListener(e -> cardLayout.show(cardPanel, "CHAT"));
+        
+        // Swipe button actions
         nextButton.addActionListener(e -> showNextProfile());
         backButton.addActionListener(e -> showPreviousProfile());
         likeButton.addActionListener(e -> likeCurrentProfile());
@@ -411,12 +436,6 @@ public class Swipe extends JFrame {
         showNextProfile();
     }
     
-    // --- Navigation handlers ---
-    private void openMyProfile() {
-        JOptionPane.showMessageDialog(this,
-                "Profile editing coming soon!","Coming Soon",JOptionPane.INFORMATION_MESSAGE);
-    }
-
     private void rejectCurrentProfile() {
         ProfileData profile = profiles.get(currentIndex);
         JOptionPane.showMessageDialog(this,

@@ -1,4 +1,4 @@
-package heartsync.view;
+package logintestfinal.View;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -18,7 +18,6 @@ public class MatchedUserList extends JFrame {
     private JButton viewProfileButton;
     private JButton messageButton;
     private JButton backButton;
-    private JButton blockButton;
     private JLabel detailsLabel;
 
     // User profile class
@@ -166,18 +165,15 @@ public class MatchedUserList extends JFrame {
         
         viewProfileButton = new JButton("View Profile");
         messageButton = new JButton("Message");
-        blockButton = new JButton("Block User");
         backButton = new JButton("Back");
         
         styleButton(viewProfileButton, new Color(70, 120, 255));
         styleButton(messageButton, new Color(255, 182, 193));
-        styleButton(blockButton, new Color(255, 99, 71));
         styleButton(backButton, new Color(200, 200, 200));
         
         // Add buttons to the horizontal panel
         buttonPanel.add(viewProfileButton);
         buttonPanel.add(messageButton);
-        buttonPanel.add(blockButton);
         buttonPanel.add(backButton);
         
         detailsPanel.add(detailsLabel);
@@ -230,24 +226,6 @@ public class MatchedUserList extends JFrame {
                         "Starting chat with " + sel.name + "...",
                         "Message",
                         JOptionPane.INFORMATION_MESSAGE);
-            }
-        });
-        blockButton.addActionListener(e -> {
-            UserProfile sel = matchedUsersList.getSelectedValue();
-            if (sel != null) {
-                int confirm = JOptionPane.showConfirmDialog(this,
-                        "Are you sure you want to block " + sel.name + "?",
-                        "Confirm Block",
-                        JOptionPane.YES_NO_OPTION,
-                        JOptionPane.WARNING_MESSAGE);
-                
-                if (confirm == JOptionPane.YES_OPTION) {
-                    listModel.removeElement(sel);
-                    JOptionPane.showMessageDialog(this,
-                            sel.name + " has been blocked.",
-                            "User Blocked",
-                            JOptionPane.INFORMATION_MESSAGE);
-                }
             }
         });
         backButton.addActionListener(e -> dispose());

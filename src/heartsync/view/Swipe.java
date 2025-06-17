@@ -179,12 +179,15 @@ public class Swipe extends JFrame {
         exploreLabel = new JLabel("Explore");
         chatLabel = new JLabel("Chat");
         profileLabel = new JLabel("My Profile");
-        
+        JLabel matchedLabel = new JLabel("Matched Users");
+        JLabel myLikesLabel = new JLabel("My Likes");
+        JLabel myLikersLabel = new JLabel("My Likers");
+        JLabel logoutLabel = new JLabel("Logout");
+
         // Style navigation labels
         Font navFont = new Font("Segoe UI", Font.PLAIN, 16);
         Color navTextColor = new Color(50, 50, 50);
-        
-        for (JLabel label : new JLabel[]{exploreLabel, chatLabel, profileLabel}) {
+        for (JLabel label : new JLabel[]{exploreLabel, chatLabel, profileLabel, matchedLabel, myLikesLabel, myLikersLabel, logoutLabel}) {
             label.setFont(navFont);
             label.setForeground(navTextColor);
             label.setCursor(new Cursor(Cursor.HAND_CURSOR));
@@ -201,31 +204,106 @@ public class Swipe extends JFrame {
                 exploreLabel.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, Color.PINK));
                 chatLabel.setBorder(null);
                 profileLabel.setBorder(null);
+                matchedLabel.setBorder(null);
+                myLikesLabel.setBorder(null);
+                myLikersLabel.setBorder(null);
+                logoutLabel.setBorder(null);
                 showExplore();
             }
         });
-        
         chatLabel.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 chatLabel.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, Color.PINK));
                 exploreLabel.setBorder(null);
                 profileLabel.setBorder(null);
-                // TODO: Implement chat view
+                matchedLabel.setBorder(null);
+                myLikesLabel.setBorder(null);
+                myLikersLabel.setBorder(null);
+                logoutLabel.setBorder(null);
                 JOptionPane.showMessageDialog(Swipe.this,
                     "Chat functionality coming soon!",
                     "Coming Soon",
                     JOptionPane.INFORMATION_MESSAGE);
             }
         });
-        
         profileLabel.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 profileLabel.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, Color.PINK));
                 exploreLabel.setBorder(null);
                 chatLabel.setBorder(null);
+                matchedLabel.setBorder(null);
+                myLikesLabel.setBorder(null);
+                myLikersLabel.setBorder(null);
+                logoutLabel.setBorder(null);
                 showProfile();
+            }
+        });
+        matchedLabel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                matchedLabel.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, Color.PINK));
+                exploreLabel.setBorder(null);
+                chatLabel.setBorder(null);
+                profileLabel.setBorder(null);
+                myLikesLabel.setBorder(null);
+                myLikersLabel.setBorder(null);
+                logoutLabel.setBorder(null);
+                JOptionPane.showMessageDialog(Swipe.this,
+                    "Matched Users functionality coming soon!",
+                    "Coming Soon",
+                    JOptionPane.INFORMATION_MESSAGE);
+            }
+        });
+        myLikesLabel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                myLikesLabel.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, Color.PINK));
+                exploreLabel.setBorder(null);
+                chatLabel.setBorder(null);
+                profileLabel.setBorder(null);
+                matchedLabel.setBorder(null);
+                myLikersLabel.setBorder(null);
+                logoutLabel.setBorder(null);
+                JOptionPane.showMessageDialog(Swipe.this,
+                    "My Likes functionality coming soon!",
+                    "Coming Soon",
+                    JOptionPane.INFORMATION_MESSAGE);
+            }
+        });
+        myLikersLabel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                myLikersLabel.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, Color.PINK));
+                exploreLabel.setBorder(null);
+                chatLabel.setBorder(null);
+                profileLabel.setBorder(null);
+                matchedLabel.setBorder(null);
+                myLikesLabel.setBorder(null);
+                logoutLabel.setBorder(null);
+                JOptionPane.showMessageDialog(Swipe.this,
+                    "My Likers functionality coming soon!",
+                    "Coming Soon",
+                    JOptionPane.INFORMATION_MESSAGE);
+            }
+        });
+        logoutLabel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                int confirm = JOptionPane.showConfirmDialog(Swipe.this,
+                    "Are you sure you want to logout?",
+                    "Logout",
+                    JOptionPane.YES_NO_OPTION);
+                if (confirm == JOptionPane.YES_OPTION) {
+                    // Clear session and return to login/home
+                    heartsync.model.User.setCurrentUser(null);
+                    heartsync.model.UserProfile.setCurrentUser(null);
+                    dispose();
+                    SwingUtilities.invokeLater(() -> {
+                        heartsync.controller.LoginController.createAndShowLoginView();
+                    });
+                }
             }
         });
         

@@ -253,4 +253,20 @@ public class SecurityQuestionsDialog extends JDialog {
     public String getFirstSchool() {
         return firstSchoolField.getText().trim();
     }
+
+    public String getSecurityQuestion1() {
+        return "What is your favorite color?";
+    }
+
+    public String getSecurityAnswer1() {
+        return favoriteColorField.getText().trim();
+    }
+
+    public String getSecurityQuestion2() {
+        return "What was the name of your first school?";
+    }
+
+    public String getSecurityAnswer2() {
+        return firstSchoolField.getText().trim();
+    }
 }

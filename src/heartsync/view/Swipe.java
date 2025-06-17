@@ -21,6 +21,14 @@ import heartsync.controller.UserProfileController;
 import heartsync.model.UserProfile;
 import java.awt.image.BufferedImage;
 import heartsync.database.DatabaseManagerProfile;
+import heartsync.model.User;
+import java.time.LocalDate;
+import java.time.Period;
+import java.time.format.DateTimeFormatter;
+import java.net.URL;
+import heartsync.navigation.WindowManager;
+import heartsync.view.ChatSystem;
+import heartsync.view.LoginView;
 
 /**
  * Modern swipe interface for browsing through potential matches.
@@ -162,24 +170,72 @@ public class Swipe extends JFrame {
         mainPanel = new JPanel(new BorderLayout());
         mainPanel.setBackground(BACKGROUND_COLOR);
         
-        // Initialize labels
+        // Initialize card layout and content cards
+        cardLayout = new CardLayout();
+        contentCards = new JPanel(cardLayout);
+        contentCards.setOpaque(false);
+        
+        // Initialize labels with proper configuration
         nameLabel = new JLabel();
+        nameLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        
         ageLabel = new JLabel();
+        ageLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        
         bioLabel = new JLabel();
-        locationLabel = new JLabel();  // Added missing label
-        interestsLabel = new JLabel(); // Added missing label
+        bioLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        
+        locationLabel = new JLabel();
+        locationLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        
+        interestsLabel = new JLabel();
+        interestsLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        
+        // Initialize imageLabel with proper configuration
+        imageLabel = new JLabel();
+        imageLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        imageLabel.setVerticalAlignment(SwingConstants.CENTER);
+        imageLabel.setPreferredSize(new Dimension(IMAGE_CONTAINER_WIDTH, IMAGE_CONTAINER_HEIGHT));
+        
+        // Initialize buttons
+        backButton = new RoundedButton("Back", BUTTON_COLOR);
+        likeButton = new RoundedButton("Like", LIKE_COLOR);
+        rejectButton = new RoundedButton("Pass", REJECT_COLOR);
+        nextButton = new RoundedButton("Next", BUTTON_COLOR);
+        
+        // Add button listeners
+        backButton.addActionListener(e -> showPreviousProfile());
+        likeButton.addActionListener(e -> likeCurrentProfile());
+        rejectButton.addActionListener(e -> rejectCurrentProfile());
+        nextButton.addActionListener(e -> showNextProfile());
+        
+        // Initialize lists
         profiles = new ArrayList<>();
         allProfiles = new ArrayList<>();
+        currentIndex = 0;
+        
+        // Initialize navigation panel
+        setupNavigationPanel();
+        
+        // Initialize search panel
+        setupSearchPanel();
         
         // Set up UI components
         setupUI();
-        setupProfiles();
         
         // Add main panel to frame
         add(mainPanel);
         
+        // Initialize profiles
+        setupProfiles();
+        
         // Show explore panel by default
         showExplore();
+        
+        // Show first profile if available
+        if (!profiles.isEmpty()) {
+            showCurrentProfile();
+        }
     }
 
     private void setupUI() {
@@ -187,25 +243,16 @@ public class Swipe extends JFrame {
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.setOpaque(false);
 
-        // Setup navigation
-        setupNavigationPanel();
+        // Add navigation and search panels
         topPanel.add(navigationPanel, BorderLayout.NORTH);
-
-        // Setup search
-        setupSearchPanel();
         topPanel.add(searchPanel, BorderLayout.CENTER);
-
         mainPanel.add(topPanel, BorderLayout.NORTH);
-
-        // Setup content panels
-        JPanel explorePanel = createExplorePanel();
-        JPanel profilePanel = createProfilePanel();
         
-        contentCards.add(explorePanel, "explore");
-        contentCards.add(profilePanel, "profile");
-        mainPanel.add(contentCards, BorderLayout.CENTER);
+        // Create explore panel
+        JPanel explorePanel = createExplorePanel();
+        mainPanel.add(explorePanel, BorderLayout.CENTER);
     }
-    
+
     private void setupNavigationPanel() {
         navigationPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 40, 15));
         navigationPanel.setOpaque(false);
@@ -214,11 +261,18 @@ public class Swipe extends JFrame {
         // Create navigation items
         exploreLabel = new JLabel("Explore");
         profileLabel = new JLabel("My Profile");
+        chatLabel = new JLabel("Chat");
+        JLabel matchedLabel = new JLabel("Matched Users");
+        JLabel myLikesLabel = new JLabel("My Likes");
+        JLabel myLikersLabel = new JLabel("My Likers");
+        JLabel logoutLabel = new JLabel("Logout");
         
         // Style navigation items
         Font navFont = new Font("Segoe UI", Font.BOLD, 16);
         
-        for (JLabel label : new JLabel[]{exploreLabel, profileLabel}) {
+        JLabel[] allLabels = new JLabel[]{exploreLabel, profileLabel, chatLabel, matchedLabel, myLikesLabel, myLikersLabel, logoutLabel};
+        
+        for (JLabel label : allLabels) {
             label.setFont(navFont);
             label.setForeground(NAV_COLOR);
             label.setCursor(new Cursor(Cursor.HAND_CURSOR));
@@ -230,29 +284,50 @@ public class Swipe extends JFrame {
                         showExplore();
                     } else if (label == profileLabel) {
                         showProfile();
+                    } else if (label == chatLabel) {
+                        // TODO: Implement chat functionality
+                        WindowManager.show(ChatSystem.class, ChatSystem::new, Swipe.this);
+                    } else if (label == matchedLabel) {
+                        // TODO: Show matched users
+                    } else if (label == myLikesLabel) {
+                        // TODO: Show users I liked
+                    } else if (label == myLikersLabel) {
+                        // TODO: Show users who liked me
+                    } else if (label == logoutLabel) {
+                        // Handle logout
+                        int choice = JOptionPane.showConfirmDialog(
+                            Swipe.this,
+                            "Are you sure you want to logout?",
+                            "Logout Confirmation",
+                            JOptionPane.YES_NO_OPTION
+                        );
+                        if (choice == JOptionPane.YES_OPTION) {
+                            WindowManager.show(LoginView.class, LoginView::new, Swipe.this);
+                            dispose();
+                        }
                     }
                 }
                 
                 @Override
                 public void mouseEntered(MouseEvent e) {
-                    if ((label == exploreLabel && !exploreLabel.getForeground().equals(NAV_ACTIVE_COLOR)) ||
-                        (label == profileLabel && !profileLabel.getForeground().equals(NAV_ACTIVE_COLOR))) {
+                    if (!label.getForeground().equals(NAV_ACTIVE_COLOR)) {
                         label.setForeground(NAV_ACTIVE_COLOR.darker());
                     }
                 }
                 
                 @Override
                 public void mouseExited(MouseEvent e) {
-                    if ((label == exploreLabel && !exploreLabel.getForeground().equals(NAV_ACTIVE_COLOR)) ||
-                        (label == profileLabel && !profileLabel.getForeground().equals(NAV_ACTIVE_COLOR))) {
+                    if (!label.getForeground().equals(NAV_ACTIVE_COLOR)) {
                         label.setForeground(NAV_COLOR);
                     }
                 }
             });
         }
         
-        navigationPanel.add(exploreLabel);
-        navigationPanel.add(profileLabel);
+        // Add all labels to the navigation panel
+        for (JLabel label : allLabels) {
+            navigationPanel.add(label);
+        }
     }
 
     private void setupSearchPanel() {
@@ -343,6 +418,13 @@ public class Swipe extends JFrame {
     }
 
     private JPanel createExplorePanel() {
+        // Use the existing imageLabel, don't create a new one
+        if (imageLabel != null) {
+            imageLabel.setHorizontalAlignment(SwingConstants.CENTER);
+            imageLabel.setVerticalAlignment(SwingConstants.CENTER);
+            imageLabel.setPreferredSize(new Dimension(IMAGE_CONTAINER_WIDTH, IMAGE_CONTAINER_HEIGHT));
+        }
+
         JPanel explorePanel = new JPanel(new BorderLayout(20, 20));
         explorePanel.setOpaque(false);
         explorePanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -387,8 +469,6 @@ public class Swipe extends JFrame {
         photoContainer.setBorder(BorderFactory.createLineBorder(new Color(255, 192, 203, 50), 1));
 
         // Configure image label with padding
-        imageLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        imageLabel.setVerticalAlignment(SwingConstants.CENTER);
         imageLabel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         photoContainer.add(imageLabel, BorderLayout.CENTER);
 
@@ -518,10 +598,6 @@ public class Swipe extends JFrame {
         
         explorePanel.add(cardContainer, BorderLayout.CENTER);
         
-        // Load initial profile
-        setupProfiles();
-        showCurrentProfile();
-        
         return explorePanel;
     }
 
@@ -617,31 +693,40 @@ public class Swipe extends JFrame {
         ProfileData profile = profiles.get(currentIndex);
         if (profile.photos.isEmpty()) {
             imageLabel.setIcon(null);
-            imageLabel.setText("");
+            imageLabel.setText("No photos available");
             return;
         }
         String photoPath = profile.photos.get(profile.currentPhotoIndex);
         try {
-            Image image;
+            Image image = null;
+            // First try as absolute path
             if (photoPath.startsWith("/")) {
-                // Try as file path
                 File file = new File(photoPath);
                 if (file.exists()) {
                     image = ImageIO.read(file);
-                } else {
-                    image = null;
                 }
-            } else {
-                // Try as resource
-                ImageIcon imageIcon = new ImageIcon(getClass().getResource(photoPath));
-                image = imageIcon.getImage();
             }
+            // Then try as relative path in ImagePicker directory
+            if (image == null) {
+                File file = new File("src/ImagePicker/" + photoPath);
+                if (file.exists()) {
+                    image = ImageIO.read(file);
+                }
+            }
+            // Finally try as resource
+            if (image == null) {
+                URL resourceUrl = getClass().getResource("/ImagePicker/" + photoPath);
+                if (resourceUrl != null) {
+                    image = ImageIO.read(resourceUrl);
+                }
+            }
+            
             if (image != null) {
                 int originalWidth = image.getWidth(null);
                 int originalHeight = image.getHeight(null);
                 double widthScale = (double) (CARD_WIDTH - 40) / originalWidth;
                 double heightScale = (double) (PHOTO_HEIGHT - 10) / originalHeight;
-                double scale = Math.max(widthScale, heightScale);
+                double scale = Math.min(widthScale, heightScale); // Changed to min to maintain aspect ratio
                 int scaledWidth = (int) (originalWidth * scale);
                 int scaledHeight = (int) (originalHeight * scale);
                 Image scaledImage = image.getScaledInstance(scaledWidth, scaledHeight, Image.SCALE_SMOOTH);
@@ -740,22 +825,58 @@ public class Swipe extends JFrame {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 Ellipse2D.Double circle = new Ellipse2D.Double(0, 0, getWidth() - 1, getHeight() - 1);
                 g2.setClip(circle);
+                
+                BufferedImage img = null;
                 String profilePicPath = UserProfile.getCurrentUser().getProfilePicPath();
+                
+                // Try to load the profile picture
                 if (profilePicPath != null && !profilePicPath.isEmpty()) {
                     try {
-                        BufferedImage img = ImageIO.read(new File(profilePicPath));
-                        if (img != null) {
-                            g2.drawImage(img, 0, 0, getWidth(), getHeight(), null);
+                        // First try as absolute path
+                        File file = new File(profilePicPath);
+                        if (file.exists()) {
+                            img = ImageIO.read(file);
+                        }
+                        
+                        // Then try in ImagePicker directory
+                        if (img == null) {
+                            file = new File("src/ImagePicker/" + profilePicPath);
+                            if (file.exists()) {
+                                img = ImageIO.read(file);
+                            }
+                        }
+                        
+                        // Finally try as resource
+                        if (img == null) {
+                            URL resourceUrl = getClass().getResource("/ImagePicker/" + profilePicPath);
+                            if (resourceUrl != null) {
+                                img = ImageIO.read(resourceUrl);
+                            }
                         }
                     } catch (IOException e) {
-                        g2.setColor(new Color(219, 112, 147));
-                        g2.fill(circle);
+                        e.printStackTrace();
                     }
+                }
+                
+                // If no profile picture was loaded, try to load the default one
+                if (img == null) {
+                    try {
+                        File defaultImg = new File("src/ImagePicker/RajeshHamalPhoto.png");
+                        if (defaultImg.exists()) {
+                            img = ImageIO.read(defaultImg);
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+                
+                // Draw the image or a colored circle if no image is available
+                if (img != null) {
+                    g2.drawImage(img, 0, 0, getWidth(), getHeight(), null);
                 } else {
                     g2.setColor(new Color(219, 112, 147));
                     g2.fill(circle);
                 }
-                // No border
             }
         };
 
@@ -768,202 +889,103 @@ public class Swipe extends JFrame {
     }
 
     private JPanel createProfilePanel() {
-        JPanel profilePanel = new JPanel(new BorderLayout(20, 20));
-        profilePanel.setOpaque(false);
-        profilePanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-
-        // Create a card-like panel for profile content
-        JPanel contentCard = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g;
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                // Draw shadow
-                g2.setColor(CARD_SHADOW);
-                g2.fillRoundRect(5, 5, getWidth() - 10, getHeight() - 10, CARD_RADIUS, CARD_RADIUS);
-                // Draw card background
-                g2.setColor(CARD_BG);
-                g2.fillRoundRect(0, 0, getWidth() - 5, getHeight() - 5, CARD_RADIUS, CARD_RADIUS);
-            }
-        };
-        contentCard.setOpaque(false);
-        contentCard.setLayout(new BorderLayout(0, 20));
-        contentCard.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-
-        // Top section with user info
-        JPanel userInfoPanel = new JPanel();
-        userInfoPanel.setLayout(new BoxLayout(userInfoPanel, BoxLayout.Y_AXIS));
-        userInfoPanel.setOpaque(false);
-
-        // Profile picture (use actual image if available)
-        JLabel profilePicture = new JLabel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                Graphics2D g2 = (Graphics2D) g;
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                Ellipse2D.Double circle = new Ellipse2D.Double(0, 0, getWidth() - 1, getHeight() - 1);
-                g2.setClip(circle);
-                String profilePicPath = UserProfile.getCurrentUser().getProfilePicPath();
-                if (profilePicPath != null && !profilePicPath.isEmpty()) {
-                    try {
-                        BufferedImage img = ImageIO.read(new File(profilePicPath));
-                        if (img != null) {
-                            g2.drawImage(img, 0, 0, getWidth(), getHeight(), null);
-                        }
-                    } catch (IOException e) {
-                        g2.setColor(new Color(219, 112, 147));
-                        g2.fill(circle);
-                    }
-                } else {
-                    g2.setColor(new Color(219, 112, 147));
-                    g2.fill(circle);
-                }
-                // No border
-            }
-        };
-        profilePicture.setPreferredSize(new Dimension(150, 150));
-        profilePicture.setMaximumSize(new Dimension(150, 150));
-        profilePicture.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        // User details
-        JLabel nameLabel = new JLabel(UserProfile.getCurrentUser().getFullName());
-        nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
-        nameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        // Calculate age from date of birth
-        String dob = UserProfile.getCurrentUser().getDateOfBirth();
-        int age = calculateAge(dob);
-        JLabel ageLabel = new JLabel(age + " years");
-        ageLabel.setFont(new Font("Segoe UI", Font.PLAIN, 18));
-        ageLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        // Add components to user info panel
-        userInfoPanel.add(profilePicture);
-        userInfoPanel.add(Box.createVerticalStrut(15));
-        userInfoPanel.add(nameLabel);
-        userInfoPanel.add(Box.createVerticalStrut(5));
-        userInfoPanel.add(ageLabel);
-        userInfoPanel.add(Box.createVerticalStrut(20));
-
-        // Create details panel
-        JPanel detailsPanel = new JPanel(new GridBagLayout());
-        detailsPanel.setOpaque(false);
+        JPanel profilePanel = new JPanel(new GridBagLayout());
+        profilePanel.setBackground(BACKGROUND_COLOR);
+        profilePanel.setBorder(new EmptyBorder(20, 20, 20, 20));
+        
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.gridwidth = GridBagConstraints.REMAINDER;
-        gbc.anchor = GridBagConstraints.WEST;
-        gbc.insets = new Insets(5, 0, 5, 0);
-
-        // Basic Information
-        addSectionHeader(detailsPanel, "Basic Information", gbc);
-        addDetailRow(detailsPanel, "Height", UserProfile.getCurrentUser().getHeight() + " cm", gbc);
-        addDetailRow(detailsPanel, "Weight", UserProfile.getCurrentUser().getWeight() + " kg", gbc);
-        addDetailRow(detailsPanel, "Gender", UserProfile.getCurrentUser().getGender(), gbc);
-        addDetailRow(detailsPanel, "Interested In", UserProfile.getCurrentUser().getPreferences(), gbc);
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 2;
+        gbc.anchor = GridBagConstraints.CENTER;
+        gbc.insets = new Insets(10, 10, 20, 10);
         
-        // Location Information
-        addSectionHeader(detailsPanel, "Location", gbc);
-        addDetailRow(detailsPanel, "Country", UserProfile.getCurrentUser().getCountry(), gbc);
-        addDetailRow(detailsPanel, "Address", UserProfile.getCurrentUser().getAddress(), gbc);
+        // Profile picture
+        JLabel profilePicture = createProfilePicture();
+        profilePicture.setPreferredSize(new Dimension(150, 150));
+        profilePanel.add(profilePicture, gbc);
         
-        // Contact Information
-        addSectionHeader(detailsPanel, "Contact", gbc);
-        addDetailRow(detailsPanel, "Phone", UserProfile.getCurrentUser().getPhoneNumber(), gbc);
-        addDetailRow(detailsPanel, "Email", UserProfile.getCurrentUser().getEmail(), gbc);
+        // Reset gridwidth for other components
+        gbc.gridwidth = 1;
+        gbc.gridy++;
         
-        // Background Information
-        addSectionHeader(detailsPanel, "Background", gbc);
-        addDetailRow(detailsPanel, "Education", UserProfile.getCurrentUser().getQualification(), gbc);
-        addDetailRow(detailsPanel, "Occupation", UserProfile.getCurrentUser().getOccupation(), gbc);
-        addDetailRow(detailsPanel, "Religion", UserProfile.getCurrentUser().getReligion(), gbc);
-        addDetailRow(detailsPanel, "Ethnicity", UserProfile.getCurrentUser().getEthnicity(), gbc);
+        // Add profile information
+        addSectionHeader(profilePanel, "Personal Information", gbc);
+        gbc.gridy++;
         
-        // Languages and Interests
-        addSectionHeader(detailsPanel, "Languages & Interests", gbc);
-        addDetailRow(detailsPanel, "Languages", String.join(", ", UserProfile.getCurrentUser().getLanguages()), gbc);
-        addDetailRow(detailsPanel, "Hobbies", String.join(", ", UserProfile.getCurrentUser().getInterests()), gbc);
+        addDetailRow(profilePanel, "Name:", UserProfile.getCurrentUser().getFullName(), gbc);
+        gbc.gridy++;
         
-        // Relationship Goals
-        addSectionHeader(detailsPanel, "Looking For", gbc);
-        addDetailRow(detailsPanel, "Relationship Goal", UserProfile.getCurrentUser().getRelationshipGoal(), gbc);
+        addDetailRow(profilePanel, "Age:", String.valueOf(calculateAge(UserProfile.getCurrentUser().getDateOfBirth())), gbc);
+        gbc.gridy++;
         
-        // About Me
-        addSectionHeader(detailsPanel, "About Me", gbc);
-        addDetailRow(detailsPanel, "", UserProfile.getCurrentUser().getAboutMe(), gbc);
-
+        addDetailRow(profilePanel, "Gender:", UserProfile.getCurrentUser().getGender(), gbc);
+        gbc.gridy++;
+        
+        addDetailRow(profilePanel, "Location:", UserProfile.getCurrentUser().getAddress(), gbc);
+        gbc.gridy++;
+        
+        // About Me section
+        gbc.gridwidth = 2;
+        addSectionHeader(profilePanel, "About Me", gbc);
+        gbc.gridy++;
+        
+        JTextArea aboutMe = new JTextArea(UserProfile.getCurrentUser().getAboutMe());
+        aboutMe.setWrapStyleWord(true);
+        aboutMe.setLineWrap(true);
+        aboutMe.setOpaque(false);
+        aboutMe.setEditable(false);
+        aboutMe.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        aboutMe.setBorder(new EmptyBorder(10, 10, 10, 10));
+        
+        JScrollPane scrollPane = new JScrollPane(aboutMe);
+        scrollPane.setPreferredSize(new Dimension(400, 100));
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        scrollPane.setOpaque(false);
+        scrollPane.getViewport().setOpaque(false);
+        
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        profilePanel.add(scrollPane, gbc);
+        gbc.gridy++;
+        
         // Action buttons
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
         buttonPanel.setOpaque(false);
-
-        JButton editProfileBtn = createProfileButton("✎ Edit Profile");
-        editProfileBtn.addActionListener(e -> {
-            UserProfileController controller = new UserProfileController(UserProfile.getCurrentUser(), heartsync.model.User.getCurrentUser().getUsername());
-            ProfileSetupView profileSetup = new ProfileSetupView(controller);
-            profileSetup.setLocationRelativeTo(this);
-            profileSetup.setVisible(true);
-            profileSetup.addWindowListener(new java.awt.event.WindowAdapter() {
-                @Override
-                public void windowClosed(java.awt.event.WindowEvent e) {
-                    UserProfile.setCurrentUser(null);
-                    contentCards.remove(1);
-                    contentCards.add(createProfilePanel(), "profile");
-                    showProfile();
-                }
-            });
-        });
-        JButton viewProfileBtn = createProfileButton("👁 View Profile");
-        JButton postPicturesBtn = createProfileButton("📷 Post Pictures");
-
-        buttonPanel.add(postPicturesBtn);
-        buttonPanel.add(editProfileBtn);
-        buttonPanel.add(viewProfileBtn);
-
-        // Add all sections to the content card
-        contentCard.add(userInfoPanel, BorderLayout.NORTH);
-        contentCard.add(new JScrollPane(detailsPanel) {
-            {
-                setBorder(null);
-                setOpaque(false);
-                getViewport().setOpaque(false);
-            }
-        }, BorderLayout.CENTER);
-        contentCard.add(buttonPanel, BorderLayout.SOUTH);
-
-        profilePanel.add(contentCard, BorderLayout.CENTER);
+        
+        JButton editButton = createProfileButton("Edit Profile");
+        editButton.addActionListener(e -> openProfileEditor());
+        
+        JButton photoButton = createProfileButton("Change Photo");
+        photoButton.addActionListener(e -> openPhotoUploader());
+        
+        buttonPanel.add(editButton);
+        buttonPanel.add(photoButton);
+        
+        gbc.gridy++;
+        profilePanel.add(buttonPanel, gbc);
+        
         return profilePanel;
     }
 
     private void addSectionHeader(JPanel panel, String text, GridBagConstraints gbc) {
         JLabel header = new JLabel(text);
-        header.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        header.setForeground(new Color(103, 58, 183));
-        gbc.insets = new Insets(15, 0, 5, 0);
+        header.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        header.setForeground(NAV_ACTIVE_COLOR);
+        header.setBorder(new EmptyBorder(10, 0, 5, 0));
         panel.add(header, gbc);
-        gbc.insets = new Insets(5, 0, 5, 0);
-    }
-
-    private int calculateAge(String dateOfBirth) {
-        if (dateOfBirth == null || dateOfBirth.isEmpty()) {
-            return 0;
-        }
-        try {
-            String[] parts = dateOfBirth.split("-");
-            if (parts.length != 3) return 0;
-            
-            int birthYear = Integer.parseInt(parts[0]);
-            int currentYear = java.time.Year.now().getValue();
-            return currentYear - birthYear;
-        } catch (Exception e) {
-            return 0;
-        }
     }
 
     private void addDetailRow(JPanel panel, String label, String value, GridBagConstraints gbc) {
-        JLabel labelComponent = new JLabel(label + ":");
+        JLabel labelComponent = new JLabel(label);
         labelComponent.setFont(new Font("Segoe UI", Font.BOLD, 14));
         panel.add(labelComponent, gbc);
 
-        JLabel valueComponent = new JLabel(value);
+        gbc.gridx = 1;
+        JLabel valueComponent = new JLabel(value != null ? value : "Not specified");
         valueComponent.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         panel.add(valueComponent, gbc);
+        
+        gbc.gridx = 0;
     }
 
     private JButton createProfileButton(String text) {
@@ -974,11 +996,11 @@ public class Swipe extends JFrame {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 
                 if (getModel().isPressed()) {
-                    g2.setColor(FILTER_BUTTON_COLOR.darker());
+                    g2.setColor(NAV_ACTIVE_COLOR.darker());
                 } else if (getModel().isRollover()) {
-                    g2.setColor(FILTER_BUTTON_COLOR.brighter());
+                    g2.setColor(NAV_ACTIVE_COLOR.brighter());
                 } else {
-                    g2.setColor(FILTER_BUTTON_COLOR);
+                    g2.setColor(NAV_ACTIVE_COLOR);
                 }
                 
                 g2.fillRoundRect(0, 0, getWidth(), getHeight(), 20, 20);
@@ -992,13 +1014,13 @@ public class Swipe extends JFrame {
             }
         };
         
-        button.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        button.setFont(new Font("Segoe UI", Font.BOLD, 14));
         button.setForeground(Color.WHITE);
         button.setBorderPainted(false);
         button.setContentAreaFilled(false);
         button.setFocusPainted(false);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        button.setPreferredSize(new Dimension(150, 35));
+        button.setPreferredSize(new Dimension(150, 40));
         
         return button;
     }
@@ -1052,23 +1074,50 @@ public class Swipe extends JFrame {
     }
 
     private void showExplore() {
+        // Remove any existing components
+        mainPanel.removeAll();
+        
+        // Add top panel
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setOpaque(false);
+        topPanel.add(navigationPanel, BorderLayout.NORTH);
+        topPanel.add(searchPanel, BorderLayout.CENTER);
+        mainPanel.add(topPanel, BorderLayout.NORTH);
+        
+        // Create and add explore panel
+        JPanel explorePanel = createExplorePanel();
+        mainPanel.add(explorePanel, BorderLayout.CENTER);
+        
+        // Update navigation indicators
         exploreLabel.setForeground(NAV_ACTIVE_COLOR);
-        exploreLabel.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, NAV_ACTIVE_COLOR));
-        chatLabel.setForeground(NAV_COLOR);
-        chatLabel.setBorder(null);
         profileLabel.setForeground(NAV_COLOR);
-        profileLabel.setBorder(null);
-        cardLayout.show(contentCards, "explore");
+        
+        // Refresh the display
+        mainPanel.revalidate();
+        mainPanel.repaint();
     }
 
     public void showProfile() {
-        profileLabel.setForeground(NAV_ACTIVE_COLOR);
-        profileLabel.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, NAV_ACTIVE_COLOR));
+        // Remove any existing components
+        mainPanel.removeAll();
+        
+        // Add top panel
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setOpaque(false);
+        topPanel.add(navigationPanel, BorderLayout.NORTH);
+        mainPanel.add(topPanel, BorderLayout.NORTH);
+        
+        // Create and add profile panel
+        JPanel profilePanel = createProfilePanel();
+        mainPanel.add(profilePanel, BorderLayout.CENTER);
+        
+        // Update navigation indicators
         exploreLabel.setForeground(NAV_COLOR);
-        exploreLabel.setBorder(null);
-        chatLabel.setForeground(NAV_COLOR);
-        chatLabel.setBorder(null);
-        cardLayout.show(contentCards, "profile");
+        profileLabel.setForeground(NAV_ACTIVE_COLOR);
+        
+        // Refresh the display
+        mainPanel.revalidate();
+        mainPanel.repaint();
     }
     
     private void setupProfiles() {
@@ -1081,15 +1130,43 @@ public class Swipe extends JFrame {
                 int age = userProfile.getAge() > 0 ? userProfile.getAge() : calculateAge(userProfile.getDateOfBirth());
                 String bio = userProfile.getAboutMe() != null ? userProfile.getAboutMe() : "";
                 List<String> photos = new ArrayList<>();
+                
+                // Add profile picture if available
                 if (userProfile.getProfilePicPath() != null && !userProfile.getProfilePicPath().isEmpty()) {
                     photos.add(userProfile.getProfilePicPath());
+                } else {
+                    // Use default profile picture
+                    photos.add("RajeshHamalPhoto.png");
                 }
+                
                 profiles.add(new ProfileData(name, age, bio, photos));
+            }
+            
+            // If no profiles are found, add a sample profile
+            if (profiles.isEmpty()) {
+                List<String> samplePhotos = new ArrayList<>();
+                samplePhotos.add("RajeshHamalPhoto.png");
+                profiles.add(new ProfileData(
+                    "Sample Profile",
+                    25,
+                    "This is a sample profile to demonstrate the app's functionality. No other profiles are currently available.",
+                    samplePhotos
+                ));
             }
         } catch (Exception e) {
             e.printStackTrace();
+            // Add a sample profile in case of error
+            List<String> samplePhotos = new ArrayList<>();
+            samplePhotos.add("RajeshHamalPhoto.png");
+            profiles.add(new ProfileData(
+                "Sample Profile",
+                25,
+                "This is a sample profile. An error occurred while loading profiles: " + e.getMessage(),
+                samplePhotos
+            ));
         }
         currentIndex = 0;
+        allProfiles = new ArrayList<>(profiles); // Keep a copy for filtering
     }
     
     private JTextField createSearchField() {
@@ -1277,12 +1354,101 @@ public class Swipe extends JFrame {
     }
 
     private void displayUserProfile(UserProfile profile) {
-        if (profile != null) {
-            nameLabel.setText(profile.getFullName());
-            ageLabel.setText(String.valueOf(profile.getAge()));
-            locationLabel.setText(profile.getLocation());
-            bioLabel.setText(profile.getBio());
-            interestsLabel.setText(String.join(", ", profile.getInterests()));
+        // Create profile panel
+        JPanel profilePanel = new JPanel(new GridBagLayout());
+        profilePanel.setBackground(BACKGROUND_COLOR);
+        profilePanel.setBorder(new EmptyBorder(20, 20, 20, 20));
+        
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 2;
+        gbc.anchor = GridBagConstraints.CENTER;
+        gbc.insets = new Insets(10, 10, 20, 10);
+        
+        // Profile picture
+        JLabel profilePicture = createProfilePicture();
+        profilePicture.setPreferredSize(new Dimension(150, 150));
+        profilePanel.add(profilePicture, gbc);
+        
+        // Reset gridwidth for other components
+        gbc.gridwidth = 1;
+        gbc.gridy++;
+        
+        // Add profile information
+        addSectionHeader(profilePanel, "Personal Information", gbc);
+        gbc.gridy++;
+        
+        addDetailRow(profilePanel, "Name:", profile.getFullName(), gbc);
+        gbc.gridy++;
+        
+        addDetailRow(profilePanel, "Age:", String.valueOf(profile.getAge()), gbc);
+        gbc.gridy++;
+        
+        addDetailRow(profilePanel, "Gender:", profile.getGender(), gbc);
+        gbc.gridy++;
+        
+        addDetailRow(profilePanel, "Location:", profile.getLocation(), gbc);
+        gbc.gridy++;
+        
+        // About Me section
+        gbc.gridwidth = 2;
+        addSectionHeader(profilePanel, "About Me", gbc);
+        gbc.gridy++;
+        
+        JTextArea aboutMe = new JTextArea(profile.getAboutMe());
+        aboutMe.setWrapStyleWord(true);
+        aboutMe.setLineWrap(true);
+        aboutMe.setOpaque(false);
+        aboutMe.setEditable(false);
+        aboutMe.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        aboutMe.setBorder(new EmptyBorder(10, 10, 10, 10));
+        
+        JScrollPane scrollPane = new JScrollPane(aboutMe);
+        scrollPane.setPreferredSize(new Dimension(400, 100));
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        scrollPane.setOpaque(false);
+        scrollPane.getViewport().setOpaque(false);
+        
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        profilePanel.add(scrollPane, gbc);
+        gbc.gridy++;
+        
+        // Action buttons
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
+        buttonPanel.setOpaque(false);
+        
+        JButton editButton = createProfileButton("Edit Profile");
+        editButton.addActionListener(e -> openProfileEditor());
+        
+        JButton photoButton = createProfileButton("Change Photo");
+        photoButton.addActionListener(e -> openPhotoUploader());
+        
+        buttonPanel.add(editButton);
+        buttonPanel.add(photoButton);
+        
+        gbc.gridy++;
+        profilePanel.add(buttonPanel, gbc);
+        
+        // Add profile panel to card panel
+        cardPanel.removeAll();
+        cardPanel.add(profilePanel, BorderLayout.CENTER);
+        cardPanel.revalidate();
+        cardPanel.repaint();
+    }
+
+    private int calculateAge(String dateOfBirth) {
+        if (dateOfBirth == null || dateOfBirth.isEmpty()) {
+            return 0;
+        }
+        try {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            LocalDate birthDate = LocalDate.parse(dateOfBirth, formatter);
+            LocalDate currentDate = LocalDate.now();
+            return Period.between(birthDate, currentDate).getYears();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0;
         }
     }
 }

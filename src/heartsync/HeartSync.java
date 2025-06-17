@@ -40,7 +40,7 @@ public class HeartSync {
             
             // Launch the HomePage directly
             SwingUtilities.invokeLater(() -> {
-                HomePage homePage = new HomePage(null);
+                HomePage homePage = new HomePage();
                 homePage.setVisible(true);
             });
         } catch (Exception e) {

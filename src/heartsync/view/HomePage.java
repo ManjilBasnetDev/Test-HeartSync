@@ -44,6 +44,10 @@ public class HomePage extends JFrame {
     /**
      * Creates new form ProfileSetup
      */
+    public HomePage() {
+        this(null);  // Call the main constructor with null user for initial landing
+    }
+
     public HomePage(User user) {
         this.currentUser = user;
         // Initialize the frame
@@ -153,6 +157,14 @@ public class HomePage extends JFrame {
         loginButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         loginButton.setPreferredSize(new Dimension(100, 35));
         
+        // Add login button click handler
+        loginButton.addActionListener(e -> {
+            LoginView loginView = new LoginView();
+            loginView.setLocationRelativeTo(null);
+            loginView.setVisible(true);
+            this.dispose(); // Close the HomePage when opening login
+        });
+        
         // Add navigation items
         navPanel.add(logoPanel);
         navPanel.add(Box.createHorizontalStrut(50));
@@ -199,13 +211,6 @@ public class HomePage extends JFrame {
                 setCurrentNavItem(contactLabel);
                 cardLayout.show(contentCards, "contact");
             }
-        });
-        
-        loginButton.addActionListener(e -> {
-            // Use the static method to ensure consistent login view initialization
-            LoginController.createAndShowLoginView();
-            // Minimize the home page when login view opens
-            setState(JFrame.ICONIFIED);
         });
         
         return navPanel;
@@ -361,8 +366,12 @@ public class HomePage extends JFrame {
                 coupleImageLabel = new JLabel(new ImageIcon(coupleImg));
                 coupleImageLabel.setBounds(720, 20, 400, 560);
             } else {
-                System.err.println("Could not find couple image resource");
-                coupleImageLabel = new JLabel("Couple Image");
+                // Create a placeholder for missing couple image
+                coupleImageLabel = new JLabel("❤");
+                coupleImageLabel.setFont(new Font("SansSerif", Font.PLAIN, 48));
+                coupleImageLabel.setForeground(new Color(255, 89, 89));
+                coupleImageLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                coupleImageLabel.setBounds(720, 20, 400, 560);
             }
 
             // Load hand image
@@ -374,14 +383,26 @@ public class HomePage extends JFrame {
                 handImageLabel = new JLabel(new ImageIcon(handImg));
                 handImageLabel.setBounds(450, 60, 200, 280);
             } else {
-                System.err.println("Could not find hand image resource");
-                handImageLabel = new JLabel("Hand Image");
+                // Create a placeholder for missing hand image
+                handImageLabel = new JLabel("♥");
+                handImageLabel.setFont(new Font("SansSerif", Font.PLAIN, 36));
+                handImageLabel.setForeground(new Color(255, 89, 89));
+                handImageLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                handImageLabel.setBounds(450, 60, 200, 280);
             }
         } catch (Exception e) {
-            e.printStackTrace();
-            System.err.println("Error loading images: " + e.getMessage());
-            coupleImageLabel = new JLabel("Couple Image");
-            handImageLabel = new JLabel("Hand Image");
+            // Create default placeholders if image loading fails
+            coupleImageLabel = new JLabel("❤");
+            coupleImageLabel.setFont(new Font("SansSerif", Font.PLAIN, 48));
+            coupleImageLabel.setForeground(new Color(255, 89, 89));
+            coupleImageLabel.setHorizontalAlignment(SwingConstants.CENTER);
+            coupleImageLabel.setBounds(720, 20, 400, 560);
+
+            handImageLabel = new JLabel("♥");
+            handImageLabel.setFont(new Font("SansSerif", Font.PLAIN, 36));
+            handImageLabel.setForeground(new Color(255, 89, 89));
+            handImageLabel.setHorizontalAlignment(SwingConstants.CENTER);
+            handImageLabel.setBounds(450, 60, 200, 280);
         }
         
         // Add components

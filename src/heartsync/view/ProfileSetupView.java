@@ -421,16 +421,21 @@ public class ProfileSetupView extends JFrame {
                 aboutMeArea.getText().trim()
             );
 
-            // Show next view
-            this.setVisible(false);
-            // If editing, show update message
-            if (controller.getModel().getFullName() != null && !controller.getModel().getFullName().isEmpty()) {
-                JOptionPane.showMessageDialog(this,
-                    "Profile updated successfully!",
-                    "Success",
-                    JOptionPane.INFORMATION_MESSAGE);
-            }
-            controller.showMoreInfoView();
+            // Show success message
+            JOptionPane.showMessageDialog(this,
+                "Profile created successfully! Please log in to continue.",
+                "Success",
+                JOptionPane.INFORMATION_MESSAGE);
+
+            // Close the profile setup window
+            this.dispose();
+
+            // Show the HomePage for login
+            SwingUtilities.invokeLater(() -> {
+                HomePage homePage = new HomePage();
+                homePage.setVisible(true);
+            });
+
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this,
                 "Error saving profile: " + ex.getMessage(),

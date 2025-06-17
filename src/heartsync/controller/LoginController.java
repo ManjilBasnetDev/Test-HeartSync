@@ -190,15 +190,8 @@ public class LoginController {
                     view.dispose();
                 }
                 
-                // First show HomePage for all users
-                HomePage homePage = new HomePage();
-                homePage.setVisible(true);
-                
-                // Then, if it's an admin, also show the admin dashboard
-                if ((user.getUserType() != null && user.getUserType().equalsIgnoreCase("admin")) 
-                    || user.getUsername().equalsIgnoreCase("admin")) {
-                    WindowManager.show(AdminDashboard.class, AdminDashboard::new, null);
-                }
+                // Show the Swipe view directly
+                WindowManager.show(Swipe.class, () -> new Swipe(), null);
                 
             } catch (Exception e) {
                 logger.log(Level.SEVERE, "Error opening user view", e);

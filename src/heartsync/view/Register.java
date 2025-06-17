@@ -599,10 +599,10 @@ public class Register extends JFrame {
                     user.setUserType(userRadio.isSelected() ? "user" : "admin");
                     
                     // Set security questions and answers
-                    user.setSecurityQuestion("What is your favorite color?");
-                    user.setSecurityAnswer(securityDialog.getFavoriteColor().trim());
-                    user.setSecurityQuestion2("What was the name of your first school?");
-                    user.setSecurityAnswer2(securityDialog.getFirstSchool().trim());
+                    user.setSecurityQuestion(securityDialog.getSecurityQuestion1());
+                    user.setSecurityAnswer(securityDialog.getSecurityAnswer1());
+                    user.setSecurityQuestion2(securityDialog.getSecurityQuestion2());
+                    user.setSecurityAnswer2(securityDialog.getSecurityAnswer2());
 
                     // Create user in database
                     UserRegisterDAO userDAO = new UserRegisterDAO();
@@ -612,12 +612,17 @@ public class Register extends JFrame {
                             dispose();
                             UserProfileController profileController = new UserProfileController(new UserProfile(), user.getUsername());
                             ProfileSetupView view = new ProfileSetupView(profileController);
+                            view.setLocationRelativeTo(null);
                             view.setVisible(true);
                         } else {
-                            // For admin users, just close the window
-                            dispose();
-                            // Show success message
+                            // For admin users, show success message and homepage
                             JOptionPane.showMessageDialog(null, "Admin account created successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                            dispose();
+                            SwingUtilities.invokeLater(() -> {
+                                HomePage homePage = new HomePage();
+                                homePage.setLocationRelativeTo(null);
+                                homePage.setVisible(true);
+                            });
                         }
                     } else {
                         // Show error message from DAO
@@ -739,13 +744,14 @@ public class Register extends JFrame {
 
             if (securityDialog.isConfirmed()) {
                 // Get security questions and answers
-                newUser.setSecurityQuestion1(securityDialog.getSecurityQuestion1());
-                newUser.setSecurityAnswer1(securityDialog.getSecurityAnswer1());
+                newUser.setSecurityQuestion(securityDialog.getSecurityQuestion1());
+                newUser.setSecurityAnswer(securityDialog.getSecurityAnswer1());
                 newUser.setSecurityQuestion2(securityDialog.getSecurityQuestion2());
                 newUser.setSecurityAnswer2(securityDialog.getSecurityAnswer2());
 
                 // Register the user
-                boolean success = userDAO.registerUser(newUser);
+                boolean success = userDAO.createUser(newUser);
+
                 if (success) {
                     JOptionPane.showMessageDialog(this,
                         "Account created successfully!",
@@ -763,10 +769,12 @@ public class Register extends JFrame {
                         HomePage homePage = new HomePage();
                         homePage.setVisible(true);
                     });
-                    
                     return true;
                 } else {
-                    validationLabel.setText("Failed to create account. Please try again.");
+                    JOptionPane.showMessageDialog(this,
+                        "Error creating account: " + userDAO.getLastError(),
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE);
                     return false;
                 }
             } else {

@@ -75,7 +75,7 @@ public class HomePage extends JFrame {
         contentCards.add(createHomePanel(), "home");
         contentCards.add(createAboutPanel(), "about");
         contentCards.add(createFeaturesPanel(), "features");
-        contentCards.add(new ContactsPage(currentUser), "contact");
+        contentCards.add(new ContactsPage(), "contact");
         
         mainPanel.add(contentCards, BorderLayout.CENTER);
         
@@ -815,7 +815,7 @@ public class HomePage extends JFrame {
     }
     
     private void btnContactsActionPerformed(java.awt.event.ActionEvent evt) {                                           
-        ContactsPage contactsPage = new ContactsPage(currentUser);
+        ContactsPage contactsPage = new ContactsPage();
         contactsPage.setVisible(true);
         this.dispose();
     }

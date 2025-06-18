@@ -591,26 +591,44 @@ public class Register extends JFrame {
 
             // If user confirmed security questions
             if (securityDialog.isConfirmed()) {
+                // Show DOB validation dialog
+                DOBVerificationDialog dobDialog = new DOBVerificationDialog(this);
+                dobDialog.setVisible(true);
+                if (!dobDialog.isConfirmed()) {
+                    // User cancelled DOB dialog
+                    return;
+                }
+                int age = dobDialog.getAge();
+                String dob = dobDialog.getDateOfBirth();
+                if (age < 18) {
+                    JOptionPane.showMessageDialog(this,
+                        "You must be at least 18 years old to register.",
+                        "Age Restriction",
+                        JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
                 try {
                     // Create user object with all required information
                     User user = new User();
                     user.setUsername(usernameField.getText().trim());
                     user.setPassword(actualPassword);
                     user.setUserType(userRadio.isSelected() ? "user" : "admin");
-                    
-                    // Set security questions and answers
                     user.setSecurityQuestion(securityDialog.getSecurityQuestion1());
                     user.setSecurityAnswer(securityDialog.getSecurityAnswer1());
                     user.setSecurityQuestion2(securityDialog.getSecurityQuestion2());
                     user.setSecurityAnswer2(securityDialog.getSecurityAnswer2());
-
+                    user.setDateOfBirth(dob);
                     // Create user in database
                     UserRegisterDAO userDAO = new UserRegisterDAO();
                     if (userDAO.createUser(user)) {
                         if (userRadio.isSelected()) {
                             // For regular users, open profile setup
                             dispose();
-                            UserProfileController profileController = new UserProfileController(new UserProfile(), user.getUsername());
+                            UserProfile profile = new UserProfile();
+                            profile.setUsername(user.getUsername());
+                            profile.setDateOfBirth(dob);
+                            profile.setAge(age);
+                            UserProfileController profileController = new UserProfileController(profile, user.getUsername());
                             ProfileSetupView view = new ProfileSetupView(profileController);
                             view.setLocationRelativeTo(null);
                             view.setVisible(true);
@@ -730,62 +748,8 @@ public class Register extends JFrame {
             return false;
         }
 
-        // If all validations pass, create the user
-        try {
-            UserRegisterDAO userDAO = new UserRegisterDAO();
-            User newUser = new User();
-            newUser.setUsername(username);
-            newUser.setPassword(password);
-            newUser.setUserType(userRadio.isSelected() ? "user" : "admin");
-
-            // Show security questions dialog
-            SecurityQuestionsDialog securityDialog = new SecurityQuestionsDialog(this);
-            securityDialog.setVisible(true);
-
-            if (securityDialog.isConfirmed()) {
-                // Get security questions and answers
-                newUser.setSecurityQuestion(securityDialog.getSecurityQuestion1());
-                newUser.setSecurityAnswer(securityDialog.getSecurityAnswer1());
-                newUser.setSecurityQuestion2(securityDialog.getSecurityQuestion2());
-                newUser.setSecurityAnswer2(securityDialog.getSecurityAnswer2());
-
-                // Register the user
-                boolean success = userDAO.createUser(newUser);
-
-                if (success) {
-                    JOptionPane.showMessageDialog(this,
-                        "Account created successfully!",
-                        "Success",
-                        JOptionPane.INFORMATION_MESSAGE);
-                    
-                    // Set the current user
-                    User.setCurrentUser(newUser);
-                    
-                    // Close the registration window
-                    this.dispose();
-                    
-                    // Show the HomePage
-                    SwingUtilities.invokeLater(() -> {
-                        HomePage homePage = new HomePage();
-                        homePage.setVisible(true);
-                    });
-                    return true;
-                } else {
-                    JOptionPane.showMessageDialog(this,
-                        "Error creating account: " + userDAO.getLastError(),
-                        "Error",
-                        JOptionPane.ERROR_MESSAGE);
-                    return false;
-                }
-            } else {
-                validationLabel.setText("Security questions are required");
-                return false;
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            validationLabel.setText("Error creating account: " + e.getMessage());
-            return false;
-        }
+        // All validations passed
+        return true;
     }
     
     private boolean isUsernameAvailable(String username) {

@@ -56,6 +56,8 @@ public class AdminDelete extends javax.swing.JFrame {
         initComponents();
         setupUI();
         setLocationRelativeTo(null);  // Center the window
+        setResizable(false);           // Make window non-resizable
+        setSize(700, 500);             // Set fixed window size
     }
 
     /**
@@ -391,103 +393,121 @@ public class AdminDelete extends javax.swing.JFrame {
     }
 
     private void styleDeletePanel() {
-        // Style the main panel
-        jPanel1.setBackground(new Color(255, 228, 236));
-        jPanel1.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
-        
-        // Style the title
-        jLabel1.setFont(new Font("Segoe UI", Font.BOLD, 36));
-        jLabel1.setForeground(new Color(44, 44, 84));
-        
-        // Style the warning panel
+        // Style the main panel with a softer background and better padding
+        jPanel1.setBackground(new Color(252, 240, 243));
+        jPanel1.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30)); // Slightly less padding for fit
+
+        // Style the title with a more modern font and color
+        jLabel1.setFont(new Font("Segoe UI", Font.BOLD, 38));
+        jLabel1.setForeground(new Color(51, 51, 51));
+        jLabel1.setText("Heart Sync"); // Ensure full text, no ellipsis
+        jLabel1.setPreferredSize(new Dimension(250, 50));
+        jLabel1.setMinimumSize(new Dimension(200, 40));
+        jLabel1.setMaximumSize(new Dimension(400, 60));
+
+        // Style the warning panel with a softer look
         jPanel2.setBackground(new Color(255, 255, 255));
         jPanel2.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(255, 105, 180), 2, true),
-            BorderFactory.createEmptyBorder(15, 15, 15, 15)
+            BorderFactory.createLineBorder(new Color(255, 182, 193), 1, true),
+            BorderFactory.createEmptyBorder(16, 16, 16, 16)
         ));
-        
-        // Style the warning labels
-        jLabel2.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        jLabel3.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        jLabel2.setForeground(new Color(44, 44, 84));
-        jLabel3.setForeground(new Color(44, 44, 84));
+
+        // Style the warning labels with better typography
+        jLabel2.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        jLabel3.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        jLabel2.setForeground(new Color(51, 51, 51));
+        jLabel3.setForeground(new Color(51, 51, 51));
         jLabel2.setText("Warning: Deleting your account will permanently");
         jLabel3.setText("remove all your data and cannot be undone.");
-        
-        // Style the username label and field
-        jLabel4.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        jLabel4.setForeground(new Color(44, 44, 84));
+        jLabel2.setPreferredSize(null);
+        jLabel3.setPreferredSize(null);
+
+        // Style the username label and field with modern look
+        jLabel4.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        jLabel4.setForeground(new Color(51, 51, 51));
         jLabel4.setText("Enter username to confirm");
-        
-        jTextField1.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        jLabel4.setPreferredSize(null);
+
+        // Modern text field styling
+        jTextField1.setFont(new Font("Segoe UI", Font.PLAIN, 15));
         jTextField1.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(255, 105, 180), 2, true),
-            BorderFactory.createEmptyBorder(8, 12, 8, 12)
+            BorderFactory.createLineBorder(new Color(255, 182, 193), 1, true),
+            BorderFactory.createEmptyBorder(10, 12, 10, 12)
         ));
         jTextField1.setBackground(Color.WHITE);
-        jTextField1.setPreferredSize(new Dimension(300, 40));
-        
-        // Style the delete button
-        jButton1.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        jButton1.setBackground(new Color(255, 99, 99));
+        jTextField1.setPreferredSize(new Dimension(320, 38));
+
+        // Modern button styling
+        jButton1.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        jButton1.setBackground(new Color(255, 105, 180));
         jButton1.setForeground(Color.WHITE);
         jButton1.setBorderPainted(false);
         jButton1.setFocusPainted(false);
         jButton1.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        jButton1.setBorder(BorderFactory.createEmptyBorder(12, 25, 12, 25));
-        jButton1.setPreferredSize(new Dimension(300, 45));
+        jButton1.setBorder(BorderFactory.createEmptyBorder(10, 30, 10, 30));
+        jButton1.setPreferredSize(new Dimension(320, 44));
         jButton1.setText("Delete User Account");
-        
+        jButton1.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(255, 105, 180), 1, true),
+            BorderFactory.createEmptyBorder(10, 30, 10, 30)
+        ));
+
         // Style the confirmation message
-        jLabel5.setFont(new Font("Segoe UI", Font.ITALIC, 14));
-        jLabel5.setForeground(new Color(44, 44, 84));
+        jLabel5.setFont(new Font("Segoe UI", Font.ITALIC, 13));
+        jLabel5.setForeground(new Color(102, 102, 102));
         jLabel5.setText("We'll send a confirmation email to verify this action. Check your inbox.");
-        
-        // Add hover effect to the delete button
+        jLabel5.setPreferredSize(null);
+
+        // Enhanced hover effect for the delete button
         jButton1.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
-                jButton1.setBackground(new Color(255, 69, 69));
+                jButton1.setBackground(new Color(255, 92, 165));
+                jButton1.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(new Color(255, 92, 165), 1, true),
+                    BorderFactory.createEmptyBorder(10, 30, 10, 30)
+                ));
             }
-            
             @Override
             public void mouseExited(MouseEvent e) {
-                jButton1.setBackground(new Color(255, 99, 99));
+                jButton1.setBackground(new Color(255, 105, 180));
+                jButton1.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(new Color(255, 105, 180), 1, true),
+                    BorderFactory.createEmptyBorder(10, 30, 10, 30)
+                ));
             }
         });
-        
-        // Add placeholder text to username field
+
+        // Enhanced placeholder text styling
         jTextField1.setText("Enter username");
-        jTextField1.setForeground(Color.GRAY);
-        
+        jTextField1.setForeground(new Color(153, 153, 153));
         jTextField1.addFocusListener(new FocusAdapter() {
             @Override
             public void focusGained(FocusEvent e) {
                 if (jTextField1.getText().equals("Enter username")) {
                     jTextField1.setText("");
-                    jTextField1.setForeground(Color.BLACK);
+                    jTextField1.setForeground(new Color(51, 51, 51));
                 }
             }
-            
             @Override
             public void focusLost(FocusEvent e) {
                 if (jTextField1.getText().isEmpty()) {
                     jTextField1.setText("Enter username");
-                    jTextField1.setForeground(Color.GRAY);
+                    jTextField1.setForeground(new Color(153, 153, 153));
                 }
             }
         });
     }
 
     private JPanel createVerifyPanel() {
-        JPanel panel = new JPanel(new BorderLayout(15, 15));
-        panel.setBackground(new Color(255, 228, 236));
-        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        JPanel panel = new JPanel(new BorderLayout(20, 20));
+        panel.setBackground(new Color(252, 240, 243));
+        panel.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
         
-        // Title
+        // Title with modern styling
         JLabel titleLabel = new JLabel("Verify User Profiles", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
-        titleLabel.setForeground(new Color(44, 44, 84));
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 32));
+        titleLabel.setForeground(new Color(51, 51, 51));
         panel.add(titleLabel, BorderLayout.NORTH);
 
         // Create table model with columns
@@ -499,25 +519,27 @@ public class AdminDelete extends javax.swing.JFrame {
             }
         };
         
-        // Create table
+        // Enhanced table styling
         verifyTable = new JTable(verifyTableModel);
-        verifyTable.setRowHeight(40);
+        verifyTable.setRowHeight(45);
         verifyTable.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         verifyTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 14));
-        verifyTable.getTableHeader().setBackground(new Color(255, 198, 209));
-        verifyTable.getTableHeader().setForeground(new Color(44, 44, 84));
+        verifyTable.getTableHeader().setBackground(new Color(255, 182, 193));
+        verifyTable.getTableHeader().setForeground(new Color(51, 51, 51));
         verifyTable.setGridColor(new Color(255, 182, 193));
         verifyTable.setShowGrid(true);
         verifyTable.setBackground(Color.WHITE);
+        verifyTable.setSelectionBackground(new Color(255, 228, 236));
+        verifyTable.setSelectionForeground(new Color(51, 51, 51));
         
-        // Create button column
+        // Create button column with modern styling
         TableColumn actionColumn = verifyTable.getColumnModel().getColumn(4);
         actionColumn.setCellRenderer(new ButtonRenderer("Delete"));
         actionColumn.setCellEditor(new ButtonEditor(new JCheckBox(), "verify"));
 
-        // Add table to scroll pane
+        // Add table to scroll pane with modern styling
         JScrollPane scrollPane = new JScrollPane(verifyTable);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        scrollPane.setBorder(BorderFactory.createLineBorder(new Color(255, 182, 193), 1, true));
         scrollPane.getViewport().setBackground(Color.WHITE);
         panel.add(scrollPane, BorderLayout.CENTER);
         
@@ -525,34 +547,47 @@ public class AdminDelete extends javax.swing.JFrame {
     }
 
     private JPanel createRespondPanel() {
-        JPanel panel = new JPanel(new BorderLayout(15, 15));
-        panel.setBackground(new Color(255, 228, 236));
-        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        JPanel panel = new JPanel(new BorderLayout(20, 20));
+        panel.setBackground(new Color(252, 240, 243));
+        panel.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
         
-        // Header Panel with Title and Refresh Button
-        JPanel headerPanel = new JPanel(new BorderLayout(15, 15));
-        headerPanel.setBackground(new Color(255, 228, 236));
+        // Header Panel with modern styling
+        JPanel headerPanel = new JPanel(new BorderLayout(20, 20));
+        headerPanel.setBackground(new Color(252, 240, 243));
         
-        // Title
+        // Title with modern styling
         JLabel titleLabel = new JLabel("Reported Users", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
-        titleLabel.setForeground(new Color(44, 44, 84));
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 32));
+        titleLabel.setForeground(new Color(51, 51, 51));
         headerPanel.add(titleLabel, BorderLayout.CENTER);
         
-        // Refresh Button
+        // Modern refresh button styling
         JButton refreshButton = new JButton("Refresh");
         refreshButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
         refreshButton.setBackground(Color.WHITE);
-        refreshButton.setForeground(new Color(44, 44, 84));
+        refreshButton.setForeground(new Color(51, 51, 51));
         refreshButton.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(255, 105, 180), 2, true),
-            BorderFactory.createEmptyBorder(8, 15, 8, 15)
+            BorderFactory.createLineBorder(new Color(255, 182, 193), 1, true),
+            BorderFactory.createEmptyBorder(10, 20, 10, 20)
         ));
         refreshButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         refreshButton.addActionListener(e -> refreshReportedUsers());
         
+        // Add hover effect to refresh button
+        refreshButton.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                refreshButton.setBackground(new Color(255, 228, 236));
+            }
+            
+            @Override
+            public void mouseExited(MouseEvent e) {
+                refreshButton.setBackground(Color.WHITE);
+            }
+        });
+        
         JPanel refreshPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        refreshPanel.setBackground(new Color(255, 228, 236));
+        refreshPanel.setBackground(new Color(252, 240, 243));
         refreshPanel.add(refreshButton);
         headerPanel.add(refreshPanel, BorderLayout.EAST);
         
@@ -571,16 +606,18 @@ public class AdminDelete extends javax.swing.JFrame {
             }
         };
         
-        // Create table
+        // Enhanced table styling
         reportedTable = new JTable(reportedTableModel);
         reportedTable.setRowHeight(45);
         reportedTable.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         reportedTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 14));
-        reportedTable.getTableHeader().setBackground(new Color(255, 198, 209));
-        reportedTable.getTableHeader().setForeground(new Color(44, 44, 84));
+        reportedTable.getTableHeader().setBackground(new Color(255, 182, 193));
+        reportedTable.getTableHeader().setForeground(new Color(51, 51, 51));
         reportedTable.setGridColor(new Color(255, 182, 193));
         reportedTable.setShowGrid(true);
         reportedTable.setBackground(Color.WHITE);
+        reportedTable.setSelectionBackground(new Color(255, 228, 236));
+        reportedTable.setSelectionForeground(new Color(51, 51, 51));
         
         // Set column widths
         reportedTable.getColumnModel().getColumn(0).setPreferredWidth(150);
@@ -589,7 +626,7 @@ public class AdminDelete extends javax.swing.JFrame {
         reportedTable.getColumnModel().getColumn(3).setPreferredWidth(200);
         reportedTable.getColumnModel().getColumn(4).setPreferredWidth(100);
         
-        // Create button column
+        // Create button column with modern styling
         TableColumn deleteColumn = reportedTable.getColumnModel().getColumn(4);
         deleteColumn.setCellRenderer(new DeleteButtonRenderer());
         deleteColumn.setCellEditor(new DeleteButtonEditor(new JCheckBox()));
@@ -597,9 +634,9 @@ public class AdminDelete extends javax.swing.JFrame {
         // Add initial data
         refreshReportedUsers();
 
-        // Add table to scroll pane
+        // Add table to scroll pane with modern styling
         JScrollPane scrollPane = new JScrollPane(reportedTable);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        scrollPane.setBorder(BorderFactory.createLineBorder(new Color(255, 182, 193), 1, true));
         scrollPane.getViewport().setBackground(Color.WHITE);
         panel.add(scrollPane, BorderLayout.CENTER);
         

@@ -913,24 +913,74 @@ public class Swipe extends JFrame {
         addSectionHeader(profilePanel, "Personal Information", gbc);
         gbc.gridy++;
         
-        addDetailRow(profilePanel, "Name:", UserProfile.getCurrentUser().getFullName(), gbc);
+        UserProfile currentProfile = UserProfile.getCurrentUser();
+        
+        // Basic Information
+        addDetailRow(profilePanel, "Full Name:", currentProfile.getFullName(), gbc);
         gbc.gridy++;
         
-        addDetailRow(profilePanel, "Age:", String.valueOf(calculateAge(UserProfile.getCurrentUser().getDateOfBirth())), gbc);
+        addDetailRow(profilePanel, "Height:", currentProfile.getHeight() + " cm", gbc);
         gbc.gridy++;
         
-        addDetailRow(profilePanel, "Gender:", UserProfile.getCurrentUser().getGender(), gbc);
+        addDetailRow(profilePanel, "Country:", currentProfile.getCountry(), gbc);
         gbc.gridy++;
         
-        addDetailRow(profilePanel, "Location:", UserProfile.getCurrentUser().getAddress(), gbc);
+        addDetailRow(profilePanel, "Address:", currentProfile.getAddress(), gbc);
+        gbc.gridy++;
+        
+        addDetailRow(profilePanel, "Phone Number:", currentProfile.getPhoneNumber(), gbc);
+        gbc.gridy++;
+        
+        addDetailRow(profilePanel, "Gender:", currentProfile.getGender(), gbc);
+        gbc.gridy++;
+        
+        addDetailRow(profilePanel, "Education:", currentProfile.getEducation(), gbc);
+        gbc.gridy++;
+        
+        addDetailRow(profilePanel, "Interested In:", currentProfile.getPreferences(), gbc);
+        gbc.gridy++;
+        
+        // Hobbies section
+        gbc.gridwidth = 2;
+        addSectionHeader(profilePanel, "Hobbies", gbc);
+        gbc.gridy++;
+        
+        List<String> hobbies = currentProfile.getHobbies();
+        if (hobbies != null && !hobbies.isEmpty()) {
+            JTextArea hobbiesArea = new JTextArea(String.join(", ", hobbies));
+            hobbiesArea.setWrapStyleWord(true);
+            hobbiesArea.setLineWrap(true);
+            hobbiesArea.setOpaque(false);
+            hobbiesArea.setEditable(false);
+            hobbiesArea.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+            hobbiesArea.setBorder(new EmptyBorder(10, 10, 10, 10));
+            
+            JScrollPane scrollPane = new JScrollPane(hobbiesArea);
+            scrollPane.setPreferredSize(new Dimension(400, 60));
+            scrollPane.setBorder(BorderFactory.createEmptyBorder());
+            scrollPane.setOpaque(false);
+            scrollPane.getViewport().setOpaque(false);
+            
+            gbc.fill = GridBagConstraints.HORIZONTAL;
+            profilePanel.add(scrollPane, gbc);
+            gbc.gridy++;
+        }
+        
+        // Relationship Goals section
+        addSectionHeader(profilePanel, "Relationship Goals", gbc);
+        gbc.gridy++;
+        
+        JLabel relationshipGoal = new JLabel(currentProfile.getRelationshipGoal());
+        relationshipGoal.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        relationshipGoal.setBorder(new EmptyBorder(10, 10, 10, 10));
+        profilePanel.add(relationshipGoal, gbc);
         gbc.gridy++;
         
         // About Me section
-        gbc.gridwidth = 2;
         addSectionHeader(profilePanel, "About Me", gbc);
         gbc.gridy++;
         
-        JTextArea aboutMe = new JTextArea(UserProfile.getCurrentUser().getAboutMe());
+        JTextArea aboutMe = new JTextArea(currentProfile.getAboutMe());
         aboutMe.setWrapStyleWord(true);
         aboutMe.setLineWrap(true);
         aboutMe.setOpaque(false);
@@ -1123,50 +1173,35 @@ public class Swipe extends JFrame {
     private void setupProfiles() {
         profiles = new ArrayList<>();
         try {
-            String currentUsername = heartsync.model.User.getCurrentUser().getUsername();
-            List<UserProfile> otherProfiles = heartsync.database.DatabaseManagerProfile.getInstance().getAllUserProfilesExcept(currentUsername);
-            for (UserProfile userProfile : otherProfiles) {
-                String name = userProfile.getFullName() != null ? userProfile.getFullName() : "Unknown";
-                int age = userProfile.getAge() > 0 ? userProfile.getAge() : calculateAge(userProfile.getDateOfBirth());
-                String bio = userProfile.getAboutMe() != null ? userProfile.getAboutMe() : "";
-                List<String> photos = new ArrayList<>();
-                
-                // Add profile picture if available
-                if (userProfile.getProfilePicPath() != null && !userProfile.getProfilePicPath().isEmpty()) {
-                    photos.add(userProfile.getProfilePicPath());
-                } else {
-                    // Use default profile picture
-                    photos.add("RajeshHamalPhoto.png");
-                }
-                
-                profiles.add(new ProfileData(name, age, bio, photos));
-            }
+            String currentUsername = User.getCurrentUser().getUsername();
+            List<UserProfile> otherProfiles = DatabaseManagerProfile.getInstance().getAllUserProfilesExcept(currentUsername);
             
-            // If no profiles are found, add a sample profile
-            if (profiles.isEmpty()) {
-                List<String> samplePhotos = new ArrayList<>();
-                samplePhotos.add("RajeshHamalPhoto.png");
-                profiles.add(new ProfileData(
-                    "Sample Profile",
-                    25,
-                    "This is a sample profile to demonstrate the app's functionality. No other profiles are currently available.",
-                    samplePhotos
-                ));
+            // Only add profiles that have actual data
+            for (UserProfile userProfile : otherProfiles) {
+                if (userProfile.getFullName() != null && !userProfile.getFullName().isEmpty()) {
+                    String name = userProfile.getFullName();
+                    int age = userProfile.getAge() > 0 ? userProfile.getAge() : calculateAge(userProfile.getDateOfBirth());
+                    String bio = userProfile.getAboutMe() != null ? userProfile.getAboutMe() : "";
+                    List<String> photos = new ArrayList<>();
+                    
+                    // Add profile picture if available
+                    if (userProfile.getProfilePicPath() != null && !userProfile.getProfilePicPath().isEmpty()) {
+                        photos.add(userProfile.getProfilePicPath());
+                    }
+                    
+                    // Only add profiles that have at least basic information
+                    if (!photos.isEmpty()) {
+                        profiles.add(new ProfileData(name, age, bio, photos));
+                    }
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
-            // Add a sample profile in case of error
-            List<String> samplePhotos = new ArrayList<>();
-            samplePhotos.add("RajeshHamalPhoto.png");
-            profiles.add(new ProfileData(
-                "Sample Profile",
-                25,
-                "This is a sample profile. An error occurred while loading profiles: " + e.getMessage(),
-                samplePhotos
-            ));
+            JOptionPane.showMessageDialog(this,
+                "Error loading profiles: " + e.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
         }
-        currentIndex = 0;
-        allProfiles = new ArrayList<>(profiles); // Keep a copy for filtering
     }
     
     private JTextField createSearchField() {
@@ -1379,20 +1414,68 @@ public class Swipe extends JFrame {
         addSectionHeader(profilePanel, "Personal Information", gbc);
         gbc.gridy++;
         
-        addDetailRow(profilePanel, "Name:", profile.getFullName(), gbc);
+        // Basic Information
+        addDetailRow(profilePanel, "Full Name:", profile.getFullName(), gbc);
         gbc.gridy++;
         
-        addDetailRow(profilePanel, "Age:", String.valueOf(profile.getAge()), gbc);
+        addDetailRow(profilePanel, "Height:", profile.getHeight() + " cm", gbc);
+        gbc.gridy++;
+        
+        addDetailRow(profilePanel, "Country:", profile.getCountry(), gbc);
+        gbc.gridy++;
+        
+        addDetailRow(profilePanel, "Address:", profile.getAddress(), gbc);
+        gbc.gridy++;
+        
+        addDetailRow(profilePanel, "Phone Number:", profile.getPhoneNumber(), gbc);
         gbc.gridy++;
         
         addDetailRow(profilePanel, "Gender:", profile.getGender(), gbc);
         gbc.gridy++;
         
-        addDetailRow(profilePanel, "Location:", profile.getLocation(), gbc);
+        addDetailRow(profilePanel, "Education:", profile.getEducation(), gbc);
+        gbc.gridy++;
+        
+        addDetailRow(profilePanel, "Interested In:", profile.getPreferences(), gbc);
+        gbc.gridy++;
+        
+        // Hobbies section
+        gbc.gridwidth = 2;
+        addSectionHeader(profilePanel, "Hobbies", gbc);
+        gbc.gridy++;
+        
+        List<String> hobbies = profile.getHobbies();
+        if (hobbies != null && !hobbies.isEmpty()) {
+            JTextArea hobbiesArea = new JTextArea(String.join(", ", hobbies));
+            hobbiesArea.setWrapStyleWord(true);
+            hobbiesArea.setLineWrap(true);
+            hobbiesArea.setOpaque(false);
+            hobbiesArea.setEditable(false);
+            hobbiesArea.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+            hobbiesArea.setBorder(new EmptyBorder(10, 10, 10, 10));
+            
+            JScrollPane scrollPane = new JScrollPane(hobbiesArea);
+            scrollPane.setPreferredSize(new Dimension(400, 60));
+            scrollPane.setBorder(BorderFactory.createEmptyBorder());
+            scrollPane.setOpaque(false);
+            scrollPane.getViewport().setOpaque(false);
+            
+            gbc.fill = GridBagConstraints.HORIZONTAL;
+            profilePanel.add(scrollPane, gbc);
+            gbc.gridy++;
+        }
+        
+        // Relationship Goals section
+        addSectionHeader(profilePanel, "Relationship Goals", gbc);
+        gbc.gridy++;
+        
+        JLabel relationshipGoal = new JLabel(profile.getRelationshipGoal());
+        relationshipGoal.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        relationshipGoal.setBorder(new EmptyBorder(10, 10, 10, 10));
+        profilePanel.add(relationshipGoal, gbc);
         gbc.gridy++;
         
         // About Me section
-        gbc.gridwidth = 2;
         addSectionHeader(profilePanel, "About Me", gbc);
         gbc.gridy++;
         

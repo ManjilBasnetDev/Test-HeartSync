@@ -128,13 +128,20 @@ public class FirebaseConfig {
     public static <T> void set(String path, T data) {
         try {
             String json = gson.toJson(data);
+            String fullUrl = DATABASE_URL + path + JSON_EXT;
+            System.out.println("Saving data to Firebase URL: " + fullUrl);
+            System.out.println("Data being saved: " + json);
+            
             HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(DATABASE_URL + path + JSON_EXT))
+                .uri(URI.create(fullUrl))
                 .header("Content-Type", "application/json")
                 .PUT(HttpRequest.BodyPublishers.ofString(json))
                 .build();
 
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            System.out.println("Firebase response status: " + response.statusCode());
+            System.out.println("Firebase response body: " + response.body());
+            
             if (response.statusCode() != 200) {
                 throw new RuntimeException("Failed to set data: " + response.body());
             }

@@ -407,6 +407,9 @@ public class ProfileSetupView extends JFrame {
 
         // Update model through controller
         try {
+            System.out.println("Saving profile data for user: " + controller.getCurrentUsername());
+            
+            // Update model through controller
             controller.updateBasicInfo(
                 controller.getCurrentUsername(),
                 nameField.getText().trim(),
@@ -420,6 +423,8 @@ public class ProfileSetupView extends JFrame {
                 preferencesComboBox.getSelectedItem().toString(),
                 aboutMeArea.getText().trim()
             );
+
+            System.out.println("Profile data saved successfully");
 
             // Show success message
             JOptionPane.showMessageDialog(this,
@@ -437,6 +442,8 @@ public class ProfileSetupView extends JFrame {
             });
 
         } catch (Exception ex) {
+            System.err.println("Error saving profile: " + ex.getMessage());
+            ex.printStackTrace();
             JOptionPane.showMessageDialog(this,
                 "Error saving profile: " + ex.getMessage(),
                 "Error",

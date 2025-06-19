@@ -857,17 +857,21 @@ public class Swipe extends JFrame {
         
         // Add to likes in Firebase
         if (likeDAO.addLike(currentUserId, profile.userId)) {
+            // Check if it's a match
+            if (likeDAO.isMatched(currentUserId, profile.userId)) {
+                // Show match notification
+                JOptionPane.showMessageDialog(this,
+                    "It's a Match with " + profile.name + "! 🎉\nYou can now chat with each other!",
+                    "New Match!",
+                    JOptionPane.INFORMATION_MESSAGE);
+            }
+            
             // Remove from current list
             profiles.remove(currentIndex);
             if (currentIndex >= profiles.size()) {
                 currentIndex = 0;
             }
             
-            JOptionPane.showMessageDialog(this,
-                "You liked " + profile.name + "!\nMatch functionality coming soon.",
-                "Liked",
-                JOptionPane.INFORMATION_MESSAGE);
-                
             if (profiles.isEmpty()) {
                 showCurrentProfile(); // Will show the "no profiles" message
             } else {

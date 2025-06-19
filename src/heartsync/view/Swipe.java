@@ -36,6 +36,7 @@ import java.time.Period;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
@@ -68,6 +69,8 @@ import heartsync.database.DatabaseManagerProfile;
 import heartsync.model.User;
 import heartsync.model.UserProfile;
 import heartsync.navigation.WindowManager;
+import heartsync.database.FirebaseConfig;
+import com.google.gson.reflect.TypeToken;
 
 /**
  * Modern swipe interface for browsing through potential matches.
@@ -1262,39 +1265,110 @@ public class Swipe extends JFrame {
         try {
             // Get current user and their profile
             User currentUser = User.getCurrentUser();
+            if (currentUser == null) {
+                JOptionPane.showMessageDialog(this,
+                    "Error: Current user not found",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            
             String currentUsername = currentUser.getUsername();
             currentUserId = currentUser.getUserId();
-            UserProfile currentUserProfile = UserProfile.getCurrentUser();
-            String currentUserGender = currentUserProfile.getGender();
             
-            // Get all other profiles
-            List<UserProfile> otherProfiles = DatabaseManagerProfile.getInstance().getAllUserProfilesExcept(currentUsername);
+            // Get current user's gender from user_details using username
+            String currentUserGender = null;
+            try {
+                Map<String, Object> userDetails = FirebaseConfig.get("user_details/" + currentUsername, 
+                    new TypeToken<Map<String, Object>>(){}.getType());
+                if (userDetails != null && userDetails.containsKey("gender")) {
+                    currentUserGender = (String) userDetails.get("gender");
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+                JOptionPane.showMessageDialog(this,
+                    "Error fetching user gender: " + e.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+                return;
+            }
             
-            // Only add profiles that have actual data and match gender preference
-            for (UserProfile userProfile : otherProfiles) {
-                if (userProfile.getFullName() != null && !userProfile.getFullName().isEmpty() 
-                    && userProfile.getGender() != null && !userProfile.getGender().isEmpty()) {
+            if (currentUserGender == null) {
+                JOptionPane.showMessageDialog(this,
+                    "Please set your gender in your profile first",
+                    "Profile Incomplete",
+                    JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            
+            // Get all users and their details
+            try {
+                Map<String, User> allUsers = FirebaseConfig.get("users", 
+                    new TypeToken<Map<String, User>>(){}.getType());
+                Map<String, Map<String, Object>> allUserDetails = FirebaseConfig.get("user_details", 
+                    new TypeToken<Map<String, Map<String, Object>>>(){}.getType());
+                
+                if (allUsers != null && allUserDetails != null) {
+                    // Get already liked/passed users to exclude them
+                    List<String> likedUsers = likeDAO.getLikedUsers(currentUserId);
+                    List<String> passedUsers = likeDAO.getPassedUsers(currentUserId);
                     
-                    // Only show profiles of opposite gender that haven't been liked or passed
-                    if (!userProfile.getGender().equals(currentUserGender) 
-                        && !likeDAO.hasInteractedWith(currentUserId, userProfile.getUsername())) {
+                    // Process each user from user_details
+                    for (Map.Entry<String, Map<String, Object>> entry : allUserDetails.entrySet()) {
+                        String username = entry.getKey();
+                        Map<String, Object> userDetails = entry.getValue();
                         
-                        String name = userProfile.getFullName();
-                        int age = userProfile.getAge() > 0 ? userProfile.getAge() : calculateAge(userProfile.getDateOfBirth());
-                        String bio = userProfile.getAboutMe() != null ? userProfile.getAboutMe() : "";
+                        // Skip if it's the current user
+                        if (username.equals(currentUsername)) continue;
+                        
+                        // Find the corresponding user in users node
+                        String userId = null;
+                        for (Map.Entry<String, User> userEntry : allUsers.entrySet()) {
+                            if (userEntry.getValue().getUsername().equals(username)) {
+                                userId = userEntry.getKey();
+                                break;
+                            }
+                        }
+                        
+                        // Skip if user not found in users node
+                        if (userId == null) continue;
+                        
+                        // Skip if user has been liked or passed
+                        if (likedUsers.contains(userId) || passedUsers.contains(userId)) continue;
+                        
+                        // Check gender from user_details
+                        String userGender = (String) userDetails.get("gender");
+                        if (userGender == null || userGender.equals(currentUserGender)) continue;
+                        
+                        // Get required profile information
+                        String name = (String) userDetails.get("fullName");
+                        String dateOfBirth = (String) userDetails.get("dateOfBirth");
+                        String bio = (String) userDetails.get("aboutMe");
+                        String profilePicPath = (String) userDetails.get("profilePicPath");
+                        
+                        // Skip if required information is missing
+                        if (name == null || name.isEmpty() || profilePicPath == null || profilePicPath.isEmpty()) {
+                            continue;
+                        }
+                        
+                        // Calculate age
+                        int age = dateOfBirth != null ? calculateAge(dateOfBirth) : 0;
+                        
+                        // Create photos list
                         List<String> photos = new ArrayList<>();
+                        photos.add(profilePicPath);
                         
-                        // Add profile picture if available
-                        if (userProfile.getProfilePicPath() != null && !userProfile.getProfilePicPath().isEmpty()) {
-                            photos.add(userProfile.getProfilePicPath());
-                        }
-                        
-                        // Only add profiles that have at least basic information and a photo
-                        if (!photos.isEmpty()) {
-                            profiles.add(new ProfileData(name, age, bio, photos, userProfile.getUsername()));
-                        }
+                        // Add to profiles list
+                        profiles.add(new ProfileData(name, age, bio != null ? bio : "", photos, userId));
                     }
                 }
+            } catch (IOException e) {
+                e.printStackTrace();
+                JOptionPane.showMessageDialog(this,
+                    "Error loading profiles: " + e.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+                return;
             }
             
             // Store all filtered profiles for search functionality
@@ -1303,7 +1377,7 @@ public class Swipe extends JFrame {
         } catch (Exception e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this,
-                "Error loading profiles: " + e.getMessage(),
+                "Error setting up profiles: " + e.getMessage(),
                 "Error",
                 JOptionPane.ERROR_MESSAGE);
         }

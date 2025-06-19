@@ -88,7 +88,7 @@ public class AdminDelete extends javax.swing.JFrame {
         jPanel1.setBackground(new java.awt.Color(255, 198, 209));
 
         jLabel1.setFont(new java.awt.Font("Segoe UI", 1, 24)); // NOI18N
-        jLabel1.setText("Heart Sync");
+        jLabel1.setText("");
 
         jLabel2.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         jLabel2.setText("Warning: Deleting yor account will permanently");
@@ -384,7 +384,7 @@ public class AdminDelete extends javax.swing.JFrame {
         cardLayout.show(cardPanel, "DELETE");
         
         // Set frame properties
-        setTitle("Heart Sync Admin");
+        setTitle("");
         setSize(500, 400);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         
@@ -400,7 +400,7 @@ public class AdminDelete extends javax.swing.JFrame {
         // Style the title with a more modern font and color
         jLabel1.setFont(new Font("Segoe UI", Font.BOLD, 38));
         jLabel1.setForeground(new Color(51, 51, 51));
-        jLabel1.setText("Heart Sync"); // Ensure full text, no ellipsis
+        jLabel1.setText(""); // Ensure full text, no ellipsis
         jLabel1.setPreferredSize(new Dimension(250, 50));
         jLabel1.setMinimumSize(new Dimension(200, 40));
         jLabel1.setMaximumSize(new Dimension(400, 60));

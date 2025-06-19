@@ -16,7 +16,6 @@ import java.awt.RenderingHints;
 import java.awt.Window;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,13 +38,9 @@ import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 
-import heartsync.controller.LoginController;
 import heartsync.controller.UserProfileController;
-import heartsync.database.DatabaseManagerProfile;
-import heartsync.model.UserProfile;
 import heartsync.model.User;
-import heartsync.navigation.WindowManager;
-import heartsync.view.Swipe;
+import heartsync.model.UserProfile;
 
 public class MoreInfoView extends JFrame {
     private UserProfileController controller;
@@ -437,8 +432,8 @@ public class MoreInfoView extends JFrame {
     private void handleFinish() {
         // Get selected hobbies
         List<String> selectedHobbies = new ArrayList<>();
-        for (Map.Entry<String, List<JCheckBox>> entry : hobbyCategories.entrySet()) {
-            for (JCheckBox checkbox : entry.getValue()) {
+        for (List<JCheckBox> checkboxes : hobbyCategories.values()) {
+            for (JCheckBox checkbox : checkboxes) {
                 if (checkbox.isSelected()) {
                     selectedHobbies.add(checkbox.getText());
                 }
@@ -446,6 +441,14 @@ public class MoreInfoView extends JFrame {
         }
 
         // Validate selections
+        if (selectedHobbies.isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                "Please select your hobbies.",
+                "Missing Information",
+                JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
         if (selectedHobbies.size() < 5 || selectedHobbies.size() > 12) {
             JOptionPane.showMessageDialog(this,
                 "Please select between 5 and 12 hobbies.",
@@ -486,7 +489,7 @@ public class MoreInfoView extends JFrame {
                 }
             } else {
                 JOptionPane.showMessageDialog(this,
-                    "Profile created successfully!",
+                    "Profile setup completed successfully!",
                     "Success",
                     JOptionPane.INFORMATION_MESSAGE);
                 this.dispose();

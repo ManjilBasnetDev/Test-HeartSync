@@ -16,7 +16,6 @@ import java.awt.Insets;
 import java.awt.RenderingHints;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
-import java.awt.image.BufferedImage;
 import java.io.File;
 
 import javax.swing.BorderFactory;
@@ -428,17 +427,16 @@ public class ProfileSetupView extends JFrame {
 
             // Show success message
             JOptionPane.showMessageDialog(this,
-                "Profile created successfully! Please log in to continue.",
+                "Basic profile created successfully! Let's add some more details.",
                 "Success",
                 JOptionPane.INFORMATION_MESSAGE);
 
             // Close the profile setup window
             this.dispose();
 
-            // Show the HomePage for login
+            // Show the MoreInfoView
             SwingUtilities.invokeLater(() -> {
-                HomePage homePage = new HomePage();
-                homePage.setVisible(true);
+                controller.showMoreInfoView();
             });
 
         } catch (Exception ex) {

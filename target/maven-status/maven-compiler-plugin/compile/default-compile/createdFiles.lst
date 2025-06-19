@@ -44,6 +44,7 @@ heartsyncdatingapp/controller/ShowHideController.class
 heartsync/controller/LoginController$2.class
 heartsync/dao/UserRegisterDAO$4.class
 heartsync/view/AdminPage$2.class
+heartsync/dao/ContactDAO$1.class
 heartsync/view/Swipe$9.class
 heartsync/view/AdminPage$3$1.class
 heartsync/dao/ChatDAO.class
@@ -84,6 +85,7 @@ heartsync/view/MoreInfoView$1.class
 heartsync/view/AdminPage$7.class
 heartsync/view/ChatSystem$2.class
 heartsync/view/Swipe$7.class
+heartsync/dao/ContactDAO.class
 heartsync/dao/UserDAO$2.class
 heartsync/dao/UserRegisterDAO$2.class
 heartsync/dao/NotificationDAO$3.class
@@ -120,6 +122,7 @@ heartsync/dao/ResetDAO.class
 heartsync/view/MessageBox.class
 heartsync/view/ProfileSetupView$4.class
 heartsync/view/HomePage$5.class
+heartsync/dao/ContactDAO$2.class
 heartsync/view/Swipe$13.class
 heartsync/view/AboutUsPage$1.class
 heartsync/dao/UserDAOForgot.class
@@ -131,6 +134,7 @@ heartsync/view/Register.class
 heartsync/view/MessageBox$Message.class
 heartsync/view/ProfileSetupView$1.class
 heartsync/database/DatabaseManagerProfile$2.class
+heartsync/database/FirebaseStorageManager.class
 heartsync/controller/SecurityQuestionsController$1.class
 heartsync/view/Register$8.class
 heartsync/view/Register$1.class

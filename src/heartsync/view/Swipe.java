@@ -4,31 +4,69 @@
  */
 package heartsync.view;
 
-import java.awt.*;
-import java.awt.event.*;
+import java.awt.BasicStroke;
+import java.awt.BorderLayout;
+import java.awt.CardLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.GradientPaint;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Image;
+import java.awt.Insets;
+import java.awt.RenderingHints;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.geom.Ellipse2D;
-import java.awt.geom.RoundRectangle2D;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import javax.imageio.ImageIO;
-import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-import javax.swing.filechooser.FileNameExtensionFilter;
-import heartsync.controller.UserProfileController;
-import heartsync.model.UserProfile;
-import java.awt.image.BufferedImage;
-import heartsync.database.DatabaseManagerProfile;
-import heartsync.model.User;
+import java.net.URL;
 import java.time.LocalDate;
 import java.time.Period;
 import java.time.format.DateTimeFormatter;
-import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.imageio.ImageIO;
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JDialog;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JLayeredPane;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JSpinner;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.SpinnerNumberModel;
+import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+import javax.swing.border.EmptyBorder;
+import javax.swing.filechooser.FileNameExtensionFilter;
+
+import heartsync.controller.UserProfileController;
+import heartsync.database.DatabaseManagerProfile;
+import heartsync.model.User;
+import heartsync.model.UserProfile;
 import heartsync.navigation.WindowManager;
-import heartsync.view.ChatSystem;
-import heartsync.view.LoginView;
 
 /**
  * Modern swipe interface for browsing through potential matches.
@@ -1173,28 +1211,43 @@ public class Swipe extends JFrame {
     private void setupProfiles() {
         profiles = new ArrayList<>();
         try {
-            String currentUsername = User.getCurrentUser().getUsername();
+            // Get current user and their profile
+            User currentUser = User.getCurrentUser();
+            String currentUsername = currentUser.getUsername();
+            UserProfile currentUserProfile = UserProfile.getCurrentUser();
+            String currentUserGender = currentUserProfile.getGender();
+            
+            // Get all other profiles
             List<UserProfile> otherProfiles = DatabaseManagerProfile.getInstance().getAllUserProfilesExcept(currentUsername);
             
-            // Only add profiles that have actual data
+            // Only add profiles that have actual data and match gender preference
             for (UserProfile userProfile : otherProfiles) {
-                if (userProfile.getFullName() != null && !userProfile.getFullName().isEmpty()) {
-                    String name = userProfile.getFullName();
-                    int age = userProfile.getAge() > 0 ? userProfile.getAge() : calculateAge(userProfile.getDateOfBirth());
-                    String bio = userProfile.getAboutMe() != null ? userProfile.getAboutMe() : "";
-                    List<String> photos = new ArrayList<>();
+                if (userProfile.getFullName() != null && !userProfile.getFullName().isEmpty() 
+                    && userProfile.getGender() != null && !userProfile.getGender().isEmpty()) {
                     
-                    // Add profile picture if available
-                    if (userProfile.getProfilePicPath() != null && !userProfile.getProfilePicPath().isEmpty()) {
-                        photos.add(userProfile.getProfilePicPath());
-                    }
-                    
-                    // Only add profiles that have at least basic information
-                    if (!photos.isEmpty()) {
-                        profiles.add(new ProfileData(name, age, bio, photos));
+                    // Only show profiles of opposite gender
+                    if (!userProfile.getGender().equals(currentUserGender)) {
+                        String name = userProfile.getFullName();
+                        int age = userProfile.getAge() > 0 ? userProfile.getAge() : calculateAge(userProfile.getDateOfBirth());
+                        String bio = userProfile.getAboutMe() != null ? userProfile.getAboutMe() : "";
+                        List<String> photos = new ArrayList<>();
+                        
+                        // Add profile picture if available
+                        if (userProfile.getProfilePicPath() != null && !userProfile.getProfilePicPath().isEmpty()) {
+                            photos.add(userProfile.getProfilePicPath());
+                        }
+                        
+                        // Only add profiles that have at least basic information and a photo
+                        if (!photos.isEmpty()) {
+                            profiles.add(new ProfileData(name, age, bio, photos));
+                        }
                     }
                 }
             }
+            
+            // Store all filtered profiles for search functionality
+            allProfiles = new ArrayList<>(profiles);
+            
         } catch (Exception e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this,

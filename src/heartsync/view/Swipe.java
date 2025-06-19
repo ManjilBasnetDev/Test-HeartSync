@@ -35,8 +35,11 @@ import java.time.LocalDate;
 import java.time.Period;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
@@ -1285,6 +1288,7 @@ public class Swipe extends JFrame {
             try {
                 Map<String, Object> userDetails = FirebaseConfig.get("user_details/" + currentUsername, 
                     new TypeToken<Map<String, Object>>(){}.getType());
+                
                 if (userDetails != null && userDetails.containsKey("gender")) {
                     currentUserGender = (String) userDetails.get("gender");
                 }
@@ -1306,82 +1310,85 @@ public class Swipe extends JFrame {
             }
             
             // Get all users and their details
-            try {
-                Map<String, User> allUsers = FirebaseConfig.get("users", 
-                    new TypeToken<Map<String, User>>(){}.getType());
-                Map<String, Map<String, Object>> allUserDetails = FirebaseConfig.get("user_details", 
-                    new TypeToken<Map<String, Map<String, Object>>>(){}.getType());
-                
-                if (allUsers != null && allUserDetails != null) {
-                    // Get already liked/passed users to exclude them
-                    List<String> likedUsers = likeDAO.getLikedUsers(currentUserId);
-                    List<String> passedUsers = likeDAO.getPassedUsers(currentUserId);
-                    
-                    // Process each user from user_details
-                    for (Map.Entry<String, Map<String, Object>> entry : allUserDetails.entrySet()) {
-                        String username = entry.getKey();
-                        Map<String, Object> userDetails = entry.getValue();
-                        
-                        // Skip if it's the current user
-                        if (username.equals(currentUsername)) continue;
-                        
-                        // Find the corresponding user in users node
-                        String userId = null;
-                        for (Map.Entry<String, User> userEntry : allUsers.entrySet()) {
-                            if (userEntry.getValue().getUsername().equals(username)) {
-                                userId = userEntry.getKey();
-                                break;
-                            }
-                        }
-                        
-                        // Skip if user not found in users node
-                        if (userId == null) continue;
-                        
-                        // Skip if user has been liked or passed
-                        if (likedUsers.contains(userId) || passedUsers.contains(userId)) continue;
-                        
-                        // Check gender from user_details
-                        String userGender = (String) userDetails.get("gender");
-                        if (userGender == null || userGender.equals(currentUserGender)) continue;
-                        
-                        // Get required profile information
-                        String name = (String) userDetails.get("fullName");
-                        String dateOfBirth = (String) userDetails.get("dateOfBirth");
-                        String bio = (String) userDetails.get("aboutMe");
-                        String profilePicPath = (String) userDetails.get("profilePicPath");
-                        
-                        // Skip if required information is missing
-                        if (name == null || name.isEmpty() || profilePicPath == null || profilePicPath.isEmpty()) {
-                            continue;
-                        }
-                        
-                        // Calculate age
-                        int age = dateOfBirth != null ? calculateAge(dateOfBirth) : 0;
-                        
-                        // Create photos list
-                        List<String> photos = new ArrayList<>();
-                        photos.add(profilePicPath);
-                        
-                        // Add to profiles list
-                        profiles.add(new ProfileData(name, age, bio != null ? bio : "", photos, userId));
-                    }
+            Map<String, User> allUsers = FirebaseConfig.get("users", 
+                new TypeToken<Map<String, User>>(){}.getType());
+            
+            Map<String, Map<String, Object>> allUserDetails = FirebaseConfig.get("user_details", 
+                new TypeToken<Map<String, Map<String, Object>>>(){}.getType());
+            
+            // Get liked and passed users
+            Map<String, Boolean> likes = FirebaseConfig.get("user_likes/" + currentUserId + "/likes",
+                new TypeToken<Map<String, Boolean>>(){}.getType());
+            Map<String, Boolean> passes = FirebaseConfig.get("user_likes/" + currentUserId + "/passes",
+                new TypeToken<Map<String, Boolean>>(){}.getType());
+            
+            Set<String> likedUsers = new HashSet<>();
+            Set<String> passedUsers = new HashSet<>();
+            
+            if (likes != null) likedUsers.addAll(likes.keySet());
+            if (passes != null) passedUsers.addAll(passes.keySet());
+            
+            if (allUsers != null && allUserDetails != null) {
+                // First, create a map of username to userId for faster lookup
+                Map<String, String> usernameToId = new HashMap<>();
+                for (Map.Entry<String, User> entry : allUsers.entrySet()) {
+                    usernameToId.put(entry.getValue().getUsername(), entry.getKey());
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
-                JOptionPane.showMessageDialog(this,
-                    "Error loading profiles: " + e.getMessage(),
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE);
-                return;
+                
+                // Now process each user from user_details
+                for (Map.Entry<String, Map<String, Object>> entry : allUserDetails.entrySet()) {
+                    String username = entry.getKey();
+                    Map<String, Object> details = entry.getValue();
+                    
+                    // Skip current user
+                    if (username.equals(currentUsername)) continue;
+                    
+                    // Get userId from the map we created
+                    String userId = usernameToId.get(username);
+                    if (userId == null) continue;
+                    
+                    // Skip if user has been liked or passed
+                    if (likedUsers.contains(userId) || passedUsers.contains(userId)) continue;
+                    
+                    // Get gender and check if it's different from current user
+                    String userGender = (String) details.get("gender");
+                    if (userGender == null || userGender.equals(currentUserGender)) continue;
+                    
+                    // Get required profile information
+                    String name = (String) details.get("fullName");
+                    String dateOfBirth = (String) details.get("dateOfBirth");
+                    String bio = (String) details.get("aboutMe");
+                    String profilePicPath = (String) details.get("profilePicPath");
+                    
+                    // Skip if required information is missing
+                    if (name == null || name.isEmpty() || profilePicPath == null || profilePicPath.isEmpty()) continue;
+                    
+                    // Calculate age
+                    int age = calculateAge(dateOfBirth);
+                    
+                    // Create photos list
+                    List<String> photos = new ArrayList<>();
+                    photos.add(profilePicPath);
+                    
+                    // Add to profiles list
+                    profiles.add(new ProfileData(name, age, bio != null ? bio : "", photos, userId));
+                }
             }
             
-            // Store all filtered profiles for search functionality
+            // Save a copy for filtering
             allProfiles = new ArrayList<>(profiles);
             
-        } catch (Exception e) {
+            // Show first profile if available
+            if (!profiles.isEmpty()) {
+                showCurrentProfile();
+            } else {
+                showCurrentProfile(); // Will show the "no profiles" message
+            }
+            
+        } catch (IOException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this,
-                "Error setting up profiles: " + e.getMessage(),
+                "Error loading profiles: " + e.getMessage(),
                 "Error",
                 JOptionPane.ERROR_MESSAGE);
         }

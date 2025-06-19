@@ -1,4 +1,4 @@
-package logintestfinal.View;
+package heartsync.view;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;

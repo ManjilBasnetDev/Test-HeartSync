@@ -197,7 +197,7 @@ public class Block extends JFrame {
         splitPane.setDividerLocation(200);
         splitPane.setDividerSize(2);
         splitPane.setBorder(null);
-        splitPane.setBackground(new Color(255, 228, 235));
+        splitPane.setBackground(new Color(255, 228, 234));
 
         // Main layout
         setLayout(new GridBagLayout());

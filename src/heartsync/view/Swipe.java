@@ -63,6 +63,7 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 import heartsync.controller.UserProfileController;
+import heartsync.dao.LikeDAO;
 import heartsync.database.DatabaseManagerProfile;
 import heartsync.model.User;
 import heartsync.model.UserProfile;
@@ -121,6 +122,8 @@ public class Swipe extends JFrame {
     private JButton filterButton;
     private CardLayout cardLayout;
     private JPanel contentCards;
+    private LikeDAO likeDAO;
+    private String currentUserId;
     
     private static class ProfileData {
         String name;
@@ -128,12 +131,14 @@ public class Swipe extends JFrame {
         String bio;
         List<String> photos;  // List to store multiple photos
         int currentPhotoIndex = 0;  // Track current photo index
+        String userId;  // Add userId to track likes/passes
 
-        ProfileData(String name, int age, String bio, List<String> photos) {
+        ProfileData(String name, int age, String bio, List<String> photos, String userId) {
             this.name = name;
             this.age = age;
             this.bio = bio;
             this.photos = photos;
+            this.userId = userId;
         }
     }
 
@@ -196,6 +201,10 @@ public class Swipe extends JFrame {
     }
 
     public Swipe() {
+        // Initialize LikeDAO
+        likeDAO = new LikeDAO();
+        currentUserId = User.getCurrentUser().getUserId();
+        
         // Set up window properties
         setTitle("HeartSync - Find Love");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -842,16 +851,56 @@ public class Swipe extends JFrame {
     private void likeCurrentProfile() {
         if (profiles.isEmpty()) return;
         ProfileData profile = profiles.get(currentIndex);
-        JOptionPane.showMessageDialog(this,
-            "You liked " + profile.name + "!\nMatch functionality coming soon.",
-            "Liked",
-            JOptionPane.INFORMATION_MESSAGE);
-        showNextProfile();
+        
+        // Add to likes in Firebase
+        if (likeDAO.addLike(currentUserId, profile.userId)) {
+            // Remove from current list
+            profiles.remove(currentIndex);
+            if (currentIndex >= profiles.size()) {
+                currentIndex = 0;
+            }
+            
+            JOptionPane.showMessageDialog(this,
+                "You liked " + profile.name + "!\nMatch functionality coming soon.",
+                "Liked",
+                JOptionPane.INFORMATION_MESSAGE);
+                
+            if (profiles.isEmpty()) {
+                showCurrentProfile(); // Will show the "no profiles" message
+            } else {
+                showCurrentProfile();
+            }
+        } else {
+            JOptionPane.showMessageDialog(this,
+                "Error saving like. Please try again.",
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private void rejectCurrentProfile() {
         if (profiles.isEmpty()) return;
-        showNextProfile();
+        ProfileData profile = profiles.get(currentIndex);
+        
+        // Add to passes in Firebase
+        if (likeDAO.addPass(currentUserId, profile.userId)) {
+            // Remove from current list
+            profiles.remove(currentIndex);
+            if (currentIndex >= profiles.size()) {
+                currentIndex = 0;
+            }
+            
+            if (profiles.isEmpty()) {
+                showCurrentProfile(); // Will show the "no profiles" message
+            } else {
+                showCurrentProfile();
+            }
+        } else {
+            JOptionPane.showMessageDialog(this,
+                "Error saving pass. Please try again.",
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private JLabel createProfilePicture() {
@@ -1214,6 +1263,7 @@ public class Swipe extends JFrame {
             // Get current user and their profile
             User currentUser = User.getCurrentUser();
             String currentUsername = currentUser.getUsername();
+            currentUserId = currentUser.getUserId();
             UserProfile currentUserProfile = UserProfile.getCurrentUser();
             String currentUserGender = currentUserProfile.getGender();
             
@@ -1225,8 +1275,10 @@ public class Swipe extends JFrame {
                 if (userProfile.getFullName() != null && !userProfile.getFullName().isEmpty() 
                     && userProfile.getGender() != null && !userProfile.getGender().isEmpty()) {
                     
-                    // Only show profiles of opposite gender
-                    if (!userProfile.getGender().equals(currentUserGender)) {
+                    // Only show profiles of opposite gender that haven't been liked or passed
+                    if (!userProfile.getGender().equals(currentUserGender) 
+                        && !likeDAO.hasInteractedWith(currentUserId, userProfile.getUsername())) {
+                        
                         String name = userProfile.getFullName();
                         int age = userProfile.getAge() > 0 ? userProfile.getAge() : calculateAge(userProfile.getDateOfBirth());
                         String bio = userProfile.getAboutMe() != null ? userProfile.getAboutMe() : "";
@@ -1239,7 +1291,7 @@ public class Swipe extends JFrame {
                         
                         // Only add profiles that have at least basic information and a photo
                         if (!photos.isEmpty()) {
-                            profiles.add(new ProfileData(name, age, bio, photos));
+                            profiles.add(new ProfileData(name, age, bio, photos, userProfile.getUsername()));
                         }
                     }
                 }

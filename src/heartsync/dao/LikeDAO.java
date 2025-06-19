@@ -5,10 +5,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.UUID;
 
 import com.google.gson.reflect.TypeToken;
 
 import heartsync.database.FirebaseConfig;
+import heartsync.model.Chat;
 
 public class LikeDAO {
     private static final String LIKES_PATH = "user_likes";
@@ -109,25 +111,39 @@ public class LikeDAO {
             // Sort user IDs alphabetically to create a consistent chat ID
             String chatId = userId1.compareTo(userId2) < 0 ? userId1 + "_" + userId2 : userId2 + "_" + userId1;
             
-            // Check if chat already exists
-            Map<String, Object> existingChat = FirebaseConfig.get(MESSAGES_PATH + "/" + chatId + "/meta", 
-                new TypeToken<Map<String, Object>>(){}.getType());
-                
-            if (existingChat == null) {
-                // Create chat metadata
-                Map<String, Object> chatMeta = new HashMap<>();
-                chatMeta.put("user1", userId1);
-                chatMeta.put("user2", userId2);
-                chatMeta.put("lastMessage", "");
-                chatMeta.put("timestamp", System.currentTimeMillis());
-                
-                // Save chat metadata
-                FirebaseConfig.put(MESSAGES_PATH + "/" + chatId + "/meta", chatMeta);
-                
-                // Initialize empty messages map
-                Map<String, Object> emptyMessages = new HashMap<>();
-                FirebaseConfig.put(MESSAGES_PATH + "/" + chatId + "/messages", emptyMessages);
-            }
+            // Create the messages node structure
+            Map<String, Object> messageData = new HashMap<>();
+            
+            // Create metadata
+            Map<String, Object> metadata = new HashMap<>();
+            metadata.put("user1", userId1);
+            metadata.put("user2", userId2);
+            metadata.put("lastMessage", "");
+            metadata.put("timestamp", System.currentTimeMillis());
+            messageData.put("meta", metadata);
+            
+            // Create empty messages map
+            messageData.put("messages", new HashMap<>());
+            
+            // Save the entire message structure
+            FirebaseConfig.put(MESSAGES_PATH + "/" + chatId, messageData);
+            
+            // Create a welcome message
+            Chat welcomeChat = new Chat();
+            welcomeChat.setMessageId(UUID.randomUUID().toString());
+            welcomeChat.setChatId(chatId);
+            welcomeChat.setSenderId("system");
+            welcomeChat.setMessage("You are now matched! Say hello! 👋");
+            welcomeChat.setTimestamp(System.currentTimeMillis());
+            
+            // Save welcome message
+            FirebaseConfig.put(MESSAGES_PATH + "/" + chatId + "/messages/" + welcomeChat.getMessageId(), welcomeChat);
+            
+            // Update metadata with welcome message
+            Map<String, Object> updatedMeta = new HashMap<>();
+            updatedMeta.put("lastMessage", welcomeChat.getMessage());
+            updatedMeta.put("timestamp", welcomeChat.getTimestamp());
+            FirebaseConfig.patch(MESSAGES_PATH + "/" + chatId + "/meta", updatedMeta);
         }
     }
 

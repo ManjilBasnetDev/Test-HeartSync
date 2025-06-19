@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 
 import com.google.gson.reflect.TypeToken;
 
@@ -13,6 +14,7 @@ public class LikeDAO {
     private static final String LIKES_PATH = "user_likes";
     private static final String PASSES_PATH = "user_passes";
     private static final String MATCHES_PATH = "matches";
+    private static final String MESSAGES_PATH = "messages";
     
     public boolean addLike(String userId, String likedUserId) {
         try {
@@ -102,6 +104,30 @@ public class LikeDAO {
             // Create match entries for both users
             FirebaseConfig.put(MATCHES_PATH + "/" + userId1 + "/" + userId2, true);
             FirebaseConfig.put(MATCHES_PATH + "/" + userId2 + "/" + userId1, true);
+            
+            // Initialize chat
+            // Sort user IDs alphabetically to create a consistent chat ID
+            String chatId = userId1.compareTo(userId2) < 0 ? userId1 + "_" + userId2 : userId2 + "_" + userId1;
+            
+            // Check if chat already exists
+            Map<String, Object> existingChat = FirebaseConfig.get(MESSAGES_PATH + "/" + chatId + "/meta", 
+                new TypeToken<Map<String, Object>>(){}.getType());
+                
+            if (existingChat == null) {
+                // Create chat metadata
+                Map<String, Object> chatMeta = new HashMap<>();
+                chatMeta.put("user1", userId1);
+                chatMeta.put("user2", userId2);
+                chatMeta.put("lastMessage", "");
+                chatMeta.put("timestamp", System.currentTimeMillis());
+                
+                // Save chat metadata
+                FirebaseConfig.put(MESSAGES_PATH + "/" + chatId + "/meta", chatMeta);
+                
+                // Initialize empty messages map
+                Map<String, Object> emptyMessages = new HashMap<>();
+                FirebaseConfig.put(MESSAGES_PATH + "/" + chatId + "/messages", emptyMessages);
+            }
         }
     }
 

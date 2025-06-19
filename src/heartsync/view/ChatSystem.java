@@ -16,7 +16,9 @@ import java.awt.RenderingHints;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.RoundRectangle2D;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Map;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -27,6 +29,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.border.EmptyBorder;
@@ -34,6 +37,9 @@ import javax.swing.border.EmptyBorder;
 // Add these imports
 import heartsync.view.Swipe;
 import heartsync.view.MessageBox;
+import heartsync.model.User;
+import heartsync.database.FirebaseConfig;
+import com.google.gson.reflect.TypeToken;
 
 public class ChatSystem extends JFrame {
     private static final int WINDOW_RADIUS = 20;
@@ -52,11 +58,13 @@ public class ChatSystem extends JFrame {
         String name;
         String imagePath;
         String lastMessage;
+        String userId;
         
-        MatchedUser(String name, String imagePath, String lastMessage) {
+        MatchedUser(String name, String imagePath, String lastMessage, String userId) {
             this.name = name;
             this.imagePath = imagePath;
             this.lastMessage = lastMessage;
+            this.userId = userId;
         }
     }
     
@@ -167,7 +175,7 @@ public class ChatSystem extends JFrame {
         menu.add(Box.createRigidArea(new Dimension(0, 20)));
         
         // Menu items
-        String[] menuItems = {"❤️ LIKED USERS", "🔖 SAVED USERS", "💝 MY LIKERS"};
+        String[] menuItems = {"💝 MY MATCHES"};
         for (String item : menuItems) {
             JButton menuButton = new JButton(item);
             menuButton.setFont(new Font("Segoe UI", Font.BOLD, 16));
@@ -206,9 +214,65 @@ public class ChatSystem extends JFrame {
     }
     
     private void setupSampleUsers() {
-        matchedUsers.add(new MatchedUser("Rajesh Dai", "/ImagePicker/RajeshHamalPhoto.png", "Hello! How are you?"));
-        matchedUsers.add(new MatchedUser("Rajesh Hamal", "/ImagePicker/RajeshHamalPhoto2.jpg", "Nice to meet you!"));
+        // Remove sample users, load real matched users
+        loadMatchedUsers();
         updateContentPanel();
+    }
+    
+    private void loadMatchedUsers() {
+        matchedUsers.clear();
+        String currentUserId = User.getCurrentUser().getUserId();
+        
+        try {
+            // Get current user's matches
+            Map<String, Boolean> matches = FirebaseConfig.get("matches/" + currentUserId, 
+                new TypeToken<Map<String, Boolean>>(){}.getType());
+            
+            if (matches != null && !matches.isEmpty()) {
+                // Get user details for all users
+                Map<String, Map<String, Object>> userDetails = FirebaseConfig.get("user_details", 
+                    new TypeToken<Map<String, Map<String, Object>>>(){}.getType());
+                
+                Map<String, User> users = FirebaseConfig.get("users", 
+                    new TypeToken<Map<String, User>>(){}.getType());
+                
+                for (String matchedUserId : matches.keySet()) {
+                    if (matches.get(matchedUserId)) {  // Only if it's a true match
+                        User matchedUser = users.get(matchedUserId);
+                        if (matchedUser != null) {
+                            // Get chat ID
+                            String chatId = currentUserId.compareTo(matchedUserId) < 0 ? 
+                                currentUserId + "_" + matchedUserId : 
+                                matchedUserId + "_" + currentUserId;
+                            
+                            // Get chat metadata
+                            Map<String, Object> chatMeta = FirebaseConfig.get("messages/" + chatId + "/meta", 
+                                new TypeToken<Map<String, Object>>(){}.getType());
+                            
+                            String lastMessage = chatMeta != null ? (String) chatMeta.get("lastMessage") : "";
+                            
+                            // Create MatchedUser object
+                            MatchedUser user = new MatchedUser(
+                                matchedUser.getUsername(),
+                                "", // We'll implement photo loading later
+                                lastMessage != null && !lastMessage.isEmpty() ? lastMessage : "No messages yet",
+                                matchedUserId
+                            );
+                            matchedUsers.add(user);
+                        }
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                "Error loading matches: " + e.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+        }
+        
+        // Refresh the UI
+        createMatchList();
     }
     
     private void updateContentPanel() {
@@ -289,7 +353,7 @@ public class ChatSystem extends JFrame {
     
     private void openChat(MatchedUser user) {
         SwingUtilities.invokeLater(() -> {
-            MessageBox messageBox = new MessageBox(user.name, user.imagePath);
+            MessageBox messageBox = new MessageBox(user.name, user.imagePath, user.userId);
             messageBox.setVisible(true);
         });
     }
@@ -320,6 +384,98 @@ public class ChatSystem extends JFrame {
         
         headerPanel.addMouseListener(dragListener);
         headerPanel.addMouseMotionListener(dragListener);
+    }
+    
+    private void createMatchList() {
+        // Remove existing match panels if any
+        Component[] components = mainPanel.getComponents();
+        for (Component comp : components) {
+            if (comp instanceof JPanel && !(comp.equals(menuPanel))) {
+                mainPanel.remove(comp);
+            }
+        }
+        
+        // Create a panel for matches
+        JPanel matchesPanel = new JPanel();
+        matchesPanel.setLayout(new BoxLayout(matchesPanel, BoxLayout.Y_AXIS));
+        matchesPanel.setBackground(Color.WHITE);
+        
+        // Add each matched user
+        for (MatchedUser user : matchedUsers) {
+            JPanel userPanel = createUserPanel(user);
+            matchesPanel.add(userPanel);
+            matchesPanel.add(Box.createRigidArea(new Dimension(0, 1))); // Small gap between users
+        }
+        
+        // If no matches, show a message
+        if (matchedUsers.isEmpty()) {
+            JLabel noMatchesLabel = new JLabel("No matches yet");
+            noMatchesLabel.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+            noMatchesLabel.setForeground(Color.GRAY);
+            noMatchesLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            matchesPanel.add(Box.createVerticalGlue());
+            matchesPanel.add(noMatchesLabel);
+            matchesPanel.add(Box.createVerticalGlue());
+        }
+        
+        // Add the matches panel to a scroll pane
+        JScrollPane scrollPane = new JScrollPane(matchesPanel);
+        scrollPane.setBorder(null);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        
+        // Add to main panel
+        mainPanel.add(scrollPane, BorderLayout.CENTER);
+        mainPanel.revalidate();
+        mainPanel.repaint();
+    }
+    
+    private JPanel createUserPanel(MatchedUser user) {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(Color.WHITE);
+        panel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(230, 230, 230)),
+            BorderFactory.createEmptyBorder(10, 15, 10, 15)
+        ));
+        
+        // User info panel (left side)
+        JPanel infoPanel = new JPanel(new BorderLayout());
+        infoPanel.setBackground(Color.WHITE);
+        
+        // Username
+        JLabel nameLabel = new JLabel(user.name);
+        nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        infoPanel.add(nameLabel, BorderLayout.NORTH);
+        
+        // Last message
+        JLabel messageLabel = new JLabel(user.lastMessage);
+        messageLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        messageLabel.setForeground(Color.GRAY);
+        infoPanel.add(messageLabel, BorderLayout.CENTER);
+        
+        panel.add(infoPanel, BorderLayout.CENTER);
+        
+        // Make the panel clickable
+        panel.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        panel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                openChat(user);
+            }
+            
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                panel.setBackground(new Color(245, 245, 245));
+                infoPanel.setBackground(new Color(245, 245, 245));
+            }
+            
+            @Override
+            public void mouseExited(MouseEvent e) {
+                panel.setBackground(Color.WHITE);
+                infoPanel.setBackground(Color.WHITE);
+            }
+        });
+        
+        return panel;
     }
     
     public static void main(String args[]) {

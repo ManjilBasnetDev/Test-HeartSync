@@ -16,6 +16,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.RoundRectangle2D;
 import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -31,6 +32,11 @@ import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.border.EmptyBorder;
+import javax.swing.JOptionPane;
+
+import heartsync.model.User;
+import heartsync.model.Chat;
+import heartsync.dao.ChatDAO;
 
 public class MessageBox extends JFrame {
     private static final int WINDOW_RADIUS = 20;
@@ -45,21 +51,33 @@ public class MessageBox extends JFrame {
     private final ArrayList<Message> messages;
     private final String userName;
     private final String userImage;
+    private final String chatId;
+    private final ChatDAO chatDAO;
+    private final String currentUserId;
+    private final String otherUserId;
     
     private static class Message {
         String content;
         boolean isSent;
+        long timestamp;
         
-        Message(String content, boolean isSent) {
+        Message(String content, boolean isSent, long timestamp) {
             this.content = content;
             this.isSent = isSent;
+            this.timestamp = timestamp;
         }
     }
     
-    public MessageBox(String userName, String userImage) {
+    public MessageBox(String userName, String userImage, String otherUserId) {
         this.userName = userName;
         this.userImage = userImage;
+        this.otherUserId = otherUserId;
+        this.currentUserId = User.getCurrentUser().getUserId();
+        this.chatId = currentUserId.compareTo(otherUserId) < 0 ? 
+            currentUserId + "_" + otherUserId : 
+            otherUserId + "_" + currentUserId;
         this.messages = new ArrayList<>();
+        this.chatDAO = new ChatDAO();
         
         setTitle("Chat with " + userName);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
@@ -100,11 +118,15 @@ public class MessageBox extends JFrame {
         setContentPane(mainPanel);
         setShape(new RoundRectangle2D.Double(0, 0, getWidth(), getHeight(), WINDOW_RADIUS, WINDOW_RADIUS));
         
-        // Add sample messages
-        addSampleMessages();
+        // Load messages
+        loadMessages();
         
         // Make window draggable
         setupWindowDragging(headerPanel);
+        
+        // Set up message refresh timer
+        Timer refreshTimer = new Timer(5000, e -> loadMessages());
+        refreshTimer.start();
     }
     
     private JPanel createHeaderPanel() {
@@ -197,18 +219,33 @@ public class MessageBox extends JFrame {
     private void sendMessage() {
         String text = messageInput.getText().trim();
         if (!text.isEmpty()) {
-            messages.add(new Message(text, true));
-            updateChatPanel();
-            messageInput.setText("");
+            Chat chat = new Chat();
+            chat.setSenderId(currentUserId);
+            chat.setReceiverId(otherUserId);
+            chat.setMessage(text);
             
-            // Simulate received message after a delay
-            Timer timer = new Timer(1000, e -> {
-                messages.add(new Message("Thanks for your message!", false));
-                updateChatPanel();
-            });
-            timer.setRepeats(false);
-            timer.start();
+            if (chatDAO.sendMessage(chatId, chat)) {
+                messageInput.setText("");
+                loadMessages(); // Reload messages to show the new one
+            } else {
+                JOptionPane.showMessageDialog(this,
+                    "Error sending message. Please try again.",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+            }
         }
+    }
+    
+    private void loadMessages() {
+        List<Chat> chatMessages = chatDAO.getMessages(chatId);
+        messages.clear();
+        
+        for (Chat chat : chatMessages) {
+            boolean isSent = chat.getSenderId().equals(currentUserId);
+            messages.add(new Message(chat.getMessage(), isSent, chat.getTimestamp()));
+        }
+        
+        updateChatPanel();
     }
     
     private void updateChatPanel() {
@@ -248,13 +285,6 @@ public class MessageBox extends JFrame {
             JScrollBar vertical = scrollPane.getVerticalScrollBar();
             vertical.setValue(vertical.getMaximum());
         });
-    }
-    
-    private void addSampleMessages() {
-        messages.add(new Message("Hi there!", false));
-        messages.add(new Message("Hello! How are you?", true));
-        messages.add(new Message("I'm doing great, thanks for asking!", false));
-        updateChatPanel();
     }
     
     private void setupWindowDragging(JPanel dragPanel) {

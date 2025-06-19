@@ -115,11 +115,6 @@ public class FirebaseConfig {
         conn.getInputStream().close();
     }
 
-    // Helper for /chats/{chatId}
-    public static String getChatPath(String chatId) {
-        return "chats/" + chatId + "/messages";
-    }
-    
     // Helper for /matches/{userId}/{otherUserId}
     public static String getMatchPath(String userId, String otherUserId) {
         return "matches/" + userId + "/" + otherUserId;

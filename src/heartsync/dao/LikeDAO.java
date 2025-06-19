@@ -12,10 +12,19 @@ import heartsync.database.FirebaseConfig;
 public class LikeDAO {
     private static final String LIKES_PATH = "user_likes";
     private static final String PASSES_PATH = "user_passes";
+    private static final String MATCHES_PATH = "matches";
     
     public boolean addLike(String userId, String likedUserId) {
         try {
+            // Add the like
             FirebaseConfig.put(LIKES_PATH + "/" + userId + "/" + likedUserId, true);
+            
+            // Check for mutual like
+            if (checkMutualLike(userId, likedUserId)) {
+                // Create match entries for both users
+                createMatch(userId, likedUserId);
+                return true;
+            }
             return true;
         } catch (IOException e) {
             e.printStackTrace();
@@ -77,5 +86,48 @@ public class LikeDAO {
             e.printStackTrace();
             return false;
         }
+    }
+
+    // Check if there's a mutual like
+    private boolean checkMutualLike(String userId, String likedUserId) throws IOException {
+        Boolean mutualLike = FirebaseConfig.get(LIKES_PATH + "/" + likedUserId + "/" + userId, Boolean.class);
+        return mutualLike != null && mutualLike;
+    }
+
+    // Create match entries for both users
+    private void createMatch(String userId1, String userId2) throws IOException {
+        // Check if match already exists to prevent duplicates
+        Boolean existingMatch = FirebaseConfig.get(MATCHES_PATH + "/" + userId1 + "/" + userId2, Boolean.class);
+        if (existingMatch == null || !existingMatch) {
+            // Create match entries for both users
+            FirebaseConfig.put(MATCHES_PATH + "/" + userId1 + "/" + userId2, true);
+            FirebaseConfig.put(MATCHES_PATH + "/" + userId2 + "/" + userId1, true);
+        }
+    }
+
+    // Check if users are matched
+    public boolean isMatched(String userId1, String userId2) {
+        try {
+            Boolean match = FirebaseConfig.get(MATCHES_PATH + "/" + userId1 + "/" + userId2, Boolean.class);
+            return match != null && match;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    // Get all matches for a user
+    public List<String> getMatches(String userId) {
+        List<String> matches = new ArrayList<>();
+        try {
+            Map<String, Boolean> userMatches = FirebaseConfig.get(MATCHES_PATH + "/" + userId, 
+                new TypeToken<Map<String, Boolean>>(){}.getType());
+            if (userMatches != null) {
+                matches.addAll(userMatches.keySet());
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return matches;
     }
 } 

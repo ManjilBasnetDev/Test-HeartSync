@@ -13,7 +13,6 @@ import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.RenderingHints;
-import java.awt.Window;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -474,32 +473,25 @@ public class MoreInfoView extends JFrame {
             UserProfile profile = controller.getModel();
             boolean isEdit = profile.getFullName() != null && !profile.getFullName().isEmpty();
 
-            if (isEdit) {
-                JOptionPane.showMessageDialog(this,
-                    "Profile updated successfully!",
-                    "Success",
-                    JOptionPane.INFORMATION_MESSAGE);
-                this.dispose();
-                // Refresh My Profile section if open
-                UserProfile.setCurrentUser(null); // Force reload from Firebase
-                for (Window w : Window.getWindows()) {
-                    if (w instanceof Swipe) {
-                        ((Swipe) w).showProfile();
-                    }
-                }
-            } else {
-                JOptionPane.showMessageDialog(this,
-                    "Profile setup completed successfully!",
-                    "Success",
-                    JOptionPane.INFORMATION_MESSAGE);
-                this.dispose();
-                // Open HomePage
-                SwingUtilities.invokeLater(() -> {
-                    HomePage homePage = new HomePage(User.getCurrentUser());
-                    homePage.setLocationRelativeTo(null);
-                    homePage.setVisible(true);
-                });
-            }
+            // Show appropriate success message
+            JOptionPane.showMessageDialog(this,
+                isEdit ? "Profile updated successfully!" : "Profile setup completed successfully!",
+                "Success",
+                JOptionPane.INFORMATION_MESSAGE);
+            
+            // Close current window
+            this.dispose();
+            
+            // Force reload profile from Firebase
+            UserProfile.setCurrentUser(null);
+            
+            // Always open HomePage
+            SwingUtilities.invokeLater(() -> {
+                HomePage homePage = new HomePage(User.getCurrentUser());
+                homePage.setLocationRelativeTo(null);
+                homePage.setVisible(true);
+            });
+            
         } catch (Exception e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this,

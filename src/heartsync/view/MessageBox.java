@@ -40,10 +40,10 @@ import heartsync.dao.ChatDAO;
 
 public class MessageBox extends JFrame {
     private static final int WINDOW_RADIUS = 20;
-    private static final Color BACKGROUND_COLOR = new Color(255, 216, 227);
-    private static final Color HEADER_COLOR = new Color(102, 0, 51);
-    private static final Color MESSAGE_SENT_COLOR = new Color(64, 158, 255);
-    private static final Color MESSAGE_RECEIVED_COLOR = new Color(240, 240, 240);
+    private static final Color BACKGROUND_COLOR = new Color(255, 192, 203); // Baby pink #FFC0CB
+    private static final Color HEADER_COLOR = new Color(219, 112, 147); // PaleVioletRed - complementary to baby pink
+    private static final Color MESSAGE_SENT_COLOR = new Color(219, 112, 147); // Matching header color
+    private static final Color MESSAGE_RECEIVED_COLOR = new Color(255, 228, 225); // MistyRose - lighter pink
     
     private final JPanel mainPanel;
     private final JPanel chatPanel;
@@ -130,35 +130,24 @@ public class MessageBox extends JFrame {
     private JPanel createHeaderPanel() {
         JPanel header = new JPanel(new BorderLayout());
         header.setBackground(HEADER_COLOR);
-        header.setPreferredSize(new Dimension(getWidth(), 70));
+        header.setPreferredSize(new Dimension(getWidth(), 60)); // Slightly reduced height
         
         // Left panel with back button and user info
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
         leftPanel.setOpaque(false);
 
-        // Back button
-        JButton backButton = new JButton("← Back");
+        // Back button with updated style
+        JButton backButton = new JButton("←");
         backButton.setForeground(Color.WHITE);
         backButton.setBackground(HEADER_COLOR);
-        backButton.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        backButton.setFont(new Font("Segoe UI", Font.BOLD, 24));
         backButton.setBorder(BorderFactory.createEmptyBorder(5, 15, 5, 15));
         backButton.setFocusPainted(false);
         backButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        backButton.addActionListener(e -> {
-            dispose();
-        });
+        backButton.addActionListener(e -> dispose());
         leftPanel.add(backButton);
         
-        // User info
-        try {
-            ImageIcon imageIcon = new ImageIcon(getClass().getResource(userImage));
-            Image image = imageIcon.getImage().getScaledInstance(50, 50, Image.SCALE_SMOOTH);
-            JLabel imageLabel = new JLabel(new ImageIcon(image));
-            leftPanel.add(imageLabel);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        
+        // User name only
         JLabel nameLabel = new JLabel(userName);
         nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
         nameLabel.setForeground(Color.WHITE);
@@ -166,11 +155,11 @@ public class MessageBox extends JFrame {
         
         header.add(leftPanel, BorderLayout.WEST);
         
-        // Close button
-        JButton closeButton = new JButton("X");
+        // Close button with updated style
+        JButton closeButton = new JButton("×");
         closeButton.setForeground(Color.WHITE);
-        closeButton.setBackground(new Color(231, 76, 60));
-        closeButton.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        closeButton.setBackground(HEADER_COLOR);
+        closeButton.setFont(new Font("Segoe UI", Font.BOLD, 24));
         closeButton.setBorder(BorderFactory.createEmptyBorder(5, 15, 5, 15));
         closeButton.setFocusPainted(false);
         closeButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
@@ -186,18 +175,19 @@ public class MessageBox extends JFrame {
     
     private JPanel createInputPanel() {
         JPanel inputPanel = new JPanel(new BorderLayout(10, 10));
-        inputPanel.setBackground(Color.WHITE);
+        inputPanel.setBackground(BACKGROUND_COLOR); // Match main background
         inputPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
         
         messageInput = new JTextField();
         messageInput.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         messageInput.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(200, 200, 200)),
-            new EmptyBorder(5, 10, 5, 10)
+            BorderFactory.createLineBorder(new Color(219, 112, 147), 1), // Match header color
+            new EmptyBorder(8, 12, 8, 12)
         ));
+        messageInput.setBackground(new Color(255, 255, 255)); // White background for input
         
         JButton sendButton = new JButton("Send");
-        sendButton.setBackground(MESSAGE_SENT_COLOR);
+        sendButton.setBackground(HEADER_COLOR);
         sendButton.setForeground(Color.WHITE);
         sendButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
         sendButton.setBorder(new EmptyBorder(8, 20, 8, 20));
@@ -289,11 +279,11 @@ public class MessageBox extends JFrame {
         messageLabel.setOpaque(true);
         
         if (isSent) {
-            messageLabel.setBackground(new Color(0, 132, 255));
+            messageLabel.setBackground(MESSAGE_SENT_COLOR);
             messageLabel.setForeground(Color.WHITE);
             bubblePanel.add(messageLabel, BorderLayout.EAST);
         } else {
-            messageLabel.setBackground(new Color(240, 240, 240));
+            messageLabel.setBackground(MESSAGE_RECEIVED_COLOR);
             messageLabel.setForeground(Color.BLACK);
             bubblePanel.add(messageLabel, BorderLayout.WEST);
         }

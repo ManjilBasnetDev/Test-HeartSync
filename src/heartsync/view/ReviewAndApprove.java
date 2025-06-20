@@ -110,53 +110,62 @@ public class ReviewAndApprove extends JPanel {
         profilePic.setMaximumSize(new Dimension(100, 100));
         profilePic.setAlignmentX(Component.CENTER_ALIGNMENT);
         
-        // Try to load profile image from Firebase
+        // Load profile image with fallback handling
+        BufferedImage profileImage = null;
+        
+        // Try loading from Firebase first
         try {
             String imageUrl = FirebaseStorageManager.getProfileImageUrl(user.getUserId());
             if (imageUrl != null && !imageUrl.isEmpty()) {
                 URL url = new URL(imageUrl);
-                BufferedImage originalImage = ImageIO.read(url);
-                
-                // Create circular mask
-                BufferedImage circularImage = new BufferedImage(100, 100, BufferedImage.TYPE_INT_ARGB);
-                Graphics2D g2 = circularImage.createGraphics();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setClip(new java.awt.geom.Ellipse2D.Float(0, 0, 100, 100));
-                g2.drawImage(originalImage.getScaledInstance(100, 100, Image.SCALE_SMOOTH), 0, 0, null);
-                g2.dispose();
-                
-                profilePic.setIcon(new ImageIcon(circularImage));
-            } else {
-                // Use default image if no profile picture
-                ImageIcon defaultIcon = new ImageIcon(getClass().getResource("/ImagePicker/RajeshHamalPhoto.png"));
-                Image img = defaultIcon.getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH);
-                
-                // Create circular mask for default image
-                BufferedImage circularImage = new BufferedImage(100, 100, BufferedImage.TYPE_INT_ARGB);
-                Graphics2D g2 = circularImage.createGraphics();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setClip(new java.awt.geom.Ellipse2D.Float(0, 0, 100, 100));
-                g2.drawImage(img, 0, 0, null);
-                g2.dispose();
-                
-                profilePic.setIcon(new ImageIcon(circularImage));
+                profileImage = ImageIO.read(url);
             }
         } catch (Exception e) {
-            // Use default image on error
-            ImageIcon defaultIcon = new ImageIcon(getClass().getResource("/ImagePicker/RajeshHamalPhoto.png"));
-            Image img = defaultIcon.getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH);
-            
-            // Create circular mask for default image
-            BufferedImage circularImage = new BufferedImage(100, 100, BufferedImage.TYPE_INT_ARGB);
-            Graphics2D g2 = circularImage.createGraphics();
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.setClip(new java.awt.geom.Ellipse2D.Float(0, 0, 100, 100));
-            g2.drawImage(img, 0, 0, null);
-            g2.dispose();
-            
-            profilePic.setIcon(new ImageIcon(circularImage));
+            // Failed to load from Firebase, continue to fallback
         }
         
+        // First fallback: Try loading local default image
+        if (profileImage == null) {
+            try {
+                URL defaultImageUrl = getClass().getResource("/ImagePicker/RajeshHamalPhoto.png");
+                if (defaultImageUrl != null) {
+                    profileImage = ImageIO.read(defaultImageUrl);
+                }
+            } catch (Exception e) {
+                // Failed to load default image, continue to final fallback
+            }
+        }
+        
+        // Final fallback: Generate colored circle with initials
+        if (profileImage == null) {
+            profileImage = new BufferedImage(100, 100, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g2 = profileImage.createGraphics();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            
+            // Draw colored circle
+            g2.setColor(new Color(41, 128, 185));
+            g2.fillOval(0, 0, 100, 100);
+            
+            // Draw initials
+            g2.setColor(Color.WHITE);
+            g2.setFont(new Font("SansSerif", Font.BOLD, 36));
+            String initials = user.getUsername().substring(0, 1).toUpperCase();
+            FontMetrics fm = g2.getFontMetrics();
+            int x = (100 - fm.stringWidth(initials)) / 2;
+            int y = ((100 - fm.getHeight()) / 2) + fm.getAscent();
+            g2.drawString(initials, x, y);
+            g2.dispose();
+        }
+        
+        // Create circular mask for the image
+        BufferedImage circularImage = new BufferedImage(100, 100, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2 = circularImage.createGraphics();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setClip(new java.awt.geom.Ellipse2D.Float(0, 0, 100, 100));
+        g2.drawImage(profileImage.getScaledInstance(100, 100, Image.SCALE_SMOOTH), 0, 0, null);
+        g2.dispose();
+        
+        profilePic.setIcon(new ImageIcon(circularImage));
         userPanel.add(profilePic);
         userPanel.add(Box.createRigidArea(new Dimension(0, 10)));
         

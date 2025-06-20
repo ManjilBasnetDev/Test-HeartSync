@@ -38,6 +38,16 @@ public class HomePage extends JFrame {
     
     // Keep track of current navigation
     private JLabel currentNavItem;
+    
+    // Static instance tracker
+    private static HomePage instance;
+    
+    public static HomePage getInstance() {
+        if (instance == null || !instance.isDisplayable()) {
+            instance = new HomePage();
+        }
+        return instance;
+    }
 
     private final User currentUser;
 
@@ -159,10 +169,12 @@ public class HomePage extends JFrame {
         
         // Add login button click handler
         loginButton.addActionListener(e -> {
+            setVisible(false);
+            dispose();
+            instance = null;
             LoginView loginView = new LoginView();
             loginView.setLocationRelativeTo(null);
             loginView.setVisible(true);
-            this.dispose(); // Close the HomePage when opening login
         });
         
         // Add navigation items

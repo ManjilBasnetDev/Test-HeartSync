@@ -190,6 +190,12 @@ public class LoginController {
                     view.dispose();
                 }
                 
+                // Close any existing HomePage instance
+                HomePage homePage = HomePage.getInstance();
+                if (homePage != null && homePage.isDisplayable()) {
+                    homePage.dispose();
+                }
+                
                 // Check user type and open appropriate view
                 String userType = user.getUserType();
                 if (userType != null && userType.equalsIgnoreCase("admin")) {
@@ -199,13 +205,8 @@ public class LoginController {
                     // Show the Swipe view for regular users
                     WindowManager.show(Swipe.class, () -> new Swipe(), null);
                 }
-                
-            } catch (Exception e) {
-                logger.log(Level.SEVERE, "Error opening user view", e);
-                if (view != null) {
-                    view.showMessage("Error initializing application view: " + e.getMessage(),
-                                   "Initialization Error", JOptionPane.ERROR_MESSAGE);
-                }
+            } catch (Exception ex) {
+                logger.log(Level.SEVERE, "Error opening user view", ex);
             }
         });
     }

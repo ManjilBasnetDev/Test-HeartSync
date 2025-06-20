@@ -39,12 +39,11 @@ public class LoginView extends javax.swing.JFrame {
         
         // --- Back Button Logic ---
         jButton1.addActionListener(evt -> {
-            // Let the controller handle the back action
-            if (controller != null) {
-                controller.handleBack();
-            } else {
-                dispose();
-            }
+            dispose(); // Close login view
+            // Create and show a fresh HomePage
+            HomePage homePage = new HomePage();
+            homePage.setLocationRelativeTo(null);
+            homePage.setVisible(true);
         });
         
         // --- Show/Hide Toggle Logic ---
@@ -384,7 +383,15 @@ jToggleButton1.setPreferredSize(new java.awt.Dimension(70, 32));
     
     // ----- Controller Integration Methods -----
     public void addLoginButtonListener(java.awt.event.ActionListener l) {
-        jButton2.addActionListener(l);
+        jButton2.addActionListener(e -> {
+            // Get the HomePage instance and dispose it if it exists
+            HomePage homePage = HomePage.getInstance();
+            if (homePage != null && homePage.isDisplayable()) {
+                homePage.dispose();
+            }
+            // Forward the event to the actual listener
+            l.actionPerformed(e);
+        });
     }
 
     public void addBackButtonListener(java.awt.event.ActionListener l) {

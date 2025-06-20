@@ -21,9 +21,11 @@ public class FirebaseStorageManager {
             if (user != null && user.getProfilePictureUrl() != null && !user.getProfilePictureUrl().isEmpty()) {
                 return user.getProfilePictureUrl();
             }
+            // Return null to trigger fallback mechanism
             return null;
         } catch (Exception e) {
             e.printStackTrace();
+            // Return null on error to trigger fallback mechanism
             return null;
         }
     }

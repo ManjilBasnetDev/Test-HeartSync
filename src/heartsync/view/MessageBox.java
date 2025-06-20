@@ -81,7 +81,7 @@ public class MessageBox extends JFrame {
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setSize(500, 700);
         setLocationRelativeTo(null);
-        setUndecorated(false);
+        setUndecorated(true);
         
         // Main panel with rounded corners
         mainPanel = new JPanel(new BorderLayout()) {

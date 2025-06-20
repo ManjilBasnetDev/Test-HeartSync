@@ -34,11 +34,11 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.border.EmptyBorder;
 
-// Add these imports
-import heartsync.view.Swipe;
-import heartsync.view.MessageBox;
 import heartsync.model.User;
+import heartsync.model.UserProfile;
+import heartsync.database.DatabaseManagerProfile;
 import heartsync.database.FirebaseConfig;
+import heartsync.navigation.WindowManager;
 import com.google.gson.reflect.TypeToken;
 
 public class ChatSystem extends JFrame {
@@ -132,11 +132,8 @@ public class ChatSystem extends JFrame {
         backButton.setFocusPainted(false);
         backButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         backButton.addActionListener(e -> {
-            this.dispose();
-            SwingUtilities.invokeLater(() -> {
-                Swipe swipe = new Swipe();
-                swipe.setVisible(true);
-            });
+            dispose();
+            heartsync.navigation.WindowManager.show(Swipe.class, Swipe::new, null);
         });
         leftPanel.add(backButton);
         

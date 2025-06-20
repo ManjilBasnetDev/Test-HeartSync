@@ -6,6 +6,8 @@ import com.google.gson.reflect.TypeToken;
 import java.util.Map;
 import java.util.UUID;
 import java.io.IOException;
+import java.util.List;
+import java.util.ArrayList;
 
 public class UserDAO {
     public UserDAO() {}
@@ -110,5 +112,24 @@ public class UserDAO {
     // Get user by username (alias)
     public User getUser(String username) {
         return getUserByUsername(username);
+    }
+
+    public List<User> getAllUsers() throws Exception {
+        List<User> users = new ArrayList<>();
+        try {
+            Map<String, Object> allUsers = FirebaseConfig.get("users", new TypeToken<Map<String, Object>>(){}.getType());
+            if (allUsers != null) {
+                for (Map.Entry<String, Object> entry : allUsers.entrySet()) {
+                    String userId = entry.getKey();
+                    User user = getUserById(userId);
+                    if (user != null) {
+                        users.add(user);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            throw new Exception("Error getting all users: " + e.getMessage());
+        }
+        return users;
     }
 }

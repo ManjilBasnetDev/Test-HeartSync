@@ -19,6 +19,7 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.GridLayout;
 import java.awt.Image;
 import java.awt.Insets;
 import java.awt.RenderingHints;
@@ -59,6 +60,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.ScrollPaneConstants;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
@@ -69,10 +71,12 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import heartsync.controller.UserProfileController;
 import heartsync.dao.LikeDAO;
 import heartsync.database.DatabaseManagerProfile;
+import heartsync.database.FirebaseConfig;
 import heartsync.model.User;
 import heartsync.model.UserProfile;
 import heartsync.navigation.WindowManager;
-import heartsync.database.FirebaseConfig;
+import heartsync.view.ChatSystem;
+
 import com.google.gson.reflect.TypeToken;
 
 /**
@@ -1030,77 +1034,6 @@ public class Swipe extends JFrame {
         nameAge.setHorizontalAlignment(SwingConstants.CENTER);
         card.add(nameAge, gbc);
         gbc.gridy++;
-<<<<<<< HEAD
-        
-        UserProfile currentProfile = UserProfile.getCurrentUser();
-        
-        // Basic Information
-        addDetailRow(profilePanel, "Full Name:", currentProfile.getFullName(), gbc);
-        gbc.gridy++;
-        
-        addDetailRow(profilePanel, "Height:", currentProfile.getHeight() + " cm", gbc);
-        gbc.gridy++;
-        
-        addDetailRow(profilePanel, "Country:", currentProfile.getCountry(), gbc);
-        gbc.gridy++;
-        
-        addDetailRow(profilePanel, "Address:", currentProfile.getAddress(), gbc);
-        gbc.gridy++;
-        
-        addDetailRow(profilePanel, "Phone Number:", currentProfile.getPhoneNumber(), gbc);
-        gbc.gridy++;
-        
-        addDetailRow(profilePanel, "Gender:", currentProfile.getGender(), gbc);
-        gbc.gridy++;
-        
-        addDetailRow(profilePanel, "Education:", currentProfile.getEducation(), gbc);
-        gbc.gridy++;
-        
-        addDetailRow(profilePanel, "Interested In:", currentProfile.getPreferences(), gbc);
-        gbc.gridy++;
-        
-        // Hobbies section
-        gbc.gridwidth = 2;
-        addSectionHeader(profilePanel, "Hobbies", gbc);
-        gbc.gridy++;
-        
-        List<String> hobbies = currentProfile.getHobbies();
-        if (hobbies != null && !hobbies.isEmpty()) {
-            JTextArea hobbiesArea = new JTextArea(String.join(", ", hobbies));
-            hobbiesArea.setWrapStyleWord(true);
-            hobbiesArea.setLineWrap(true);
-            hobbiesArea.setOpaque(false);
-            hobbiesArea.setEditable(false);
-            hobbiesArea.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-            hobbiesArea.setBorder(new EmptyBorder(10, 10, 10, 10));
-            
-            JScrollPane scrollPane = new JScrollPane(hobbiesArea);
-            scrollPane.setPreferredSize(new Dimension(400, 60));
-            scrollPane.setBorder(BorderFactory.createEmptyBorder());
-            scrollPane.setOpaque(false);
-            scrollPane.getViewport().setOpaque(false);
-            
-            gbc.fill = GridBagConstraints.HORIZONTAL;
-            profilePanel.add(scrollPane, gbc);
-            gbc.gridy++;
-        }
-        
-        // Relationship Goals section
-        addSectionHeader(profilePanel, "Relationship Goals", gbc);
-        gbc.gridy++;
-        
-        JLabel relationshipGoal = new JLabel(currentProfile.getRelationshipGoal());
-        relationshipGoal.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        relationshipGoal.setBorder(new EmptyBorder(10, 10, 10, 10));
-        profilePanel.add(relationshipGoal, gbc);
-        gbc.gridy++;
-        
-        // About Me section
-        addSectionHeader(profilePanel, "About Me", gbc);
-        gbc.gridy++;
-        
-        JTextArea aboutMe = new JTextArea(currentProfile.getAboutMe());
-=======
 
         // Location
         JLabel location = new JLabel(UserProfile.getCurrentUser().getAddress() + (UserProfile.getCurrentUser().getCountry() != null ? ", " + UserProfile.getCurrentUser().getCountry() : ""));
@@ -1117,7 +1050,6 @@ public class Swipe extends JFrame {
         card.add(aboutHeader, gbc);
         gbc.gridy++;
         JTextArea aboutMe = new JTextArea(UserProfile.getCurrentUser().getAboutMe());
->>>>>>> 1e751b03e14418f4fd6b384329009b4a6fad77f0
         aboutMe.setWrapStyleWord(true);
         aboutMe.setLineWrap(true);
         aboutMe.setOpaque(false);
@@ -1271,8 +1203,8 @@ public class Swipe extends JFrame {
     }
 
     private void openProfileEditor() {
-        String currentUsername = ""; // TODO: Get actual username from session
-        UserProfile userProfile = loadUserProfile(currentUsername);
+        String currentUsername = heartsync.model.User.getCurrentUser().getUsername();
+        UserProfile userProfile = heartsync.database.DatabaseManagerProfile.getInstance().getUserProfile(currentUsername);
         
         if (userProfile != null) {
             UserProfileController controller = new UserProfileController(userProfile, currentUsername);
@@ -1331,9 +1263,13 @@ public class Swipe extends JFrame {
         topPanel.add(navigationPanel, BorderLayout.NORTH);
         mainPanel.add(topPanel, BorderLayout.NORTH);
         
-        // Create and add profile panel
-        JPanel profilePanel = createProfilePanel();
-        mainPanel.add(profilePanel, BorderLayout.CENTER);
+        // Load current user's profile from Firebase
+        String currentUsername = heartsync.model.User.getCurrentUser().getUsername();
+        UserProfile currentProfile = heartsync.database.DatabaseManagerProfile.getInstance().getUserProfile(currentUsername);
+        if (currentProfile != null) {
+            UserProfile.setCurrentUser(currentProfile);
+            displayUserProfile(currentProfile);
+        }
         
         // Update navigation indicators
         exploreLabel.setForeground(NAV_COLOR);
@@ -1347,130 +1283,6 @@ public class Swipe extends JFrame {
     private void setupProfiles() {
         profiles = new ArrayList<>();
         try {
-<<<<<<< HEAD
-            // Get current user and their profile
-            User currentUser = User.getCurrentUser();
-            if (currentUser == null) {
-                JOptionPane.showMessageDialog(this,
-                    "Error: Current user not found",
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-            
-            String currentUsername = currentUser.getUsername();
-            currentUserId = currentUser.getUserId();
-            
-            // Get current user's gender from user_details using username
-            String currentUserGender = null;
-            try {
-                Map<String, Object> userDetails = FirebaseConfig.get("user_details/" + currentUsername, 
-                    new TypeToken<Map<String, Object>>(){}.getType());
-                
-                if (userDetails != null && userDetails.containsKey("gender")) {
-                    currentUserGender = (String) userDetails.get("gender");
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-                JOptionPane.showMessageDialog(this,
-                    "Error fetching user gender: " + e.getMessage(),
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-            
-            if (currentUserGender == null) {
-                JOptionPane.showMessageDialog(this,
-                    "Please set your gender in your profile first",
-                    "Profile Incomplete",
-                    JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-            
-            // Get all users and their details
-            Map<String, User> allUsers = FirebaseConfig.get("users", 
-                new TypeToken<Map<String, User>>(){}.getType());
-            
-            Map<String, Map<String, Object>> allUserDetails = FirebaseConfig.get("user_details", 
-                new TypeToken<Map<String, Map<String, Object>>>(){}.getType());
-            
-            // Get liked and passed users
-            Map<String, Boolean> likes = FirebaseConfig.get("user_likes/" + currentUserId + "/likes",
-                new TypeToken<Map<String, Boolean>>(){}.getType());
-            Map<String, Boolean> passes = FirebaseConfig.get("user_likes/" + currentUserId + "/passes",
-                new TypeToken<Map<String, Boolean>>(){}.getType());
-            
-            Set<String> likedUsers = new HashSet<>();
-            Set<String> passedUsers = new HashSet<>();
-            
-            if (likes != null) likedUsers.addAll(likes.keySet());
-            if (passes != null) passedUsers.addAll(passes.keySet());
-            
-            if (allUsers != null && allUserDetails != null) {
-                // First, create a map of username to userId for faster lookup
-                Map<String, String> usernameToId = new HashMap<>();
-                for (Map.Entry<String, User> entry : allUsers.entrySet()) {
-                    usernameToId.put(entry.getValue().getUsername(), entry.getKey());
-                }
-                
-                // Now process each user from user_details
-                for (Map.Entry<String, Map<String, Object>> entry : allUserDetails.entrySet()) {
-                    String username = entry.getKey();
-                    Map<String, Object> details = entry.getValue();
-                    
-                    // Skip current user
-                    if (username.equals(currentUsername)) continue;
-                    
-                    // Get userId from the map we created
-                    String userId = usernameToId.get(username);
-                    if (userId == null) continue;
-                    
-                    // Skip if user has been liked or passed
-                    if (likedUsers.contains(userId) || passedUsers.contains(userId)) continue;
-                    
-                    // Get gender and check if it's different from current user
-                    String userGender = (String) details.get("gender");
-                    if (userGender == null || userGender.equals(currentUserGender)) continue;
-                    
-                    // Get required profile information
-                    String name = (String) details.get("fullName");
-                    String dateOfBirth = (String) details.get("dateOfBirth");
-                    String bio = (String) details.get("aboutMe");
-                    String profilePicPath = (String) details.get("profilePicPath");
-                    
-                    // Skip if required information is missing
-                    if (name == null || name.isEmpty() || profilePicPath == null || profilePicPath.isEmpty()) continue;
-                    
-                    // Calculate age
-                    int age = calculateAge(dateOfBirth);
-                    
-                    // Create photos list
-                    List<String> photos = new ArrayList<>();
-                    photos.add(profilePicPath);
-                    
-                    // Add to profiles list
-                    profiles.add(new ProfileData(name, age, bio != null ? bio : "", photos, userId));
-                }
-            }
-            
-            // Save a copy for filtering
-            allProfiles = new ArrayList<>(profiles);
-            
-            // Show first profile if available
-            if (!profiles.isEmpty()) {
-                showCurrentProfile();
-            } else {
-                showCurrentProfile(); // Will show the "no profiles" message
-            }
-            
-        } catch (IOException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this,
-                "Error loading profiles: " + e.getMessage(),
-                "Error",
-                JOptionPane.ERROR_MESSAGE);
-        }
-=======
             String currentUsername = heartsync.model.User.getCurrentUser().getUsername();
             List<UserProfile> otherProfiles = heartsync.database.DatabaseManagerProfile.getInstance().getAllUserProfilesExcept(currentUsername);
             for (UserProfile userProfile : otherProfiles) {
@@ -1483,14 +1295,13 @@ public class Swipe extends JFrame {
                 } else {
                     photos.add("RajeshHamalPhoto.png");
                 }
-                profiles.add(new ProfileData(name, age, bio, photos));
+                profiles.add(new ProfileData(name, age, bio, photos, userProfile.getUsername()));
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
         allProfiles = new ArrayList<>(profiles);
         currentIndex = 0;
->>>>>>> 1e751b03e14418f4fd6b384329009b4a6fad77f0
     }
     
     private JTextField createSearchField() {
@@ -1677,136 +1488,86 @@ public class Swipe extends JFrame {
         });
     }
 
-    private void displayUserProfile(UserProfile profile) {
+    private void displayUserProfile(heartsync.model.UserProfile profile) {
         // Create profile panel
         JPanel profilePanel = new JPanel(new GridBagLayout());
         profilePanel.setBackground(BACKGROUND_COLOR);
-        profilePanel.setBorder(new EmptyBorder(20, 20, 20, 20));
-        
+        profilePanel.setBorder(new EmptyBorder(40, 0, 40, 0));
+
+        // Add profile information
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 0;
-        gbc.gridwidth = 2;
         gbc.anchor = GridBagConstraints.CENTER;
         gbc.insets = new Insets(10, 10, 20, 10);
-        
+
         // Profile picture
         JLabel profilePicture = createProfilePicture();
         profilePicture.setPreferredSize(new Dimension(150, 150));
         profilePanel.add(profilePicture, gbc);
-        
-        // Reset gridwidth for other components
-        gbc.gridwidth = 1;
+
+        // Add profile details
+        addProfileDetails(profilePanel, profile, gbc);
+
+        // Add profile panel to main panel
+        mainPanel.add(profilePanel, BorderLayout.CENTER);
+        mainPanel.revalidate();
+        mainPanel.repaint();
+    }
+
+    private void addProfileDetails(JPanel panel, heartsync.model.UserProfile profile, GridBagConstraints gbc) {
         gbc.gridy++;
         
-        // Add profile information
-        addSectionHeader(profilePanel, "Personal Information", gbc);
+        // Name and age
+        JLabel nameAge = new JLabel(profile.getFullName() + ", " + calculateAge(profile.getDateOfBirth()));
+        nameAge.setFont(new Font("Segoe UI", Font.BOLD, 34));
+        nameAge.setHorizontalAlignment(SwingConstants.CENTER);
+        panel.add(nameAge, gbc);
         gbc.gridy++;
-        
-        // Basic Information
-        addDetailRow(profilePanel, "Full Name:", profile.getFullName(), gbc);
-        gbc.gridy++;
-        
-        addDetailRow(profilePanel, "Height:", profile.getHeight() + " cm", gbc);
-        gbc.gridy++;
-        
-        addDetailRow(profilePanel, "Country:", profile.getCountry(), gbc);
-        gbc.gridy++;
-        
-        addDetailRow(profilePanel, "Address:", profile.getAddress(), gbc);
-        gbc.gridy++;
-        
-        addDetailRow(profilePanel, "Phone Number:", profile.getPhoneNumber(), gbc);
-        gbc.gridy++;
-        
-        addDetailRow(profilePanel, "Gender:", profile.getGender(), gbc);
-        gbc.gridy++;
-        
-        addDetailRow(profilePanel, "Education:", profile.getEducation(), gbc);
-        gbc.gridy++;
-        
-        addDetailRow(profilePanel, "Interested In:", profile.getPreferences(), gbc);
-        gbc.gridy++;
-        
-        // Hobbies section
-        gbc.gridwidth = 2;
-        addSectionHeader(profilePanel, "Hobbies", gbc);
-        gbc.gridy++;
-        
-        List<String> hobbies = profile.getHobbies();
-        if (hobbies != null && !hobbies.isEmpty()) {
-            JTextArea hobbiesArea = new JTextArea(String.join(", ", hobbies));
-            hobbiesArea.setWrapStyleWord(true);
-            hobbiesArea.setLineWrap(true);
-            hobbiesArea.setOpaque(false);
-            hobbiesArea.setEditable(false);
-            hobbiesArea.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-            hobbiesArea.setBorder(new EmptyBorder(10, 10, 10, 10));
-            
-            JScrollPane scrollPane = new JScrollPane(hobbiesArea);
-            scrollPane.setPreferredSize(new Dimension(400, 60));
-            scrollPane.setBorder(BorderFactory.createEmptyBorder());
-            scrollPane.setOpaque(false);
-            scrollPane.getViewport().setOpaque(false);
-            
-            gbc.fill = GridBagConstraints.HORIZONTAL;
-            profilePanel.add(scrollPane, gbc);
+
+        // Location
+        if (profile.getAddress() != null || profile.getCountry() != null) {
+            String locationText = (profile.getAddress() != null ? profile.getAddress() : "") +
+                                (profile.getCountry() != null ? ", " + profile.getCountry() : "");
+            JLabel location = new JLabel(locationText);
+            location.setFont(new Font("Segoe UI", Font.PLAIN, 22));
+            location.setForeground(new Color(120,120,120));
+            panel.add(location, gbc);
             gbc.gridy++;
         }
-        
-        // Relationship Goals section
-        addSectionHeader(profilePanel, "Relationship Goals", gbc);
-        gbc.gridy++;
-        
-        JLabel relationshipGoal = new JLabel(profile.getRelationshipGoal());
-        relationshipGoal.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        relationshipGoal.setBorder(new EmptyBorder(10, 10, 10, 10));
-        profilePanel.add(relationshipGoal, gbc);
-        gbc.gridy++;
-        
+
         // About Me section
-        addSectionHeader(profilePanel, "About Me", gbc);
-        gbc.gridy++;
-        
-        JTextArea aboutMe = new JTextArea(profile.getAboutMe());
-        aboutMe.setWrapStyleWord(true);
-        aboutMe.setLineWrap(true);
-        aboutMe.setOpaque(false);
-        aboutMe.setEditable(false);
-        aboutMe.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        aboutMe.setBorder(new EmptyBorder(10, 10, 10, 10));
-        
-        JScrollPane scrollPane = new JScrollPane(aboutMe);
-        scrollPane.setPreferredSize(new Dimension(400, 100));
-        scrollPane.setBorder(BorderFactory.createEmptyBorder());
-        scrollPane.setOpaque(false);
-        scrollPane.getViewport().setOpaque(false);
-        
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        profilePanel.add(scrollPane, gbc);
-        gbc.gridy++;
-        
-        // Action buttons
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
+        if (profile.getAboutMe() != null && !profile.getAboutMe().isEmpty()) {
+            JLabel aboutHeader = new JLabel("About Me");
+            aboutHeader.setFont(new Font("Segoe UI", Font.BOLD, 26));
+            aboutHeader.setForeground(new Color(229, 89, 36));
+            aboutHeader.setBorder(new EmptyBorder(20,0,10,0));
+            panel.add(aboutHeader, gbc);
+            gbc.gridy++;
+
+            JTextArea aboutMe = new JTextArea(profile.getAboutMe());
+            aboutMe.setWrapStyleWord(true);
+            aboutMe.setLineWrap(true);
+            aboutMe.setOpaque(false);
+            aboutMe.setEditable(false);
+            aboutMe.setFont(new Font("Segoe UI", Font.PLAIN, 20));
+            aboutMe.setBorder(new EmptyBorder(0, 0, 20, 0));
+            panel.add(aboutMe, gbc);
+            gbc.gridy++;
+        }
+
+        // Action buttons at the bottom
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 30, 0));
         buttonPanel.setOpaque(false);
-        
         JButton editButton = createProfileButton("Edit Profile");
         editButton.addActionListener(e -> openProfileEditor());
-        
-        JButton photoButton = createProfileButton("Change Photo");
-        photoButton.addActionListener(e -> openPhotoUploader());
-        
+        JButton postPicButton = createProfileButton("Post Pictures");
+        postPicButton.addActionListener(e -> openPhotoUploader());
         buttonPanel.add(editButton);
-        buttonPanel.add(photoButton);
+        buttonPanel.add(postPicButton);
         
         gbc.gridy++;
-        profilePanel.add(buttonPanel, gbc);
-        
-        // Add profile panel to card panel
-        cardPanel.removeAll();
-        cardPanel.add(profilePanel, BorderLayout.CENTER);
-        cardPanel.revalidate();
-        cardPanel.repaint();
+        panel.add(buttonPanel, gbc);
     }
 
     private int calculateAge(String dateOfBirth) {

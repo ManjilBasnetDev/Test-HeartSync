@@ -76,8 +76,37 @@ public class DatabaseManagerProfile {
     public UserProfile getUserProfile(String username) {
         try {
             String path = PROFILES_PATH + "/" + username;
-            return FirebaseConfig.get(path, UserProfile.class);
+            Map<String, Object> profileData = FirebaseConfig.get(path, new TypeToken<Map<String, Object>>(){}.getType());
+            
+            if (profileData != null) {
+                UserProfile profile = new UserProfile();
+                profile.setUsername((String) profileData.getOrDefault("username", ""));
+                profile.setFullName((String) profileData.getOrDefault("fullName", ""));
+                
+                Object heightObj = profileData.get("height");
+                if (heightObj instanceof Number) {
+                    profile.setHeight(((Number) heightObj).intValue());
+                }
+                
+                profile.setCountry((String) profileData.getOrDefault("country", ""));
+                profile.setAddress((String) profileData.getOrDefault("address", ""));
+                profile.setPhoneNumber((String) profileData.getOrDefault("phoneNumber", ""));
+                profile.setGender((String) profileData.getOrDefault("gender", ""));
+                profile.setEducation((String) profileData.getOrDefault("education", ""));
+                profile.setPreferences((String) profileData.getOrDefault("preferences", ""));
+                
+                Object hobbiesObj = profileData.get("hobbies");
+                if (hobbiesObj instanceof List) {
+                    profile.setHobbies((List<String>) hobbiesObj);
+                }
+                
+                profile.setRelationshipGoal((String) profileData.getOrDefault("relationshipGoal", ""));
+                profile.setAboutMe((String) profileData.getOrDefault("aboutMe", ""));
+                profile.setProfilePicPath((String) profileData.getOrDefault("profilePicPath", ""));
+                return profile;
+            }
         } catch (Exception e) {
+            System.err.println("Error loading profile for " + username + ": " + e.getMessage());
             e.printStackTrace();
         }
         return null;
@@ -85,16 +114,48 @@ public class DatabaseManagerProfile {
 
     public List<UserProfile> getAllUserProfilesExcept(String username) {
         try {
-            Map<String, UserProfile> profiles = FirebaseConfig.get(PROFILES_PATH, 
-                new TypeToken<Map<String, UserProfile>>(){}.getType());
+            Map<String, Map<String, Object>> profiles = FirebaseConfig.get(PROFILES_PATH, 
+                new TypeToken<Map<String, Map<String, Object>>>(){}.getType());
             
             if (profiles != null) {
                 return profiles.entrySet().stream()
                     .filter(entry -> !entry.getKey().equals(username))
-                    .map(Map.Entry::getValue)
+                    .map(entry -> {
+                        Map<String, Object> profileData = entry.getValue();
+                        if (profileData != null) {
+                            UserProfile profile = new UserProfile();
+                            profile.setUsername((String) profileData.getOrDefault("username", ""));
+                            profile.setFullName((String) profileData.getOrDefault("fullName", ""));
+                            
+                            Object heightObj = profileData.get("height");
+                            if (heightObj instanceof Number) {
+                                profile.setHeight(((Number) heightObj).intValue());
+                            }
+                            
+                            profile.setCountry((String) profileData.getOrDefault("country", ""));
+                            profile.setAddress((String) profileData.getOrDefault("address", ""));
+                            profile.setPhoneNumber((String) profileData.getOrDefault("phoneNumber", ""));
+                            profile.setGender((String) profileData.getOrDefault("gender", ""));
+                            profile.setEducation((String) profileData.getOrDefault("education", ""));
+                            profile.setPreferences((String) profileData.getOrDefault("preferences", ""));
+                            
+                            Object hobbiesObj = profileData.get("hobbies");
+                            if (hobbiesObj instanceof List) {
+                                profile.setHobbies((List<String>) hobbiesObj);
+                            }
+                            
+                            profile.setRelationshipGoal((String) profileData.getOrDefault("relationshipGoal", ""));
+                            profile.setAboutMe((String) profileData.getOrDefault("aboutMe", ""));
+                            profile.setProfilePicPath((String) profileData.getOrDefault("profilePicPath", ""));
+                            return profile;
+                        }
+                        return null;
+                    })
+                    .filter(profile -> profile != null)
                     .collect(Collectors.toList());
             }
         } catch (Exception e) {
+            System.err.println("Error loading all profiles: " + e.getMessage());
             e.printStackTrace();
         }
         return new ArrayList<>();

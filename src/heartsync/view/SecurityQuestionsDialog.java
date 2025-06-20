@@ -122,6 +122,7 @@ public class SecurityQuestionsDialog extends JDialog {
         submitButton.addActionListener(e -> {
             if (validateInput()) {
                 confirmed = true;
+                JOptionPane.showMessageDialog(this, "Security questions saved successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
                 dispose();
             }
         });

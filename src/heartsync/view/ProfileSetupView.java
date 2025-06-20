@@ -427,16 +427,29 @@ public class ProfileSetupView extends JFrame {
 
             // Show success message
             JOptionPane.showMessageDialog(this,
+<<<<<<< HEAD
                 "Basic profile created successfully! Let's add some more details.",
+=======
+                "Profile created successfully! Please complete your hobbies and relationship preferences.",
+>>>>>>> 1e751b03e14418f4fd6b384329009b4a6fad77f0
                 "Success",
                 JOptionPane.INFORMATION_MESSAGE);
 
             // Close the profile setup window
             this.dispose();
 
+<<<<<<< HEAD
             // Show the MoreInfoView
             SwingUtilities.invokeLater(() -> {
                 controller.showMoreInfoView();
+=======
+            // Open MoreInfoView for hobbies/relationship
+            SwingUtilities.invokeLater(() -> {
+                heartsync.controller.UserProfileController profileController = new heartsync.controller.UserProfileController(controller.getModel(), controller.getCurrentUsername());
+                heartsync.view.MoreInfoView moreInfoView = new heartsync.view.MoreInfoView(profileController);
+                moreInfoView.setLocationRelativeTo(null);
+                moreInfoView.setVisible(true);
+>>>>>>> 1e751b03e14418f4fd6b384329009b4a6fad77f0
             });
 
         } catch (Exception ex) {

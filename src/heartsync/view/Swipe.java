@@ -217,50 +217,93 @@ public class Swipe extends JFrame {
         setSize(1200, 900);
         setLocationRelativeTo(null);
         setResizable(false);
-        
-        // Set application icon
-        try {
-            ImageIcon icon = new ImageIcon(getClass().getResource("/ImagePicker/HomePageCoupleImg.png"));
-            if (icon.getImage() != null) {
-                setIconImage(icon.getImage());
-            }
-        } catch (Exception e) {
-            System.err.println("Could not load application icon: " + e.getMessage());
-        }
+        setUndecorated(false);
         
         // Initialize components
         mainPanel = new JPanel(new BorderLayout());
         mainPanel.setBackground(BACKGROUND_COLOR);
         
-        // Setup UI components
-        setupUI();
-        
-        // Set the main panel as content pane
-        setContentPane(mainPanel);
-    }
-    
-    private void setupUI() {
-        // Setup navigation panel
-        setupNavigationPanel();
-        mainPanel.add(navigationPanel, BorderLayout.NORTH);
-        
-        // Create card layout for content
+        // Initialize card layout and content cards
         cardLayout = new CardLayout();
         contentCards = new JPanel(cardLayout);
-        contentCards.setBackground(BACKGROUND_COLOR);
+        contentCards.setOpaque(false);
         
-        // Add content panels
-        contentCards.add(createExplorePanel(), "explore");
-        contentCards.add(new LikesView(User.getCurrentUser().getUserId(), false), "likes");
-        contentCards.add(new LikesView(User.getCurrentUser().getUserId(), true), "likers");
+        // Initialize labels with proper configuration
+        nameLabel = new JLabel();
+        nameLabel.setHorizontalAlignment(SwingConstants.CENTER);
         
-        mainPanel.add(contentCards, BorderLayout.CENTER);
+        ageLabel = new JLabel();
+        ageLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        
+        bioLabel = new JLabel();
+        bioLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        
+        locationLabel = new JLabel();
+        locationLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        
+        interestsLabel = new JLabel();
+        interestsLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        
+        // Initialize imageLabel with proper configuration
+        imageLabel = new JLabel();
+        imageLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        imageLabel.setVerticalAlignment(SwingConstants.CENTER);
+        imageLabel.setPreferredSize(new Dimension(IMAGE_CONTAINER_WIDTH, IMAGE_CONTAINER_HEIGHT));
+        
+        // Initialize buttons
+        backButton = new RoundedButton("Back", BUTTON_COLOR);
+        likeButton = new RoundedButton("Like", LIKE_COLOR);
+        rejectButton = new RoundedButton("Pass", REJECT_COLOR);
+        nextButton = new RoundedButton("Next", BUTTON_COLOR);
+        
+        // Add button listeners
+        backButton.addActionListener(e -> showPreviousProfile());
+        likeButton.addActionListener(e -> likeCurrentProfile());
+        rejectButton.addActionListener(e -> rejectCurrentProfile());
+        nextButton.addActionListener(e -> showNextProfile());
+        
+        // Initialize lists
+        profiles = new ArrayList<>();
+        allProfiles = new ArrayList<>();
+        currentIndex = 0;
+        
+        // Initialize navigation panel
+        setupNavigationPanel();
+        
+        // Initialize search panel
+        setupSearchPanel();
+        
+        // Set up UI components
+        setupUI();
+        
+        // Add main panel to frame
+        add(mainPanel);
+        
+        // Initialize profiles
+        setupProfiles();
         
         // Show explore panel by default
-        cardLayout.show(contentCards, "explore");
+        showExplore();
         
-        // Load initial profiles
-        setupProfiles();
+        // Show first profile if available
+        if (!profiles.isEmpty()) {
+            showCurrentProfile();
+        }
+    }
+
+    private void setupUI() {
+        // Top panel for navigation and search
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setOpaque(false);
+
+        // Add navigation and search panels
+        topPanel.add(navigationPanel, BorderLayout.NORTH);
+        topPanel.add(searchPanel, BorderLayout.CENTER);
+        mainPanel.add(topPanel, BorderLayout.NORTH);
+        
+        // Create explore panel
+        JPanel explorePanel = createExplorePanel();
+        mainPanel.add(explorePanel, BorderLayout.CENTER);
     }
 
     private void setupNavigationPanel() {
@@ -314,6 +357,7 @@ public class Swipe extends JFrame {
                         if (choice == JOptionPane.YES_OPTION) {
                             WindowManager.show(LoginView.class, LoginView::new, Swipe.this);
                             dispose();
+                            heartsync.view.HomePage.showHomePage();
                         }
                     }
                 }
@@ -341,38 +385,43 @@ public class Swipe extends JFrame {
     }
 
     private void setupSearchPanel() {
-        searchPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
-        searchPanel.setBackground(BACKGROUND_COLOR);
-        
-        // Create modern search field
-        JPanel searchWrapper = new JPanel(new BorderLayout());
-        searchWrapper.setPreferredSize(new Dimension(400, 40));
-        searchWrapper.setBackground(SEARCH_BG);
-        searchWrapper.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(220, 220, 220), 1),
+        searchPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        searchPanel.setOpaque(false);
+        searchPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+
+        // Search field with icon
+        JPanel searchFieldPanel = new JPanel(new BorderLayout());
+        searchFieldPanel.setPreferredSize(new Dimension(500, 40));
+        searchFieldPanel.setBackground(SEARCH_BG);
+        searchFieldPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(NAV_COLOR.brighter(), 1),
             BorderFactory.createEmptyBorder(5, 10, 5, 10)
         ));
-        
+
+        JLabel searchIcon = new JLabel("🔍");
+        searchIcon.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        searchFieldPanel.add(searchIcon, BorderLayout.WEST);
+
         searchField = new JTextField();
         searchField.setBorder(null);
         searchField.setBackground(SEARCH_BG);
-        searchField.setFont(new Font("SansSerif", Font.PLAIN, 14));
-        searchField.setForeground(new Color(60, 60, 60));
-        
-        // Add search icon
-        JLabel searchIcon = new JLabel("🔍");
-        searchIcon.setFont(new Font("SansSerif", Font.PLAIN, 16));
-        searchIcon.setForeground(SEARCH_ICON_COLOR);
-        searchWrapper.add(searchIcon, BorderLayout.WEST);
-        searchWrapper.add(searchField, BorderLayout.CENTER);
-        
-        searchPanel.add(searchWrapper);
-        
-        // Add filter button
-        filterButton = createFiltersButton();
+        searchField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        searchField.setPreferredSize(new Dimension(400, 30));
+        searchFieldPanel.add(searchField, BorderLayout.CENTER);
+
+        // Filter button
+        filterButton = new JButton("Filters");
+        filterButton.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        filterButton.setPreferredSize(new Dimension(100, 40));
+        filterButton.setBackground(NAV_ACTIVE_COLOR);
+        filterButton.setForeground(Color.WHITE);
+        filterButton.setBorderPainted(false);
+        filterButton.setFocusPainted(false);
+        filterButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        filterButton.addActionListener(e -> showFilterDialog());
+
+        searchPanel.add(searchFieldPanel);
         searchPanel.add(filterButton);
-        
-        setupSearchLogic();
     }
 
     private void showFilterDialog() {
@@ -423,130 +472,185 @@ public class Swipe extends JFrame {
     }
 
     private JPanel createExplorePanel() {
-        // Initialize labels if they haven't been initialized
-        if (nameLabel == null) {
-            nameLabel = new JLabel();
-            nameLabel.setHorizontalAlignment(SwingConstants.CENTER);
-            nameLabel.setFont(new Font("SansSerif", Font.BOLD, 24));
-        }
-        
-        if (ageLabel == null) {
-            ageLabel = new JLabel();
-            ageLabel.setHorizontalAlignment(SwingConstants.CENTER);
-            ageLabel.setFont(new Font("SansSerif", Font.PLAIN, 18));
-        }
-        
-        if (bioLabel == null) {
-            bioLabel = new JLabel();
-            bioLabel.setHorizontalAlignment(SwingConstants.CENTER);
-            bioLabel.setFont(new Font("SansSerif", Font.PLAIN, 16));
-        }
-        
-        if (imageLabel == null) {
-            imageLabel = new JLabel();
+        // Use the existing imageLabel, don't create a new one
+        if (imageLabel != null) {
             imageLabel.setHorizontalAlignment(SwingConstants.CENTER);
             imageLabel.setVerticalAlignment(SwingConstants.CENTER);
             imageLabel.setPreferredSize(new Dimension(IMAGE_CONTAINER_WIDTH, IMAGE_CONTAINER_HEIGHT));
         }
-        
-        // Create the main explore panel
+
         JPanel explorePanel = new JPanel(new BorderLayout(20, 20));
-        explorePanel.setBackground(BACKGROUND_COLOR);
-        explorePanel.setBorder(new EmptyBorder(20, 20, 20, 20));
+        explorePanel.setOpaque(false);
+        explorePanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        // Main card panel
+        cardPanel = new JPanel(new BorderLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g;
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                // Draw shadow
+                g2.setColor(CARD_SHADOW);
+                g2.fillRoundRect(5, 5, getWidth() - 10, getHeight() - 10, CARD_RADIUS, CARD_RADIUS);
+                
+                // Draw card background
+                g2.setColor(CARD_BG);
+                g2.fillRoundRect(0, 0, getWidth() - 5, getHeight() - 5, CARD_RADIUS, CARD_RADIUS);
+            }
+        };
+        cardPanel.setOpaque(false);
+        cardPanel.setPreferredSize(new Dimension(CARD_WIDTH, CARD_HEIGHT));
+        cardPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        // Create the photo container with gradient overlay
+        JPanel photoContainer = new JPanel(new BorderLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g;
+                
+                // Create gradient overlay at the bottom
+                GradientPaint gradient = new GradientPaint(
+                    0, getHeight() - 100, new Color(0, 0, 0, 0),
+                    0, getHeight(), new Color(0, 0, 0, 100)
+                );
+                g2.setPaint(gradient);
+                g2.fillRect(0, getHeight() - 100, getWidth(), 100);
+            }
+        };
+        photoContainer.setOpaque(false);
+        photoContainer.setBorder(BorderFactory.createLineBorder(new Color(255, 192, 203, 50), 1));
+
+        // Configure image label with padding
+        imageLabel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        photoContainer.add(imageLabel, BorderLayout.CENTER);
+
+        // Style the navigation arrows
+        JLabel leftArrow = createPhotoNavArrow("←");
+        JLabel rightArrow = createPhotoNavArrow("→");
         
-        // Create profile card panel
-        cardPanel = new JPanel(new BorderLayout(10, 10));
-        cardPanel.setBackground(CARD_BG);
-        cardPanel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(230, 230, 230), 1),
-            new EmptyBorder(15, 15, 15, 15)
-        ));
+        // Add hover effect and click handlers to arrows
+        for (JLabel arrow : new JLabel[]{leftArrow, rightArrow}) {
+            arrow.setForeground(new Color(255, 255, 255, 200));
+            arrow.setFont(new Font("Segoe UI", Font.BOLD, 32));
+            arrow.setBorder(BorderFactory.createEmptyBorder(0, 15, 0, 15));
+            arrow.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        }
         
-        // Create photo navigation panel
-        JPanel photoNavPanel = new JPanel(new BorderLayout());
-        photoNavPanel.setOpaque(false);
-        
-        // Add left arrow
-        JLabel leftArrow = new JLabel("←");
-        leftArrow.setFont(new Font("SansSerif", Font.BOLD, 40));
-        leftArrow.setForeground(new Color(200, 200, 200));
-        leftArrow.setCursor(new Cursor(Cursor.HAND_CURSOR));
         leftArrow.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                showPreviousProfile();
+                showPreviousPhoto();
             }
+            
             @Override
             public void mouseEntered(MouseEvent e) {
-                leftArrow.setForeground(new Color(150, 150, 150));
+                leftArrow.setForeground(new Color(255, 255, 255, 200));
             }
+            
             @Override
             public void mouseExited(MouseEvent e) {
-                leftArrow.setForeground(new Color(200, 200, 200));
+                leftArrow.setForeground(Color.WHITE);
             }
         });
         
-        // Add right arrow
-        JLabel rightArrow = new JLabel("→");
-        rightArrow.setFont(new Font("SansSerif", Font.BOLD, 40));
-        rightArrow.setForeground(new Color(200, 200, 200));
-        rightArrow.setCursor(new Cursor(Cursor.HAND_CURSOR));
         rightArrow.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                showNextProfile();
+                showNextPhoto();
             }
+            
             @Override
             public void mouseEntered(MouseEvent e) {
-                rightArrow.setForeground(new Color(150, 150, 150));
+                rightArrow.setForeground(new Color(255, 255, 255, 200));
             }
+            
             @Override
             public void mouseExited(MouseEvent e) {
-                rightArrow.setForeground(new Color(200, 200, 200));
+                rightArrow.setForeground(Color.WHITE);
             }
         });
+
+        // Center panel for photo and info
+        JPanel centerPanel = new JPanel(new BorderLayout());
+        centerPanel.setOpaque(false);
         
-        // Add arrows to photo nav panel
-        photoNavPanel.add(leftArrow, BorderLayout.WEST);
-        photoNavPanel.add(imageLabel, BorderLayout.CENTER);
-        photoNavPanel.add(rightArrow, BorderLayout.EAST);
+        // Add navigation arrows with proper layering
+        JPanel arrowsPanel = new JPanel(new BorderLayout());
+        arrowsPanel.setOpaque(false);
+        arrowsPanel.add(leftArrow, BorderLayout.WEST);
+        arrowsPanel.add(rightArrow, BorderLayout.EAST);
         
-        // Create info panel
+        // Layer the components
+        JLayeredPane layeredPane = new JLayeredPane();
+        layeredPane.setPreferredSize(new Dimension(CARD_WIDTH - 20, PHOTO_HEIGHT));
+        
+        photoContainer.setBounds(0, 0, CARD_WIDTH - 20, PHOTO_HEIGHT);
+        arrowsPanel.setBounds(0, 0, CARD_WIDTH - 20, PHOTO_HEIGHT);
+        
+        layeredPane.add(photoContainer, JLayeredPane.DEFAULT_LAYER);
+        layeredPane.add(arrowsPanel, JLayeredPane.PALETTE_LAYER);
+        
+        centerPanel.add(layeredPane, BorderLayout.CENTER);
+
+        // Profile info panel
         JPanel infoPanel = new JPanel();
         infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
-        infoPanel.setBackground(CARD_BG);
-        infoPanel.setBorder(new EmptyBorder(15, 0, 0, 0));
+        infoPanel.setOpaque(false);
+        infoPanel.setBorder(BorderFactory.createEmptyBorder(15, 10, 10, 10));
         
-        // Add components to info panel
+        // Style labels
+        nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        nameLabel.setForeground(NAV_COLOR);
+        nameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
+        ageLabel.setFont(new Font("Segoe UI", Font.PLAIN, 18));
+        ageLabel.setForeground(NAV_COLOR.brighter());
+        ageLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
+        bioLabel.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        bioLabel.setForeground(NAV_COLOR);
+        bioLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
+        // Add components with spacing
         infoPanel.add(nameLabel);
         infoPanel.add(Box.createVerticalStrut(5));
         infoPanel.add(ageLabel);
-        infoPanel.add(Box.createVerticalStrut(10));
+        infoPanel.add(Box.createVerticalStrut(8));
         infoPanel.add(bioLabel);
+
+        // Action buttons panel
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 40, 10));
+        buttonPanel.setOpaque(false);
+        buttonPanel.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
         
-        // Add components to card panel
-        cardPanel.add(photoNavPanel, BorderLayout.CENTER);
-        cardPanel.add(infoPanel, BorderLayout.SOUTH);
+        // Create modern action buttons
+        likeButton = createActionButton("♥", "Like", LIKE_COLOR);
+        rejectButton = createActionButton("✕", "Pass", REJECT_COLOR);
         
-        // Create buttons panel
-        JPanel buttonsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
-        buttonsPanel.setOpaque(false);
-        
-        // Initialize buttons if they haven't been
-        if (likeButton == null) likeButton = new RoundedButton("Like", LIKE_COLOR);
-        if (rejectButton == null) rejectButton = new RoundedButton("Pass", REJECT_COLOR);
-        
-        // Add button listeners
         likeButton.addActionListener(e -> likeCurrentProfile());
         rejectButton.addActionListener(e -> rejectCurrentProfile());
         
-        // Add buttons to panel
-        buttonsPanel.add(rejectButton);
-        buttonsPanel.add(likeButton);
+        buttonPanel.add(rejectButton);
+        buttonPanel.add(likeButton);
+
+        // Bottom panel for info and buttons
+        JPanel bottomPanel = new JPanel(new BorderLayout(0, 5));
+        bottomPanel.setOpaque(false);
+        bottomPanel.add(infoPanel, BorderLayout.CENTER);
+        bottomPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        // Add all components to the card
+        cardPanel.add(centerPanel, BorderLayout.CENTER);
+        cardPanel.add(bottomPanel, BorderLayout.SOUTH);
         
-        // Add components to explore panel
-        explorePanel.add(cardPanel, BorderLayout.CENTER);
-        explorePanel.add(buttonsPanel, BorderLayout.SOUTH);
+        // Center the card in the explore panel
+        JPanel cardContainer = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        cardContainer.setOpaque(false);
+        cardContainer.add(cardPanel);
+        
+        explorePanel.add(cardContainer, BorderLayout.CENTER);
         
         return explorePanel;
     }
@@ -695,75 +799,93 @@ public class Swipe extends JFrame {
 
     private void showCurrentProfile() {
         if (profiles.isEmpty()) {
-            JOptionPane.showMessageDialog(this,
-                "No profiles match your search criteria.",
-                "No Matches Found",
-                JOptionPane.INFORMATION_MESSAGE);
+            nameLabel.setText("");
+            ageLabel.setText("");
+            // Improved empty state message with visible emoji and wrapped text
+            String icon = "<div style='font-size:40px;font-weight:bold;line-height:1;'>:(</div>"; // Text-based sad face
+            String msg = "<div style='font-size:17px;margin-top:10px;max-width:220px;word-break:break-word;margin-left:auto;margin-right:auto;'>No profiles found!<br>Try adjusting your search or filters.</div>";
+            String html = "<html><div style='text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;width:100%;'>"
+                + icon + msg + "</div></html>";
+            bioLabel.setText(html);
+            bioLabel.setHorizontalAlignment(SwingConstants.CENTER);
+            imageLabel.setIcon(null);
+            imageLabel.setText("");
             return;
         }
-        
-        ProfileData profile = profiles.get(currentIndex);
-        
-        // Update profile photo
-        if (profile.photos != null && !profile.photos.isEmpty()) {
-            try {
-                String photoUrl = profile.photos.get(profile.currentPhotoIndex);
-                ImageIcon icon = new ImageIcon(new URL(photoUrl));
-                Image img = icon.getImage().getScaledInstance(IMAGE_CONTAINER_WIDTH, IMAGE_CONTAINER_HEIGHT, Image.SCALE_SMOOTH);
-                imageLabel.setIcon(new ImageIcon(img));
-            } catch (Exception e) {
-                // Use default image if photo loading fails
-                imageLabel.setIcon(new ImageIcon("path/to/default/profile.png"));
-            }
+        if (currentIndex >= 0 && currentIndex < profiles.size()) {
+            ProfileData profile = profiles.get(currentIndex);
+            nameLabel.setText(profile.name);
+            ageLabel.setText(profile.age + " years");
+            // Center-align the bio text visually and horizontally
+            String htmlBio = "<html><div style='text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:center;height:100%;width:" + (CARD_WIDTH - 80) + "px;'>"
+                + profile.bio.replace(". ", ".<br><br>") + "</div></html>";
+            bioLabel.setText(htmlBio);
+            bioLabel.setHorizontalAlignment(SwingConstants.CENTER);
+            updateProfilePhoto();
         }
-        
-        // Update profile info
-        nameLabel.setText(profile.name);
-        ageLabel.setText(profile.age + " years");
-        bioLabel.setText("<html><body style='width: 300px'>" + profile.bio + "</body></html>");
     }
 
     private void showNextProfile() {
+        if (profiles.isEmpty()) return;
+        if (profiles.size() == 1) {
+            showCurrentProfile();
+            return;
+        }
         if (currentIndex < profiles.size() - 1) {
             currentIndex++;
-            showCurrentProfile();
-        } else if (!profiles.isEmpty()) {
-            // Show "All profiles finished" message and loop back
-            int choice = JOptionPane.showConfirmDialog(this,
-                "You've seen all profiles! Would you like to start over?",
-                "All Profiles Viewed",
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.QUESTION_MESSAGE);
-            
-            if (choice == JOptionPane.YES_OPTION) {
-                currentIndex = 0;
-                showCurrentProfile();
-            }
+        } else {
+            currentIndex = 0; // Loop to first
         }
+        profiles.get(currentIndex).currentPhotoIndex = 0;
+        showCurrentProfile();
     }
 
     private void showPreviousProfile() {
+        if (profiles.isEmpty()) return;
+        if (profiles.size() == 1) {
+            showCurrentProfile();
+            return;
+        }
         if (currentIndex > 0) {
             currentIndex--;
-            showCurrentProfile();
+        } else {
+            currentIndex = profiles.size() - 1; // Loop to last
         }
+        profiles.get(currentIndex).currentPhotoIndex = 0;
+        showCurrentProfile();
     }
 
     private void likeCurrentProfile() {
         if (profiles.isEmpty()) return;
-        
         ProfileData profile = profiles.get(currentIndex);
-        boolean success = likeDAO.addLike(currentUserId, profile.userId);
         
-        if (success) {
+        // Add to likes in Firebase
+        if (likeDAO.addLike(currentUserId, profile.userId)) {
             // Check if it's a match
             if (likeDAO.isMatched(currentUserId, profile.userId)) {
+                // Show match notification
                 JOptionPane.showMessageDialog(this,
-                    "It's a match! You can now chat with " + profile.name,
+                    "It's a Match with " + profile.name + "! 🎉\nYou can now chat with each other!",
                     "New Match!",
                     JOptionPane.INFORMATION_MESSAGE);
             }
-            showNextProfile();
+            
+            // Remove from current list
+            profiles.remove(currentIndex);
+            if (currentIndex >= profiles.size()) {
+                currentIndex = 0;
+            }
+            
+            if (profiles.isEmpty()) {
+                showCurrentProfile(); // Will show the "no profiles" message
+            } else {
+                showCurrentProfile();
+            }
+        } else {
+            JOptionPane.showMessageDialog(this,
+                "Error saving like. Please try again.",
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -865,29 +987,50 @@ public class Swipe extends JFrame {
     }
 
     private JPanel createProfilePanel() {
-        JPanel profilePanel = new JPanel(new GridBagLayout());
-        profilePanel.setBackground(BACKGROUND_COLOR);
-        profilePanel.setBorder(new EmptyBorder(20, 20, 20, 20));
-        
+        JPanel outerPanel = new JPanel(new GridBagLayout());
+        outerPanel.setBackground(BACKGROUND_COLOR);
+        outerPanel.setBorder(new EmptyBorder(40, 0, 40, 0));
+
+        // Card panel for modern look
+        JPanel card = new JPanel(new GridBagLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                // Shadow
+                g2.setColor(new Color(0,0,0,30));
+                g2.fillRoundRect(8, 8, getWidth()-16, getHeight()-16, 32, 32);
+                // Card background
+                g2.setColor(Color.WHITE);
+                g2.fillRoundRect(0, 0, getWidth()-8, getHeight()-8, 32, 32);
+                g2.dispose();
+            }
+        };
+        card.setOpaque(false);
+        card.setBorder(new EmptyBorder(40, 40, 40, 40));
+        card.setMaximumSize(new Dimension(600, 900));
+        card.setPreferredSize(new Dimension(500, 800));
+
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.gridwidth = 2;
         gbc.anchor = GridBagConstraints.CENTER;
-        gbc.insets = new Insets(10, 10, 20, 10);
-        
-        // Profile picture
+        gbc.insets = new Insets(0, 0, 30, 0);
+
+        // Circular profile picture
         JLabel profilePicture = createProfilePicture();
-        profilePicture.setPreferredSize(new Dimension(150, 150));
-        profilePanel.add(profilePicture, gbc);
-        
-        // Reset gridwidth for other components
-        gbc.gridwidth = 1;
+        profilePicture.setPreferredSize(new Dimension(160, 160));
+        card.add(profilePicture, gbc);
         gbc.gridy++;
-        
-        // Add profile information
-        addSectionHeader(profilePanel, "Personal Information", gbc);
+
+        // Name and age
+        JLabel nameAge = new JLabel(UserProfile.getCurrentUser().getFullName() + ", " + calculateAge(UserProfile.getCurrentUser().getDateOfBirth()));
+        nameAge.setFont(new Font("Segoe UI", Font.BOLD, 34));
+        nameAge.setHorizontalAlignment(SwingConstants.CENTER);
+        card.add(nameAge, gbc);
         gbc.gridy++;
+<<<<<<< HEAD
         
         UserProfile currentProfile = UserProfile.getCurrentUser();
         
@@ -957,40 +1100,110 @@ public class Swipe extends JFrame {
         gbc.gridy++;
         
         JTextArea aboutMe = new JTextArea(currentProfile.getAboutMe());
+=======
+
+        // Location
+        JLabel location = new JLabel(UserProfile.getCurrentUser().getAddress() + (UserProfile.getCurrentUser().getCountry() != null ? ", " + UserProfile.getCurrentUser().getCountry() : ""));
+        location.setFont(new Font("Segoe UI", Font.PLAIN, 22));
+        location.setForeground(new Color(120,120,120));
+        card.add(location, gbc);
+        gbc.gridy++;
+
+        // Section: About Me
+        JLabel aboutHeader = new JLabel("About Me");
+        aboutHeader.setFont(new Font("Segoe UI", Font.BOLD, 26));
+        aboutHeader.setForeground(new Color(229, 89, 36));
+        aboutHeader.setBorder(new EmptyBorder(20,0,10,0));
+        card.add(aboutHeader, gbc);
+        gbc.gridy++;
+        JTextArea aboutMe = new JTextArea(UserProfile.getCurrentUser().getAboutMe());
+>>>>>>> 1e751b03e14418f4fd6b384329009b4a6fad77f0
         aboutMe.setWrapStyleWord(true);
         aboutMe.setLineWrap(true);
         aboutMe.setOpaque(false);
         aboutMe.setEditable(false);
-        aboutMe.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        aboutMe.setBorder(new EmptyBorder(10, 10, 10, 10));
-        
-        JScrollPane scrollPane = new JScrollPane(aboutMe);
-        scrollPane.setPreferredSize(new Dimension(400, 100));
+        aboutMe.setFont(new Font("Segoe UI", Font.PLAIN, 20));
+        aboutMe.setBorder(new EmptyBorder(0, 0, 20, 0));
+        card.add(aboutMe, gbc);
+        gbc.gridy++;
+
+        // Section: Details
+        JLabel detailsHeader = new JLabel("Details");
+        detailsHeader.setFont(new Font("Segoe UI", Font.BOLD, 26));
+        detailsHeader.setForeground(new Color(229, 89, 36));
+        detailsHeader.setBorder(new EmptyBorder(20,0,10,0));
+        card.add(detailsHeader, gbc);
+        gbc.gridy++;
+        JPanel detailsPanel = new JPanel(new GridLayout(0,2,20,10));
+        detailsPanel.setOpaque(false);
+        Font labelFont = new Font("Segoe UI", Font.BOLD, 18);
+        Font valueFont = new Font("Segoe UI", Font.PLAIN, 18);
+        detailsPanel.add(makeLabel("Gender:", labelFont));
+        detailsPanel.add(makeLabel(UserProfile.getCurrentUser().getGender(), valueFont));
+        detailsPanel.add(makeLabel("Phone:", labelFont));
+        detailsPanel.add(makeLabel(UserProfile.getCurrentUser().getPhoneNumber(), valueFont));
+        detailsPanel.add(makeLabel("Email:", labelFont));
+        detailsPanel.add(makeLabel(UserProfile.getCurrentUser().getEmail(), valueFont));
+        detailsPanel.add(makeLabel("Education:", labelFont));
+        detailsPanel.add(makeLabel(UserProfile.getCurrentUser().getQualification(), valueFont));
+        detailsPanel.add(makeLabel("Occupation:", labelFont));
+        detailsPanel.add(makeLabel(UserProfile.getCurrentUser().getOccupation(), valueFont));
+        detailsPanel.add(makeLabel("Relationship Goal:", labelFont));
+        detailsPanel.add(makeLabel(UserProfile.getCurrentUser().getRelationshipGoal(), valueFont));
+        detailsPanel.add(makeLabel("Religion:", labelFont));
+        detailsPanel.add(makeLabel(UserProfile.getCurrentUser().getReligion(), valueFont));
+        detailsPanel.add(makeLabel("Ethnicity:", labelFont));
+        detailsPanel.add(makeLabel(UserProfile.getCurrentUser().getEthnicity(), valueFont));
+        card.add(detailsPanel, gbc);
+        gbc.gridy++;
+
+        // Section: Hobbies & Languages
+        JLabel hobbiesHeader = new JLabel("Hobbies & Languages");
+        hobbiesHeader.setFont(new Font("Segoe UI", Font.BOLD, 26));
+        hobbiesHeader.setForeground(new Color(229, 89, 36));
+        hobbiesHeader.setBorder(new EmptyBorder(20,0,10,0));
+        card.add(hobbiesHeader, gbc);
+        gbc.gridy++;
+        JPanel hobbiesPanel = new JPanel(new GridLayout(0,1,0,5));
+        hobbiesPanel.setOpaque(false);
+        hobbiesPanel.add(makeLabel("Hobbies: " + (UserProfile.getCurrentUser().getHobbies() != null && !UserProfile.getCurrentUser().getHobbies().isEmpty() ? String.join(", ", UserProfile.getCurrentUser().getHobbies()) : "-"), valueFont));
+        hobbiesPanel.add(makeLabel("Languages: " + (UserProfile.getCurrentUser().getLanguages() != null && !UserProfile.getCurrentUser().getLanguages().isEmpty() ? String.join(", ", UserProfile.getCurrentUser().getLanguages()) : "-"), valueFont));
+        card.add(hobbiesPanel, gbc);
+        gbc.gridy++;
+
+        // Action buttons at the bottom
+        gbc.insets = new Insets(30, 0, 0, 0);
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 30, 0));
+        buttonPanel.setOpaque(false);
+        JButton editButton = createProfileButton("Edit Profile");
+        JButton postPicButton = createProfileButton("Post Pictures");
+        buttonPanel.add(editButton);
+        buttonPanel.add(postPicButton);
+        card.add(buttonPanel, gbc);
+        gbc.gridy++;
+
+        // Make the card scrollable
+        JScrollPane scrollPane = new JScrollPane(card);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
         scrollPane.setOpaque(false);
         scrollPane.getViewport().setOpaque(false);
-        
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        profilePanel.add(scrollPane, gbc);
-        gbc.gridy++;
-        
-        // Action buttons
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
-        buttonPanel.setOpaque(false);
-        
-        JButton editButton = createProfileButton("Edit Profile");
-        editButton.addActionListener(e -> openProfileEditor());
-        
-        JButton photoButton = createProfileButton("Change Photo");
-        photoButton.addActionListener(e -> openPhotoUploader());
-        
-        buttonPanel.add(editButton);
-        buttonPanel.add(photoButton);
-        
-        gbc.gridy++;
-        profilePanel.add(buttonPanel, gbc);
-        
-        return profilePanel;
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        scrollPane.setPreferredSize(new Dimension(600, 900));
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+
+        // Center the card in the outer panel
+        GridBagConstraints outer = new GridBagConstraints();
+        outer.gridx = 0;
+        outer.gridy = 0;
+        outer.anchor = GridBagConstraints.CENTER;
+        outerPanel.add(scrollPane, outer);
+        return outerPanel;
+    }
+
+    private JLabel makeLabel(String text, Font font) {
+        JLabel label = new JLabel(text);
+        label.setFont(font);
+        return label;
     }
 
     private void addSectionHeader(JPanel panel, String text, GridBagConstraints gbc) {
@@ -1015,39 +1228,24 @@ public class Swipe extends JFrame {
     }
 
     private JButton createProfileButton(String text) {
-        JButton button = new JButton(text) {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g;
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                
-                if (getModel().isPressed()) {
-                    g2.setColor(NAV_ACTIVE_COLOR.darker());
-                } else if (getModel().isRollover()) {
-                    g2.setColor(NAV_ACTIVE_COLOR.brighter());
-                } else {
-                    g2.setColor(NAV_ACTIVE_COLOR);
-                }
-                
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 20, 20);
-                
-                g2.setColor(Color.WHITE);
-                g2.setFont(getFont());
-                FontMetrics fm = g2.getFontMetrics();
-                int x = (getWidth() - fm.stringWidth(getText())) / 2;
-                int y = ((getHeight() - fm.getHeight()) / 2) + fm.getAscent();
-                g2.drawString(getText(), x, y);
-            }
-        };
-        
-        button.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        JButton button = new JButton(text);
+        button.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        button.setBackground(new Color(229, 89, 36));
         button.setForeground(Color.WHITE);
-        button.setBorderPainted(false);
-        button.setContentAreaFilled(false);
         button.setFocusPainted(false);
+        button.setBorder(BorderFactory.createEmptyBorder(12, 32, 12, 32));
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        button.setPreferredSize(new Dimension(150, 40));
-        
+        button.setContentAreaFilled(true);
+        button.setOpaque(true);
+        button.setBorderPainted(false);
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                button.setBackground(new Color(255, 105, 60));
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                button.setBackground(new Color(229, 89, 36));
+            }
+        });
         return button;
     }
 
@@ -1149,6 +1347,7 @@ public class Swipe extends JFrame {
     private void setupProfiles() {
         profiles = new ArrayList<>();
         try {
+<<<<<<< HEAD
             // Get current user and their profile
             User currentUser = User.getCurrentUser();
             if (currentUser == null) {
@@ -1271,6 +1470,27 @@ public class Swipe extends JFrame {
                 "Error",
                 JOptionPane.ERROR_MESSAGE);
         }
+=======
+            String currentUsername = heartsync.model.User.getCurrentUser().getUsername();
+            List<UserProfile> otherProfiles = heartsync.database.DatabaseManagerProfile.getInstance().getAllUserProfilesExcept(currentUsername);
+            for (UserProfile userProfile : otherProfiles) {
+                String name = userProfile.getFullName() != null ? userProfile.getFullName() : "Unknown";
+                int age = userProfile.getAge() > 0 ? userProfile.getAge() : calculateAge(userProfile.getDateOfBirth());
+                String bio = userProfile.getAboutMe() != null ? userProfile.getAboutMe() : "";
+                List<String> photos = new ArrayList<>();
+                if (userProfile.getProfilePicPath() != null && !userProfile.getProfilePicPath().isEmpty()) {
+                    photos.add(userProfile.getProfilePicPath());
+                } else {
+                    photos.add("RajeshHamalPhoto.png");
+                }
+                profiles.add(new ProfileData(name, age, bio, photos));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        allProfiles = new ArrayList<>(profiles);
+        currentIndex = 0;
+>>>>>>> 1e751b03e14418f4fd6b384329009b4a6fad77f0
     }
     
     private JTextField createSearchField() {
@@ -1417,28 +1637,29 @@ public class Swipe extends JFrame {
     }
 
     private void filterProfiles() {
-        String searchText = searchField.getText().toLowerCase().trim();
-        
-        if (searchText.isEmpty()) {
-            profiles = new ArrayList<>(allProfiles);
+        if (allProfiles == null) return;
+        String query = searchField.getText().trim().toLowerCase();
+        if (query.isEmpty() || query.equals("search by name, age, or interests...")) {
+            profiles.clear();
+            profiles.addAll(allProfiles);
         } else {
-            profiles = new ArrayList<>();
-            for (ProfileData profile : allProfiles) {
-                if (profile.name.toLowerCase().contains(searchText) ||
-                    profile.bio.toLowerCase().contains(searchText)) {
-                    profiles.add(profile);
+            profiles.clear();
+            for (ProfileData p : allProfiles) {
+                boolean matches = false;
+                // Name match
+                if (p.name != null && p.name.toLowerCase().contains(query)) matches = true;
+                // Bio/interests match
+                if (!matches && p.bio != null && p.bio.toLowerCase().contains(query)) matches = true;
+                // Age match (if query is a number)
+                if (!matches) {
+                    try {
+                        int ageQuery = Integer.parseInt(query);
+                        if (p.age == ageQuery) matches = true;
+                    } catch (NumberFormatException ignored) {}
                 }
+                if (matches) profiles.add(p);
             }
         }
-        
-        if (profiles.isEmpty()) {
-            JOptionPane.showMessageDialog(this,
-                "No profiles match your search criteria.",
-                "No Matches Found",
-                JOptionPane.INFORMATION_MESSAGE);
-            profiles = new ArrayList<>(allProfiles);
-        }
-        
         currentIndex = 0;
         showCurrentProfile();
     }

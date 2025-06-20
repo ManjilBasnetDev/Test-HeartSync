@@ -456,6 +456,7 @@ public class MoreInfoView extends JFrame {
             return;
         }
 
+<<<<<<< HEAD
         if (selectedRelation.isEmpty()) {
             JOptionPane.showMessageDialog(this,
                 "Please select a relationship type.",
@@ -492,6 +493,39 @@ public class MoreInfoView extends JFrame {
                 homePage.setVisible(true);
             });
             
+=======
+            if (isEdit) {
+                JOptionPane.showMessageDialog(this,
+                    "Profile updated successfully, please log in",
+                    "Success",
+                    JOptionPane.INFORMATION_MESSAGE);
+                // Dispose this window
+                this.dispose();
+                // Dispose all other windows except HomePage
+                java.awt.Window[] windows = java.awt.Window.getWindows();
+                for (java.awt.Window w : windows) {
+                    if (w != null && w != this && w.isDisplayable()) {
+                        w.dispose();
+                    }
+                }
+                // Open HomePage
+                SwingUtilities.invokeLater(() -> {
+                    heartsync.view.HomePage.showHomePage();
+                });
+            } else {
+                JOptionPane.showMessageDialog(this,
+                    "Profile created successfully!",
+                    "Success",
+                    JOptionPane.INFORMATION_MESSAGE);
+                this.dispose();
+                // Open HomePage instead of LoginView
+                SwingUtilities.invokeLater(() -> {
+                    HomePage homePage = new HomePage(User.getCurrentUser());
+                    homePage.setLocationRelativeTo(null);
+                    homePage.setVisible(true);
+                });
+            }
+>>>>>>> 1e751b03e14418f4fd6b384329009b4a6fad77f0
         } catch (Exception e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this,

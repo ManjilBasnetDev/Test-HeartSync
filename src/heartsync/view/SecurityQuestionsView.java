@@ -47,6 +47,13 @@ public class SecurityQuestionsView extends JDialog {
         saveButton.setBounds(140, 250, 120, 40);
         saveButton.setEnabled(false);
         inner.add(saveButton);
+
+        saveButton.addActionListener(e -> {
+            // ... existing code for validation and saving ...
+            saved = true;
+            JOptionPane.showMessageDialog(this, "Security questions saved successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+            dispose();
+        });
     }
 
     private boolean saved = false;

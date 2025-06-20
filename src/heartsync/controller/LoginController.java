@@ -190,10 +190,25 @@ public class LoginController {
                     view.dispose();
                 }
                 
+<<<<<<< HEAD
                 // Close any existing HomePage instance
                 HomePage homePage = HomePage.getInstance();
                 if (homePage != null && homePage.isDisplayable()) {
                     homePage.dispose();
+=======
+                // If admin, open AdminDashboard, else open Swipe
+                if (user.getUserType() != null && user.getUserType().equalsIgnoreCase("admin")) {
+                    WindowManager.show(AdminDashboard.class, AdminDashboard::new, null);
+                } else {
+                    WindowManager.show(Swipe.class, () -> new Swipe(), null);
+                }
+                
+            } catch (Exception e) {
+                logger.log(Level.SEVERE, "Error opening user view", e);
+                if (view != null) {
+                    view.showMessage("Error initializing application view: " + e.getMessage(),
+                                   "Initialization Error", JOptionPane.ERROR_MESSAGE);
+>>>>>>> 1e751b03e14418f4fd6b384329009b4a6fad77f0
                 }
                 
                 // Check user type and open appropriate view

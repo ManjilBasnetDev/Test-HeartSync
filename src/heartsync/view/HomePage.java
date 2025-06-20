@@ -364,7 +364,7 @@ public class HomePage extends JFrame {
         createAccountButton.addActionListener(e -> {
             Register register = new Register();
             register.setVisible(true);
-            dispose(); // Close the home page when register page opens
+            this.dispose(); // Close the home page when register page opens
         });
         
         // Load and add images
@@ -830,5 +830,14 @@ public class HomePage extends JFrame {
         ContactsPage contactsPage = new ContactsPage();
         contactsPage.setVisible(true);
         this.dispose();
+    }
+
+    // Add a static method to show HomePage on logout
+    public static void showHomePage() {
+        SwingUtilities.invokeLater(() -> {
+            HomePage homePage = new HomePage();
+            homePage.setLocationRelativeTo(null);
+            homePage.setVisible(true);
+        });
     }
 }

@@ -140,7 +140,7 @@ public class Register extends JFrame {
     }
 
     private void initComponents() {
-        setUndecorated(true);
+        setUndecorated(false);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         getContentPane().setBackground(new Color(255, 219, 227));
         

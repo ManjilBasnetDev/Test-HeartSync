@@ -73,7 +73,7 @@ public class ChatSystem extends JFrame {
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setSize(900, 600);
         setLocationRelativeTo(null);
-        setUndecorated(true);
+        setUndecorated(false);
         
         // Main panel with rounded corners
         mainPanel = new JPanel(new BorderLayout()) {
@@ -108,8 +108,10 @@ public class ChatSystem extends JFrame {
         // Make window draggable
         setupWindowDragging();
         
-        // Set window shape
-        setShape(new RoundRectangle2D.Double(0, 0, getWidth(), getHeight(), WINDOW_RADIUS, WINDOW_RADIUS));
+        // Set window shape only if undecorated
+        if (isUndecorated()) {
+            setShape(new RoundRectangle2D.Double(0, 0, getWidth(), getHeight(), WINDOW_RADIUS, WINDOW_RADIUS));
+        }
     }
     
     private JPanel createHeaderPanel() {

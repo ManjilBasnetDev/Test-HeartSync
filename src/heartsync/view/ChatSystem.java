@@ -30,6 +30,7 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JSeparator;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.border.EmptyBorder;
@@ -399,30 +400,51 @@ public class ChatSystem extends JFrame {
         matchesPanel.setLayout(new BoxLayout(matchesPanel, BoxLayout.Y_AXIS));
         matchesPanel.setBackground(Color.WHITE);
         
-        // Add each matched user
-        for (MatchedUser user : matchedUsers) {
-            JPanel userPanel = createUserPanel(user);
-            matchesPanel.add(userPanel);
-            matchesPanel.add(Box.createRigidArea(new Dimension(0, 1))); // Small gap between users
-        }
+        // Add back button at the top
+        JPanel backButtonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        backButtonPanel.setBackground(Color.WHITE);
+        JButton backButton = new JButton("← Back to Swipe");
+        backButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        backButton.setForeground(new Color(229, 89, 36));  // Orange color
+        backButton.setBackground(Color.WHITE);
+        backButton.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
+        backButton.setFocusPainted(false);
+        backButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        backButton.addActionListener(e -> {
+            dispose();
+            heartsync.navigation.WindowManager.show(Swipe.class, Swipe::new, null);
+        });
+        backButtonPanel.add(backButton);
+        matchesPanel.add(backButtonPanel);
         
-        // If no matches, show a message
+        // Add a separator
+        JSeparator separator = new JSeparator();
+        separator.setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
+        matchesPanel.add(separator);
+        matchesPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        
+        // Add matched users
         if (matchedUsers.isEmpty()) {
             JLabel noMatchesLabel = new JLabel("No matches yet");
             noMatchesLabel.setFont(new Font("Segoe UI", Font.PLAIN, 16));
             noMatchesLabel.setForeground(Color.GRAY);
             noMatchesLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-            matchesPanel.add(Box.createVerticalGlue());
             matchesPanel.add(noMatchesLabel);
-            matchesPanel.add(Box.createVerticalGlue());
+        } else {
+            for (MatchedUser user : matchedUsers) {
+                JPanel userPanel = createUserPanel(user);
+                matchesPanel.add(userPanel);
+                matchesPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+            }
         }
         
         // Add the matches panel to a scroll pane
         JScrollPane scrollPane = new JScrollPane(matchesPanel);
         scrollPane.setBorder(null);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
         
-        // Add to main panel
+        // Add the scroll pane to the main panel
         mainPanel.add(scrollPane, BorderLayout.CENTER);
         mainPanel.revalidate();
         mainPanel.repaint();

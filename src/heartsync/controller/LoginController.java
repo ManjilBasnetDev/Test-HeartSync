@@ -190,8 +190,15 @@ public class LoginController {
                     view.dispose();
                 }
                 
-                // Show the Swipe view directly
-                WindowManager.show(Swipe.class, () -> new Swipe(), null);
+                // Check user type and open appropriate view
+                String userType = user.getUserType();
+                if (userType != null && userType.equalsIgnoreCase("admin")) {
+                    // Show admin dashboard for admin users
+                    AdminDashboard.showAdminDashboard();
+                } else {
+                    // Show the Swipe view for regular users
+                    WindowManager.show(Swipe.class, () -> new Swipe(), null);
+                }
                 
             } catch (Exception e) {
                 logger.log(Level.SEVERE, "Error opening user view", e);

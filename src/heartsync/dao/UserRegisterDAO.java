@@ -157,4 +157,36 @@ public class UserRegisterDAO {
         }
         return false;
     }
+
+    public boolean verifyUser(String userId) {
+        try {
+            Map<String, User> users = FirebaseConfig.get("users", new TypeToken<Map<String, User>>(){}.getType());
+            if (users != null && users.containsKey(userId)) {
+                User user = users.get(userId);
+                user.setUserType("verified");
+                FirebaseConfig.put(FirebaseConfig.getUserPath(userId), user);
+                return true;
+            }
+        } catch (IOException e) {
+            lastError = "Error verifying user: " + e.getMessage();
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean rejectUser(String userId) {
+        try {
+            Map<String, User> users = FirebaseConfig.get("users", new TypeToken<Map<String, User>>(){}.getType());
+            if (users != null && users.containsKey(userId)) {
+                User user = users.get(userId);
+                user.setUserType("rejected");
+                FirebaseConfig.put(FirebaseConfig.getUserPath(userId), user);
+                return true;
+            }
+        } catch (IOException e) {
+            lastError = "Error rejecting user: " + e.getMessage();
+            e.printStackTrace();
+        }
+        return false;
+    }
 } 

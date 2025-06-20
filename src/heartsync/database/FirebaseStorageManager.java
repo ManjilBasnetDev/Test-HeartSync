@@ -6,10 +6,27 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.UUID;
+import heartsync.dao.UserDAO;
+import heartsync.model.User;
 
 public class FirebaseStorageManager {
     private static final String STORAGE_URL = "https://firebasestorage.googleapis.com/v0/b/heartsync-96435.appspot.com/o/";
     private static final String STORAGE_TOKEN = "?alt=media";
+    private static final UserDAO userDAO = new UserDAO();
+
+    public static String getProfileImageUrl(String userId) {
+        try {
+            // Get user from database to check if they have a profile picture URL
+            User user = userDAO.getUserById(userId);
+            if (user != null && user.getProfilePictureUrl() != null && !user.getProfilePictureUrl().isEmpty()) {
+                return user.getProfilePictureUrl();
+            }
+            return null;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 
     public static String uploadProfilePicture(String filePath) throws IOException {
         File file = new File(filePath);

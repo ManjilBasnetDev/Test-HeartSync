@@ -21,6 +21,7 @@ public class User {
     private String securityAnswer;
     private String securityQuestion2;
     private String securityAnswer2;
+    private String profilePictureUrl;
     
     // Static methods for current user management
     public static User getCurrentUser() {
@@ -33,6 +34,11 @@ public class User {
     
     // No-arg constructor for Gson
     public User() {}
+    
+    // Check if user is verified
+    public boolean isVerified() {
+        return userType != null && userType.equalsIgnoreCase("verified");
+    }
     
     // Getters and Setters
     public String getUserId() { return userId; }
@@ -69,6 +75,8 @@ public class User {
     public void setSecurityQuestion2(String securityQuestion2) { this.securityQuestion2 = securityQuestion2; }
     public String getSecurityAnswer2() { return securityAnswer2; }
     public void setSecurityAnswer2(String securityAnswer2) { this.securityAnswer2 = securityAnswer2; }
+    public String getProfilePictureUrl() { return profilePictureUrl; }
+    public void setProfilePictureUrl(String profilePictureUrl) { this.profilePictureUrl = profilePictureUrl; }
     
     @Override
     public String toString() {

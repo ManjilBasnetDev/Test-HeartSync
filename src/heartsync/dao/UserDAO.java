@@ -10,6 +10,21 @@ import java.io.IOException;
 public class UserDAO {
     public UserDAO() {}
 
+    // Get user by ID
+    public User getUserById(String userId) {
+        try {
+            Map<String, User> users = FirebaseConfig.get("users", new TypeToken<Map<String, User>>(){}.getType());
+            if (users != null && users.containsKey(userId)) {
+                User user = users.get(userId);
+                user.setUserId(userId);
+                return user;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     // Authenticate user login
     public User authenticateUser(String username, String password) {
         try {

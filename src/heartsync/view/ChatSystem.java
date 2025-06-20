@@ -15,6 +15,7 @@ import java.awt.Point;
 import java.awt.RenderingHints;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.geom.Ellipse2D;
 import java.awt.geom.RoundRectangle2D;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -35,6 +36,7 @@ import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.border.EmptyBorder;
+import javax.swing.border.CompoundBorder;
 
 import heartsync.model.User;
 import heartsync.model.UserProfile;
@@ -45,8 +47,11 @@ import com.google.gson.reflect.TypeToken;
 
 public class ChatSystem extends JFrame {
     private static final int WINDOW_RADIUS = 20;
-    private static final Color THEME_COLOR = new Color(102, 0, 51); // Deep purple/maroon color
+    private static final Color THEME_COLOR = new Color(105, 0, 51); // #690033
     private static final Color TEXT_COLOR = Color.WHITE;
+    private static final int AVATAR_SIZE = 32;
+    private static final int CARD_RADIUS = 10;
+    private static final Font CHAT_FONT = new Font("Roboto", Font.PLAIN, 13);
     
     private final JPanel mainPanel;
     private final JPanel headerPanel;
@@ -191,16 +196,17 @@ public class ChatSystem extends JFrame {
     
     private void displayMatchedUsers() {
         contentPanel.removeAll();
+        contentPanel.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
         
         for (MatchedUser user : matchedUsers) {
             JPanel userPanel = createUserPanel(user);
             contentPanel.add(userPanel);
-            contentPanel.add(Box.createRigidArea(new Dimension(0, 15)));
+            contentPanel.add(Box.createRigidArea(new Dimension(0, 6)));
         }
         
         if (matchedUsers.isEmpty()) {
             JLabel noMatchesLabel = new JLabel("No matches yet");
-            noMatchesLabel.setFont(new Font("Arial", Font.PLAIN, 16));
+            noMatchesLabel.setFont(CHAT_FONT);
             noMatchesLabel.setForeground(Color.GRAY);
             noMatchesLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
             contentPanel.add(noMatchesLabel);
@@ -211,52 +217,71 @@ public class ChatSystem extends JFrame {
     }
     
     private JPanel createUserPanel(MatchedUser user) {
-        JPanel panel = new JPanel(new BorderLayout(15, 0));
-        panel.setBackground(Color.WHITE);
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        // Main panel with rounded corners and shadow
+        JPanel panel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                // Draw shadow (more subtle)
+                g2.setColor(new Color(0, 0, 0, 15));
+                g2.fillRoundRect(1, 1, getWidth() - 2, getHeight() - 2, CARD_RADIUS, CARD_RADIUS);
+                
+                // Draw background
+                g2.setColor(THEME_COLOR);
+                g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, CARD_RADIUS, CARD_RADIUS);
+                
+                g2.dispose();
+            }
+
+            @Override
+            public Dimension getPreferredSize() {
+                // Control the height of the panel
+                Dimension size = super.getPreferredSize();
+                return new Dimension(size.width, 44); // Fixed height for consistency
+            }
+        };
+        
+        panel.setLayout(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        panel.setBackground(new Color(0, 0, 0, 0));
+        panel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createEmptyBorder(2, 2, 2, 2),
+            BorderFactory.createEmptyBorder(4, 8, 4, 8)
+        ));
         panel.setCursor(new Cursor(Cursor.HAND_CURSOR));
         
-        // Profile picture (circular)
+        // Profile picture (circular with white border)
         try {
             ImageIcon originalIcon = new ImageIcon(getClass().getResource(user.imagePath));
-            Image image = originalIcon.getImage().getScaledInstance(60, 60, Image.SCALE_SMOOTH);
+            Image image = originalIcon.getImage().getScaledInstance(AVATAR_SIZE, AVATAR_SIZE, Image.SCALE_SMOOTH);
             JLabel imageLabel = new JLabel(new ImageIcon(image)) {
                 @Override
                 protected void paintComponent(Graphics g) {
                     Graphics2D g2 = (Graphics2D) g.create();
                     g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                    g2.setClip(new java.awt.geom.Ellipse2D.Float(0, 0, getWidth(), getHeight()));
+                    
+                    // Draw white border (thinner)
+                    g2.setColor(Color.WHITE);
+                    g2.fill(new Ellipse2D.Float(0, 0, getWidth(), getHeight()));
+                    
+                    // Draw image
+                    g2.setClip(new Ellipse2D.Float(1, 1, getWidth() - 2, getHeight() - 2));
                     super.paintComponent(g2);
                     g2.dispose();
                 }
             };
-            imageLabel.setPreferredSize(new Dimension(60, 60));
-            panel.add(imageLabel, BorderLayout.WEST);
+            imageLabel.setPreferredSize(new Dimension(AVATAR_SIZE, AVATAR_SIZE));
+            panel.add(imageLabel);
         } catch (Exception e) {
             e.printStackTrace();
         }
         
-        // Name in a purple rounded rectangle
-        JPanel nameContainer = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(THEME_COLOR);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 20, 20);
-                g2.dispose();
-            }
-        };
-        nameContainer.setOpaque(false);
-        nameContainer.setLayout(new BorderLayout());
-        nameContainer.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
-        
+        // Name label
         JLabel nameLabel = new JLabel(user.name.toUpperCase());
-        nameLabel.setFont(new Font("Arial", Font.BOLD, 16));
+        nameLabel.setFont(CHAT_FONT);
         nameLabel.setForeground(TEXT_COLOR);
-        nameContainer.add(nameLabel, BorderLayout.CENTER);
-        
-        panel.add(nameContainer, BorderLayout.CENTER);
+        panel.add(nameLabel);
         
         // Click listener
         panel.addMouseListener(new MouseAdapter() {

@@ -1,6 +1,6 @@
 heartsync/view/ProfileSetupView$3.class
-heartsync/database/DatabaseManagerProfile$4.class
 heartsync/view/HomePage$7.class
+heartsync/view/ChatSystem$7.class
 heartsync/view/ResetPassword$1.class
 heartsync/view/MessageBox$1.class
 heartsync/view/ResetPasswordView.class
@@ -30,6 +30,7 @@ heartsyncdatingapp/controller/RegisterController.class
 heartsync/view/LoginView$4.class
 heartsync/view/ChatSystem$1.class
 heartsync/view/Swipe$14.class
+heartsync/dao/LikeDAO$3.class
 heartsync/view/ChatSystem.class
 heartsync/controller/NotificationController.class
 heartsync/view/Swipe$ProfileData.class
@@ -52,6 +53,7 @@ heartsync/dao/MatchDAO$1.class
 heartsync/dao/ChatDAO$1.class
 heartsync/database/DatabaseManagerProfile.class
 heartsync/view/LoginView$1.class
+heartsync/view/Swipe$17.class
 heartsync/dao/NotificationDAO$1.class
 heartsync/view/Register$5.class
 heartsync/dao/UserDAOForgot$3.class
@@ -63,8 +65,10 @@ heartsync/view/Swipe$2.class
 heartsync/model/Notification.class
 heartsync/view/Swipe$10.class
 heartsyncdatingapp/controller/ShowHideController$1.class
+heartsync/view/ChatSystem$9.class
 heartsync/view/ForgotPassword$3.class
 heartsync/view/AboutUsPage.class
+heartsync/view/Swipe$16.class
 heartsync/view/HomePage$9.class
 heartsync/controller/SecurityQuestionsController.class
 heartsync/view/Swipe$8.class
@@ -74,6 +78,7 @@ heartsync/view/AdminDashboard.class
 heartsync/view/AdminPage$1.class
 heartsync/dao/UserDAO$1.class
 heartsync/model/Chat.class
+heartsync/view/ChatSystem$8.class
 heartsync/model/Contact.class
 heartsync/view/LoginView$ModernButtonUI.class
 heartsync/dao/UserRegisterDAO$3.class
@@ -84,10 +89,12 @@ heartsync/view/ForgotPassword$4.class
 heartsync/view/MoreInfoView$1.class
 heartsync/view/AdminPage$7.class
 heartsync/view/ChatSystem$2.class
+heartsync/dao/LikeDAO$2.class
 heartsync/view/Swipe$7.class
 heartsync/dao/ContactDAO.class
 heartsync/dao/UserDAO$2.class
 heartsync/dao/UserRegisterDAO$2.class
+heartsync/view/Swipe$15.class
 heartsync/dao/NotificationDAO$3.class
 heartsync/view/HomePage$10.class
 heartsync/view/AdminPage.class
@@ -97,6 +104,8 @@ heartsync/view/AdminPage$3.class
 heartsync/view/MoreInfoView$2.class
 heartsync/view/LoginView$2.class
 heartsync/view/ChatSystem$3.class
+heartsync/view/Swipe$18.class
+heartsync/dao/ChatDAO$2.class
 heartsync/model/UserProfile.class
 heartsync/dao/UserRegisterDAO$5.class
 heartsync/view/SecurityQuestionsDialog$1.class
@@ -107,6 +116,7 @@ heartsync/dao/UserDAOForgot$2.class
 heartsync/view/FeaturesPage.class
 heartsync/view/HomePage$8.class
 heartsync/view/ForgotPassword$6.class
+heartsync/dao/LikeDAO.class
 heartsync/view/ContactsPage$1.class
 heartsync/view/FeaturesPage$1.class
 heartsync/view/ResetPassword$2.class
@@ -117,7 +127,6 @@ heartsync/view/Register$7.class
 heartsync/view/LoginView.class
 heartsync/view/ChatSystem$MatchedUser.class
 heartsync/view/MatchNotif$NotificationCellRenderer.class
-heartsync/database/DatabaseManagerProfile$3.class
 heartsync/dao/ResetDAO.class
 heartsync/view/MessageBox.class
 heartsync/view/ProfileSetupView$4.class
@@ -127,6 +136,7 @@ heartsync/view/Swipe$13.class
 heartsync/view/AboutUsPage$1.class
 heartsync/dao/UserDAOForgot.class
 heartsync/view/ContactsPage.class
+heartsync/view/ChatSystem$5.class
 heartsync/view/LoginView$3.class
 heartsync/controller/LoginController$3.class
 heartsync/view/AdminPage$5.class
@@ -145,13 +155,16 @@ heartsync/view/HomePage$6.class
 heartsync/view/HomePage$12.class
 heartsync/dao/ResetDAO$2.class
 heartsync/view/SecurityQuestionsDialog$5.class
+heartsync/view/ChatSystem$6.class
 heartsync/controller/LoginController$4.class
 heartsync/view/MatchNotif$1.class
+heartsync/dao/LikeDAO$1.class
 heartsync/view/ProfileSetupView$2.class
 heartsync/view/ForgotPassword$1.class
 heartsync/view/Register$9.class
 heartsync/view/MoreInfoView.class
 heartsync/view/AdminPage$4.class
+heartsync/view/Swipe$19.class
 heartsync/controller/ResetController.class
 heartsync/view/Swipe$4.class
 heartsync/view/SecurityQuestionsDialog.class

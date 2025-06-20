@@ -34,12 +34,11 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.border.EmptyBorder;
 
-// Add these imports
-import heartsync.view.Swipe;
-import heartsync.view.MessageBox;
-import heartsync.model.User;
-import heartsync.database.FirebaseConfig;
 import com.google.gson.reflect.TypeToken;
+
+import heartsync.database.FirebaseConfig;
+import heartsync.model.User;
+import heartsync.navigation.WindowManager;
 
 public class ChatSystem extends JFrame {
     private static final int WINDOW_RADIUS = 20;
@@ -118,33 +117,45 @@ public class ChatSystem extends JFrame {
         header.setPreferredSize(new Dimension(getWidth(), 70));
         
         // Logo and back button panel
-        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
+        JPanel leftPanel = new JPanel();
+        leftPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 5, 0));
         leftPanel.setOpaque(false);
 
         // Back button
-        JButton backButton = new JButton("← Back");
+        JButton backButton = new JButton("←");
         backButton.setForeground(Color.WHITE);
-        backButton.setBackground(HEADER_COLOR);
-        backButton.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        backButton.setBorder(BorderFactory.createEmptyBorder(5, 15, 5, 15));
+        backButton.setBackground(new Color(219, 68, 134)); // Pink color to match the UI
+        backButton.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        backButton.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
         backButton.setFocusPainted(false);
+        backButton.setOpaque(true);  // Make sure the button background is visible
         backButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         backButton.addActionListener(e -> {
-            this.dispose();
-            SwingUtilities.invokeLater(() -> {
-                Swipe swipe = new Swipe();
-                swipe.setVisible(true);
-            });
+            dispose();
+            WindowManager.show(Swipe.class, Swipe::new, this);
         });
-        leftPanel.add(backButton);
+        
+        // Add hover effect
+        backButton.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                backButton.setBackground(new Color(199, 48, 114)); // Darker pink on hover
+            }
+            
+            @Override
+            public void mouseExited(MouseEvent e) {
+                backButton.setBackground(new Color(219, 68, 134));
+            }
+        });
         
         // Logo
         JLabel logo = new JLabel("HeartSync");
         logo.setFont(new Font("Segoe UI", Font.BOLD, 24));
         logo.setForeground(Color.WHITE);
         logo.setBorder(new EmptyBorder(10, 20, 10, 0));
+
+        leftPanel.add(backButton);
         leftPanel.add(logo);
-        
         header.add(leftPanel, BorderLayout.WEST);
         
         // Close button
@@ -154,6 +165,7 @@ public class ChatSystem extends JFrame {
         closeButton.setFont(new Font("Segoe UI", Font.BOLD, 16));
         closeButton.setBorder(BorderFactory.createEmptyBorder(5, 15, 5, 15));
         closeButton.setFocusPainted(false);
+        closeButton.setOpaque(true);  // Make sure the button background is visible
         closeButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         closeButton.addActionListener(e -> dispose());
         
@@ -174,31 +186,43 @@ public class ChatSystem extends JFrame {
         // Add some padding at the top
         menu.add(Box.createRigidArea(new Dimension(0, 20)));
         
+        // Back button at the top
+        JButton backButton = new JButton("← Back to Swipe");
+        backButton.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        backButton.setForeground(Color.WHITE);
+        backButton.setBackground(MENU_BACKGROUND);
+        backButton.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        backButton.setMaximumSize(new Dimension(250, 50));
+        backButton.setFocusPainted(false);
+        backButton.setOpaque(true);
+        backButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        backButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
+        backButton.addMouseListener(new MouseAdapter() {
+            public void mouseEntered(MouseEvent evt) {
+                backButton.setBackground(MENU_BACKGROUND.darker());
+            }
+            public void mouseExited(MouseEvent evt) {
+                backButton.setBackground(MENU_BACKGROUND);
+            }
+        });
+        
+        backButton.addActionListener(e -> {
+            dispose();
+            WindowManager.show(Swipe.class, Swipe::new, this);
+        });
+        
+        menu.add(backButton);
+        menu.add(Box.createRigidArea(new Dimension(0, 10)));
+        
         // Menu items
-        String[] menuItems = {"💝 MY MATCHES"};
-        for (String item : menuItems) {
-            JButton menuButton = new JButton(item);
-            menuButton.setFont(new Font("Segoe UI", Font.BOLD, 16));
-            menuButton.setForeground(Color.WHITE);
-            menuButton.setBackground(MENU_BACKGROUND);
-            menuButton.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
-            menuButton.setMaximumSize(new Dimension(250, 50));
-            menuButton.setFocusPainted(false);
-            menuButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            menuButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-            
-            menuButton.addMouseListener(new MouseAdapter() {
-                public void mouseEntered(MouseEvent evt) {
-                    menuButton.setBackground(MENU_BACKGROUND.darker());
-                }
-                public void mouseExited(MouseEvent evt) {
-                    menuButton.setBackground(MENU_BACKGROUND);
-                }
-            });
-            
-            menu.add(menuButton);
-            menu.add(Box.createRigidArea(new Dimension(0, 10)));
-        }
+        JLabel matchesLabel = new JLabel("💝 MY MATCHES");
+        matchesLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        matchesLabel.setForeground(Color.WHITE);
+        matchesLabel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        matchesLabel.setMaximumSize(new Dimension(250, 50));
+        matchesLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        menu.add(matchesLabel);
         
         return menu;
     }

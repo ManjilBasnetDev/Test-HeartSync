@@ -19,12 +19,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.BorderFactory;
-import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
@@ -32,11 +32,11 @@ import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.border.EmptyBorder;
-import javax.swing.JOptionPane;
 
-import heartsync.model.User;
-import heartsync.model.Chat;
 import heartsync.dao.ChatDAO;
+import heartsync.model.Chat;
+import heartsync.model.User;
+import heartsync.navigation.WindowManager;
 
 public class MessageBox extends JFrame {
     private static final int WINDOW_RADIUS = 20;
@@ -133,28 +133,45 @@ public class MessageBox extends JFrame {
         header.setPreferredSize(new Dimension(getWidth(), 70));
         
         // Left panel with back button and user info
-        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
+        JPanel leftPanel = new JPanel();
+        leftPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 5, 0));
         leftPanel.setOpaque(false);
 
         // Back button
-        JButton backButton = new JButton("← Back");
+        JButton backButton = new JButton("←");
         backButton.setForeground(Color.WHITE);
-        backButton.setBackground(HEADER_COLOR);
-        backButton.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        backButton.setBorder(BorderFactory.createEmptyBorder(5, 15, 5, 15));
+        backButton.setBackground(new Color(219, 68, 134));
+        backButton.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        backButton.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
         backButton.setFocusPainted(false);
+        backButton.setOpaque(true);  // Make sure the button background is visible
         backButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         backButton.addActionListener(e -> {
             dispose();
+            WindowManager.show(ChatSystem.class, ChatSystem::new, this);
         });
-        leftPanel.add(backButton);
+        
+        backButton.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                backButton.setBackground(new Color(199, 48, 114));
+            }
+            
+            @Override
+            public void mouseExited(MouseEvent e) {
+                backButton.setBackground(new Color(219, 68, 134));
+            }
+        });
         
         // User info
+        JPanel userInfoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        userInfoPanel.setOpaque(false);
+        
         try {
             ImageIcon imageIcon = new ImageIcon(getClass().getResource(userImage));
             Image image = imageIcon.getImage().getScaledInstance(50, 50, Image.SCALE_SMOOTH);
             JLabel imageLabel = new JLabel(new ImageIcon(image));
-            leftPanel.add(imageLabel);
+            userInfoPanel.add(imageLabel);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -162,8 +179,10 @@ public class MessageBox extends JFrame {
         JLabel nameLabel = new JLabel(userName);
         nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
         nameLabel.setForeground(Color.WHITE);
-        leftPanel.add(nameLabel);
-        
+        userInfoPanel.add(nameLabel);
+
+        leftPanel.add(backButton);
+        leftPanel.add(userInfoPanel);
         header.add(leftPanel, BorderLayout.WEST);
         
         // Close button
@@ -173,6 +192,7 @@ public class MessageBox extends JFrame {
         closeButton.setFont(new Font("Segoe UI", Font.BOLD, 16));
         closeButton.setBorder(BorderFactory.createEmptyBorder(5, 15, 5, 15));
         closeButton.setFocusPainted(false);
+        closeButton.setOpaque(true);  // Make sure the button background is visible
         closeButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         closeButton.addActionListener(e -> dispose());
         

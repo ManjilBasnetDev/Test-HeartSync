@@ -4,6 +4,8 @@
  */
 package heartsync.view;
 
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import heartsync.controller.LoginController;
 import heartsync.view.ForgotPassword;
 import javax.swing.ImageIcon;
@@ -15,6 +17,8 @@ import javax.swing.ImageIcon;
 public class LoginView extends javax.swing.JFrame {
     
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(LoginView.class.getName());
+    // Simple placeholders
+    private static final String PLACEHOLDER_USERNAME = "USERNAME";
 
     /**
      * Creates new form LoginView
@@ -22,6 +26,8 @@ public class LoginView extends javax.swing.JFrame {
     public LoginView() {
         initComponents();
         styleButtons();
+        setLoginButtonEnabled(false);
+        setupLiveValidation();
         
         // Set application icon
         try {
@@ -33,12 +39,11 @@ public class LoginView extends javax.swing.JFrame {
         
         // --- Back Button Logic ---
         jButton1.addActionListener(evt -> {
-            // Let the controller handle the back action
-            if (controller != null) {
-                controller.handleBack();
-            } else {
-                dispose();
-            }
+            dispose(); // Close login view
+            // Create and show a fresh HomePage
+            HomePage homePage = new HomePage();
+            homePage.setLocationRelativeTo(null);
+            homePage.setVisible(true);
         });
         
         // --- Show/Hide Toggle Logic ---
@@ -93,6 +98,40 @@ public class LoginView extends javax.swing.JFrame {
     // Method to set the controller
     public void setController(heartsync.controller.LoginController controller) {
         this.controller = controller;
+    }
+    
+    /**
+     * Enables or disables the login button
+     * @param enabled true to enable the button, false to disable it
+     */
+    public void setLoginButtonEnabled(boolean enabled) {
+        jButton2.setEnabled(enabled);
+    }
+    
+    /**
+     * Creates and shows the login view.
+     * This is a static method that can be called from anywhere in the application.
+     */
+    public static void createAndShowLoginView() {
+        java.awt.EventQueue.invokeLater(() -> {
+            LoginView loginView = new LoginView();
+            heartsync.controller.LoginController controller = new heartsync.controller.LoginController(loginView);
+            loginView.setLocationRelativeTo(null);
+            loginView.setVisible(true);
+        });
+    }
+    
+    /**
+     * Shows the login view as a new window.
+     * This is a static method that can be called from anywhere in the application.
+     */
+    public static void showLoginView() {
+        java.awt.EventQueue.invokeLater(() -> {
+            LoginView loginView = new LoginView();
+            heartsync.controller.LoginController controller = new heartsync.controller.LoginController(loginView);
+            loginView.setLocationRelativeTo(null);
+            loginView.setVisible(true);
+        });
     }
 
     // Helper for showing popups
@@ -344,7 +383,15 @@ jToggleButton1.setPreferredSize(new java.awt.Dimension(70, 32));
     
     // ----- Controller Integration Methods -----
     public void addLoginButtonListener(java.awt.event.ActionListener l) {
-        jButton2.addActionListener(l);
+        jButton2.addActionListener(e -> {
+            // Get the HomePage instance and dispose it if it exists
+            HomePage homePage = HomePage.getInstance();
+            if (homePage != null && homePage.isDisplayable()) {
+                homePage.dispose();
+            }
+            // Forward the event to the actual listener
+            l.actionPerformed(e);
+        });
     }
 
     public void addBackButtonListener(java.awt.event.ActionListener l) {
@@ -384,6 +431,25 @@ jToggleButton1.setPreferredSize(new java.awt.Dimension(70, 32));
     // Overloaded showMessage to accept custom title (used by controller)
     public void showMessage(String message, String title, int messageType) {
         javax.swing.JOptionPane.showMessageDialog(this, message, title, messageType);
+    }
+
+    // ---------------- Live validation ----------------
+    private void setupLiveValidation() {
+        DocumentListener dl = new DocumentListener() {
+            private void update() {
+                String user = getUsername();
+                String pass = getPassword();
+                boolean valid = !user.isBlank() && !user.equalsIgnoreCase(PLACEHOLDER_USERNAME) && !pass.isBlank();
+                setLoginButtonEnabled(valid);
+            }
+            @Override public void insertUpdate(DocumentEvent e) { update(); }
+            @Override public void removeUpdate(DocumentEvent e) { update(); }
+            @Override public void changedUpdate(DocumentEvent e) { update(); }
+        };
+        jTextField1.getDocument().addDocumentListener(dl);
+        jPasswordField1.getDocument().addDocumentListener(dl);
+        // Run once to initialize
+        dl.insertUpdate(null);
     }
 
     // Utility to clear input fields

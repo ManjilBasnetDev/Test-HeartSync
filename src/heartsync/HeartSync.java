@@ -4,7 +4,7 @@
  */
 package heartsync;
 
-import heartsync.controller.LoginController;
+import heartsync.view.HomePage;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
@@ -27,9 +27,21 @@ public class HeartSync {
             // Set system look and feel
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
             
-            // Launch the HomePage first
+            // Set button UI defaults
+            UIManager.put("Button.background", new java.awt.Color(70, 130, 180));
+            UIManager.put("Button.foreground", java.awt.Color.WHITE);
+            UIManager.put("Button.font", new java.awt.Font("Arial", java.awt.Font.BOLD, 14));
+            
+            // Set panel UI defaults
+            UIManager.put("Panel.background", new java.awt.Color(255, 240, 245));
+            UIManager.put("Label.font", new java.awt.Font("Arial", java.awt.Font.BOLD, 14));
+            UIManager.put("TextField.font", new java.awt.Font("Arial", java.awt.Font.PLAIN, 14));
+            UIManager.put("TextArea.font", new java.awt.Font("Arial", java.awt.Font.PLAIN, 14));
+            
+            // Launch the HomePage directly
             SwingUtilities.invokeLater(() -> {
-                new heartsync.view.HomePage().setVisible(true);
+                HomePage homePage = new HomePage();
+                homePage.setVisible(true);
             });
         } catch (Exception e) {
             System.err.println("Error starting application: " + e.getMessage());

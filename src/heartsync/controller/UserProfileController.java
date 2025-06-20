@@ -4,6 +4,7 @@ import java.util.List;
 
 import heartsync.model.UserProfile;
 import heartsync.view.MoreInfoView;
+import heartsync.database.DatabaseManagerProfile;
 
 public class UserProfileController {
     private UserProfile model;
@@ -24,20 +25,33 @@ public class UserProfileController {
     }
 
     // Basic info methods
-    public void updateBasicInfo(String username, String fullName, int height, int weight, 
-                              String country, String address, String phone, 
-                              String qualification, String gender, String preferences, 
-                              String aboutMe) {
-        model.setFullName(fullName);
-        model.setHeight(height);
-        model.setWeight(weight);
-        model.setCountry(country);
-        model.setAddress(address);
-        model.setPhoneNumber(phone);
-        model.setQualification(qualification);
-        model.setGender(gender);
-        model.setPreferences(preferences);
-        model.setAboutMe(aboutMe);
+    public void updateBasicInfo(String username, String fullName, int height, int weight,
+                                String country, String address, String phoneNumber,
+                                String education, String gender, String preferences,
+                                String aboutMe) {
+        try {
+            UserProfile profile = getModel();
+            profile.setUsername(username);
+            profile.setFullName(fullName);
+            profile.setHeight(height);
+            profile.setWeight(weight);
+            profile.setCountry(country);
+            profile.setAddress(address);
+            profile.setPhoneNumber(phoneNumber);
+            profile.setEducation(education);
+            profile.setGender(gender);
+            profile.setPreferences(preferences);
+            profile.setAboutMe(aboutMe);
+            
+            // Save to Firebase under user_details/{username}
+            DatabaseManagerProfile.getInstance().saveUserProfile(profile);
+            
+            // Update the current user's profile in memory
+            UserProfile.setCurrentUser(profile);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Failed to update profile: " + e.getMessage());
+        }
     }
 
     // Additional info methods
@@ -53,16 +67,52 @@ public class UserProfileController {
         model.setEmail(email);
     }
 
-    public void setProfilePicture(String profilePicPath) {
-        model.setProfilePicPath(profilePicPath);
+    public void setProfilePicture(String path) {
+        try {
+            UserProfile profile = getModel();
+            profile.setProfilePicPath(path);
+            
+            // Save to Firebase
+            DatabaseManagerProfile.getInstance().saveUserProfile(profile);
+            
+            // Update the current user's profile in memory
+            UserProfile.setCurrentUser(profile);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Failed to update profile picture: " + e.getMessage());
+        }
     }
 
-    public void updateHobbies(List<String> hobbies) {
-        model.setHobbies(hobbies);
+    public void setRelationChoice(String relationshipGoal) {
+        try {
+            UserProfile profile = getModel();
+            profile.setRelationshipGoal(relationshipGoal);
+            
+            // Save to Firebase
+            DatabaseManagerProfile.getInstance().saveUserProfile(profile);
+            
+            // Update the current user's profile in memory
+            UserProfile.setCurrentUser(profile);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Failed to update relationship goal: " + e.getMessage());
+        }
     }
 
-    public void setRelationChoice(String relation) {
-        model.setRelationshipGoal(relation);
+    public void setHobbies(List<String> hobbies) {
+        try {
+            UserProfile profile = getModel();
+            profile.setHobbies(hobbies);
+            
+            // Save to Firebase
+            DatabaseManagerProfile.getInstance().saveUserProfile(profile);
+            
+            // Update the current user's profile in memory
+            UserProfile.setCurrentUser(profile);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Failed to update hobbies: " + e.getMessage());
+        }
     }
 
     public void showMoreInfoView() {

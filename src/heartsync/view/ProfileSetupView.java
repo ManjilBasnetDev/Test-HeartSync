@@ -16,7 +16,6 @@ import java.awt.Insets;
 import java.awt.RenderingHints;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
-import java.awt.image.BufferedImage;
 import java.io.File;
 
 import javax.swing.BorderFactory;
@@ -74,9 +73,9 @@ public class ProfileSetupView extends JFrame {
         UIManager.put("ComboBox.buttonDarkShadow", Color.WHITE);
         UIManager.put("ComboBox.border", BorderFactory.createLineBorder(new Color(219, 112, 147), 1));
 
-        setTitle("HeartSync - Profile Setup");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setPreferredSize(new Dimension(800, 600));
+        setTitle("Profile Setup");
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setSize(800, 900);
         setLocationRelativeTo(null);
 
         // Create the main scrollable panel
@@ -122,7 +121,6 @@ public class ProfileSetupView extends JFrame {
         profilePicLabel = new JLabel();
         profilePicLabel.setPreferredSize(new Dimension(150, 150));
         profilePicLabel.setBorder(BorderFactory.createLineBorder(new Color(219, 112, 147), 2));
-        setDefaultProfilePic();
         picPanel.add(profilePicLabel);
 
         JButton uploadButton = new JButton("Upload Picture");
@@ -138,22 +136,29 @@ public class ProfileSetupView extends JFrame {
 
         // Create form fields
         nameField = createStyledTextField("Full Name");
+        // Pre-fill name
+        if (controller.getModel().getFullName() != null) nameField.setText(controller.getModel().getFullName());
         
         // Height Slider with value label
-        heightSlider = createStyledSlider(140, 220, 170);
+        int initialHeight = controller.getModel().getHeight() > 0 ? controller.getModel().getHeight() : 170;
+        heightSlider = createStyledSlider(140, 220, initialHeight);
         heightValueLabel = new JLabel(heightSlider.getValue() + " cm");
         heightValueLabel.setFont(new Font("Arial", Font.PLAIN, 14));
         heightSlider.addChangeListener(e -> heightValueLabel.setText(heightSlider.getValue() + " cm"));
         
         // Weight Slider with value label
-        weightSlider = createStyledSlider(40, 150, 70);
+        int initialWeight = controller.getModel().getWeight() > 0 ? controller.getModel().getWeight() : 70;
+        weightSlider = createStyledSlider(40, 150, initialWeight);
         weightValueLabel = new JLabel(weightSlider.getValue() + " kg");
         weightValueLabel.setFont(new Font("Arial", Font.PLAIN, 14));
         weightSlider.addChangeListener(e -> weightValueLabel.setText(weightSlider.getValue() + " kg"));
         
         countryField = createStyledTextField("Country");
+        if (controller.getModel().getCountry() != null) countryField.setText(controller.getModel().getCountry());
         addressField = createStyledTextField("Address");
+        if (controller.getModel().getAddress() != null) addressField.setText(controller.getModel().getAddress());
         phoneField = createStyledTextField("Phone Number");
+        if (controller.getModel().getPhoneNumber() != null) phoneField.setText(controller.getModel().getPhoneNumber());
 
         // Qualification dropdown
         String[] qualifications = {
@@ -168,14 +173,17 @@ public class ProfileSetupView extends JFrame {
         };
         qualificationComboBox = new JComboBox<>(qualifications);
         styleComboBox(qualificationComboBox);
+        if (controller.getModel().getQualification() != null) qualificationComboBox.setSelectedItem(controller.getModel().getQualification());
 
         String[] genders = {"Male", "Female", "Other"};
         genderComboBox = new JComboBox<>(genders);
         styleComboBox(genderComboBox);
+        if (controller.getModel().getGender() != null) genderComboBox.setSelectedItem(controller.getModel().getGender());
 
         String[] preferences = {"Men", "Women", "Both"};
         preferencesComboBox = new JComboBox<>(preferences);
         styleComboBox(preferencesComboBox);
+        if (controller.getModel().getPreferences() != null) preferencesComboBox.setSelectedItem(controller.getModel().getPreferences());
 
         aboutMeArea = new JTextArea(4, 20);
         aboutMeArea.setLineWrap(true);
@@ -187,6 +195,7 @@ public class ProfileSetupView extends JFrame {
             BorderFactory.createEmptyBorder(5, 5, 5, 5)
         ));
         aboutMeArea.setFont(new Font("Arial", Font.PLAIN, 14));
+        if (controller.getModel().getAboutMe() != null) aboutMeArea.setText(controller.getModel().getAboutMe());
 
         // Add form fields with labels
         addFormField(formPanel, "Full Name:", nameField, gbc);
@@ -221,7 +230,8 @@ public class ProfileSetupView extends JFrame {
         formPanel.add(new JScrollPane(aboutMeArea), gbc);
 
         // Next button
-        JButton nextButton = new JButton("NEXT");
+        String buttonText = (controller.getModel().getFullName() != null && !controller.getModel().getFullName().isEmpty()) ? "Update Profile" : "NEXT";
+        JButton nextButton = new JButton(buttonText);
         styleButton(nextButton);
         nextButton.setPreferredSize(new Dimension(200, 50));
         nextButton.addActionListener(this::handleNext);
@@ -347,15 +357,6 @@ public class ProfileSetupView extends JFrame {
         panel.add(field, gbc);
     }
 
-    private void setDefaultProfilePic() {
-        ImageIcon defaultIcon = new ImageIcon(new BufferedImage(150, 150, BufferedImage.TYPE_INT_RGB));
-        Graphics2D g = (Graphics2D) defaultIcon.getImage().getGraphics();
-        g.setColor(new Color(219, 112, 147));
-        g.fillRect(0, 0, 150, 150);
-        g.dispose();
-        profilePicLabel.setIcon(defaultIcon);
-    }
-
     private void handlePictureUpload() {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setFileFilter(new javax.swing.filechooser.FileFilter() {
@@ -405,6 +406,9 @@ public class ProfileSetupView extends JFrame {
 
         // Update model through controller
         try {
+            System.out.println("Saving profile data for user: " + controller.getCurrentUsername());
+            
+            // Update model through controller
             controller.updateBasicInfo(
                 controller.getCurrentUsername(),
                 nameField.getText().trim(),
@@ -419,10 +423,25 @@ public class ProfileSetupView extends JFrame {
                 aboutMeArea.getText().trim()
             );
 
-            // Show next view
-            this.setVisible(false);
-            controller.showMoreInfoView();
+            System.out.println("Profile data saved successfully");
+
+            // Show success message
+            JOptionPane.showMessageDialog(this,
+                "Basic profile created successfully! Let's add some more details.",
+                "Success",
+                JOptionPane.INFORMATION_MESSAGE);
+
+            // Close the profile setup window
+            this.dispose();
+
+            // Show the MoreInfoView
+            SwingUtilities.invokeLater(() -> {
+                controller.showMoreInfoView();
+            });
+
         } catch (Exception ex) {
+            System.err.println("Error saving profile: " + ex.getMessage());
+            ex.printStackTrace();
             JOptionPane.showMessageDialog(this,
                 "Error saving profile: " + ex.getMessage(),
                 "Error",

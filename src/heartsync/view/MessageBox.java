@@ -16,6 +16,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.RoundRectangle2D;
 import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -31,6 +32,11 @@ import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.border.EmptyBorder;
+import javax.swing.JOptionPane;
+
+import heartsync.model.User;
+import heartsync.model.Chat;
+import heartsync.dao.ChatDAO;
 
 public class MessageBox extends JFrame {
     private static final int WINDOW_RADIUS = 20;
@@ -45,21 +51,31 @@ public class MessageBox extends JFrame {
     private final ArrayList<Message> messages;
     private final String userName;
     private final String userImage;
+    private final String chatId;
+    private final ChatDAO chatDAO;
+    private final String currentUserId;
+    private final String otherUserId;
     
     private static class Message {
         String content;
         boolean isSent;
+        long timestamp;
         
-        Message(String content, boolean isSent) {
+        Message(String content, boolean isSent, long timestamp) {
             this.content = content;
             this.isSent = isSent;
+            this.timestamp = timestamp;
         }
     }
     
-    public MessageBox(String userName, String userImage) {
+    public MessageBox(String userName, String userImage, String otherUserId) {
         this.userName = userName;
         this.userImage = userImage;
+        this.otherUserId = otherUserId;
+        this.currentUserId = User.getCurrentUser().getUserId();
+        this.chatId = getChatId(currentUserId, otherUserId);
         this.messages = new ArrayList<>();
+        this.chatDAO = new ChatDAO();
         
         setTitle("Chat with " + userName);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
@@ -100,11 +116,15 @@ public class MessageBox extends JFrame {
         setContentPane(mainPanel);
         setShape(new RoundRectangle2D.Double(0, 0, getWidth(), getHeight(), WINDOW_RADIUS, WINDOW_RADIUS));
         
-        // Add sample messages
-        addSampleMessages();
+        // Load messages
+        loadMessages();
         
         // Make window draggable
         setupWindowDragging(headerPanel);
+        
+        // Set up message refresh timer
+        Timer refreshTimer = new Timer(5000, e -> loadMessages());
+        refreshTimer.start();
     }
     
     private JPanel createHeaderPanel() {
@@ -195,66 +215,92 @@ public class MessageBox extends JFrame {
     }
     
     private void sendMessage() {
-        String text = messageInput.getText().trim();
-        if (!text.isEmpty()) {
-            messages.add(new Message(text, true));
-            updateChatPanel();
-            messageInput.setText("");
+        String messageText = messageInput.getText().trim();
+        if (messageText.isEmpty()) {
+            return;
+        }
+
+        try {
+            Chat chat = new Chat();
+            chat.setSenderId(currentUserId);
+            chat.setMessage(messageText);
             
-            // Simulate received message after a delay
-            Timer timer = new Timer(1000, e -> {
-                messages.add(new Message("Thanks for your message!", false));
-                updateChatPanel();
-            });
-            timer.setRepeats(false);
-            timer.start();
+            boolean success = chatDAO.sendMessage(chatId, chat);
+            
+            if (success) {
+                messageInput.setText("");
+                loadMessages(); // Refresh messages
+            } else {
+                JOptionPane.showMessageDialog(this,
+                    "Failed to send message. Please try again.",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                "Error sending message: " + e.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
         }
     }
     
-    private void updateChatPanel() {
-        chatPanel.removeAll();
-        chatPanel.add(Box.createVerticalStrut(10));
-        
-        for (Message message : messages) {
-            JPanel messagePanel = new JPanel(new BorderLayout());
-            messagePanel.setOpaque(false);
-            messagePanel.setBorder(new EmptyBorder(5, 10, 5, 10));
+    private void loadMessages() {
+        try {
+            List<Chat> chatMessages = chatDAO.getMessages(chatId);
             
-            JLabel messageLabel = new JLabel(message.content);
-            messageLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-            messageLabel.setBorder(new EmptyBorder(8, 15, 8, 15));
+            // Clear existing messages
+            chatPanel.removeAll();
             
-            if (message.isSent) {
-                messageLabel.setBackground(MESSAGE_SENT_COLOR);
-                messageLabel.setForeground(Color.WHITE);
-                messagePanel.add(messageLabel, BorderLayout.EAST);
-            } else {
-                messageLabel.setBackground(MESSAGE_RECEIVED_COLOR);
-                messageLabel.setForeground(Color.BLACK);
-                messagePanel.add(messageLabel, BorderLayout.WEST);
+            // Add each message
+            for (Chat chat : chatMessages) {
+                boolean isSent = chat.getSenderId().equals(currentUserId);
+                addMessageBubble(chat.getMessage(), isSent, chat.getTimestamp());
             }
             
-            messageLabel.setOpaque(true);
-            chatPanel.add(messagePanel);
+            // Scroll to bottom
+            SwingUtilities.invokeLater(() -> {
+                JScrollPane scrollPane = (JScrollPane) chatPanel.getParent().getParent();
+                JScrollBar vertical = scrollPane.getVerticalScrollBar();
+                vertical.setValue(vertical.getMaximum());
+            });
+            
+            chatPanel.revalidate();
+            chatPanel.repaint();
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                "Error loading messages: " + e.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
         }
-        
-        chatPanel.add(Box.createVerticalGlue());
-        chatPanel.revalidate();
-        chatPanel.repaint();
-        
-        // Scroll to bottom
-        SwingUtilities.invokeLater(() -> {
-            JScrollPane scrollPane = (JScrollPane) chatPanel.getParent().getParent();
-            JScrollBar vertical = scrollPane.getVerticalScrollBar();
-            vertical.setValue(vertical.getMaximum());
-        });
     }
     
-    private void addSampleMessages() {
-        messages.add(new Message("Hi there!", false));
-        messages.add(new Message("Hello! How are you?", true));
-        messages.add(new Message("I'm doing great, thanks for asking!", false));
-        updateChatPanel();
+    private void addMessageBubble(String message, boolean isSent, long timestamp) {
+        JPanel bubblePanel = new JPanel();
+        bubblePanel.setLayout(new BorderLayout());
+        bubblePanel.setOpaque(false);
+        
+        // Message text
+        JLabel messageLabel = new JLabel("<html><div style='width: 200px;'>" + message + "</div></html>");
+        messageLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        messageLabel.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
+        messageLabel.setOpaque(true);
+        
+        if (isSent) {
+            messageLabel.setBackground(new Color(0, 132, 255));
+            messageLabel.setForeground(Color.WHITE);
+            bubblePanel.add(messageLabel, BorderLayout.EAST);
+        } else {
+            messageLabel.setBackground(new Color(240, 240, 240));
+            messageLabel.setForeground(Color.BLACK);
+            bubblePanel.add(messageLabel, BorderLayout.WEST);
+        }
+        
+        // Add some padding
+        bubblePanel.setBorder(BorderFactory.createEmptyBorder(4, 10, 4, 10));
+        chatPanel.add(bubblePanel);
     }
     
     private void setupWindowDragging(JPanel dragPanel) {
@@ -283,5 +329,9 @@ public class MessageBox extends JFrame {
         
         dragPanel.addMouseListener(dragListener);
         dragPanel.addMouseMotionListener(dragListener);
+    }
+    
+    private String getChatId(String userId1, String userId2) {
+        return userId1.compareTo(userId2) < 0 ? userId1 + "_" + userId2 : userId2 + "_" + userId1;
     }
 } 

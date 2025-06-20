@@ -1,11 +1,9 @@
 package heartsync.view;
 
 import heartsync.dao.ContactDAO;
-import heartsync.database.MySqlConnection;
 import heartsync.model.Contact;
 import java.awt.*;
 import java.awt.geom.Rectangle2D;
-import java.sql.SQLException;
 import javax.swing.*;
 import javax.swing.border.Border;
 
@@ -204,14 +202,6 @@ public class ContactsPage extends JPanel {
         
         // Initialize DAO
         contactDAO = new ContactDAO();
-        
-        // Test database connection
-        if (!MySqlConnection.testConnection()) {
-            JOptionPane.showMessageDialog(this,
-                "Could not connect to database. Some features may not work.",
-                "Database Error",
-                JOptionPane.WARNING_MESSAGE);
-        }
     }
 
     private void validateAndSubmit() {
@@ -292,12 +282,6 @@ public class ContactsPage extends JPanel {
                     "Error",
                     JOptionPane.ERROR_MESSAGE);
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(SwingUtilities.getWindowAncestor(this),
-                "Database error: " + e.getMessage(),
-                "Error",
-                JOptionPane.ERROR_MESSAGE);
         } catch (IllegalArgumentException e) {
             JOptionPane.showMessageDialog(SwingUtilities.getWindowAncestor(this),
                 "Invalid input: " + e.getMessage(),

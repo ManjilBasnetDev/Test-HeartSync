@@ -19,7 +19,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-
 import javax.swing.AbstractButton;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -36,10 +35,10 @@ import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 
-import heartsync.controller.LoginController;
 import heartsync.controller.UserProfileController;
-import heartsync.database.DatabaseManagerProfile;
+import heartsync.model.User;
 import heartsync.model.UserProfile;
 
 public class MoreInfoView extends JFrame {
@@ -49,13 +48,14 @@ public class MoreInfoView extends JFrame {
     private JButton hobbiesButton;
     private ButtonGroup relationButtonGroup;
     private JLabel selectedHobbiesLabel;
+    private final User currentUser;
 
-    public MoreInfoView(UserProfileController controller) {
     public MoreInfoView(UserProfileController controller) {
         this.controller = controller;
         this.hobbyCategories = new HashMap<>();
         initializeHobbyCategories();
         initializeUI();
+        this.currentUser = null; // Assuming currentUser is not available in the constructor
     }
 
     private void initializeHobbyCategories() {
@@ -414,7 +414,7 @@ public class MoreInfoView extends JFrame {
                         }
                     }
                 }
-                controller.updateHobbies(selectedHobbies);
+                controller.setHobbies(selectedHobbies);
                 selectedHobbiesLabel.setText(selectedCount[0] + " hobbies selected");
                 selectedHobbiesLabel.setFont(new Font("Arial", Font.PLAIN, 14));
                 selectedHobbiesLabel.setForeground(new Color(219, 112, 147));
@@ -429,15 +429,7 @@ public class MoreInfoView extends JFrame {
     }
 
     private void handleFinish() {
-        // Validate selections
-        if (selectedRelation.isEmpty()) {
-            JOptionPane.showMessageDialog(this,
-                "Please select your relationship preference!",
-                "Missing Selection",
-                JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
+        // Get selected hobbies
         List<String> selectedHobbies = new ArrayList<>();
         for (List<JCheckBox> checkboxes : hobbyCategories.values()) {
             for (JCheckBox checkbox : checkboxes) {
@@ -447,59 +439,64 @@ public class MoreInfoView extends JFrame {
             }
         }
 
+        // Validate selections
         if (selectedHobbies.isEmpty()) {
             JOptionPane.showMessageDialog(this,
-                "Please select your hobbies and interests!",
-                "Missing Selection",
+                "Please select your hobbies.",
+                "Missing Information",
                 JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        // Proceed with saving
-        try {
-            UserProfile profile = controller.getModel();
-            DatabaseManagerProfile dbManager = DatabaseManagerProfile.getInstance();
-            int userId = dbManager.saveUserProfile(
-                controller.getCurrentUsername(),
-            DatabaseManagerProfile dbManager = DatabaseManagerProfile.getInstance();
-            int userId = dbManager.saveUserProfile(
-                controller.getCurrentUsername(),
-                profile.getFullName(),
-                profile.getHeight(),
-                profile.getWeight(),
-                profile.getCountry(),
-                profile.getAddress(),
-                profile.getPhoneNumber(),
-                profile.getQualification(),
-                profile.getGender(),
-                profile.getPreferences(),
-                profile.getAboutMe(),
-                profile.getProfilePicPath(),
-                selectedRelation,
-                selectedHobbies
-            );
+        if (selectedHobbies.size() < 5 || selectedHobbies.size() > 12) {
+            JOptionPane.showMessageDialog(this,
+                "Please select between 5 and 12 hobbies.",
+                "Invalid Selection",
+                JOptionPane.WARNING_MESSAGE);
+            return;
+        }
 
-            if (userId != -1) {
-                JOptionPane.showMessageDialog(this,
-                    "Profile created successfully!\nYour User ID is: " + userId,
-                    "Success",
-            if (userId != -1) {
-                JOptionPane.showMessageDialog(this,
-                    "Profile created successfully!\nYour User ID is: " + userId,
-                    "Success",
-                    JOptionPane.INFORMATION_MESSAGE);
-                this.dispose();
-                LoginController.createAndShowLoginView();
-            } else {
-                JOptionPane.showMessageDialog(this,
-                    "Failed to save profile. Please try again.",
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE);
-            }
+        if (selectedRelation.isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                "Please select a relationship type.",
+                "Missing Information",
+                JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        try {
+            // Update hobbies and relationship goal
+            controller.setHobbies(selectedHobbies);
+            controller.setRelationChoice(selectedRelation);
+
+            // Get the current user's profile
+            UserProfile profile = controller.getModel();
+            boolean isEdit = profile.getFullName() != null && !profile.getFullName().isEmpty();
+
+            // Show appropriate success message
+            JOptionPane.showMessageDialog(this,
+                isEdit ? "Profile updated successfully!" : "Profile setup completed successfully!",
+                "Success",
+                JOptionPane.INFORMATION_MESSAGE);
+            
+            // Close current window
+            this.dispose();
+            
+            // Force reload profile from Firebase
+            UserProfile.setCurrentUser(null);
+            
+            // Always open HomePage
+            SwingUtilities.invokeLater(() -> {
+                HomePage homePage = new HomePage(User.getCurrentUser());
+                homePage.setLocationRelativeTo(null);
+                homePage.setVisible(true);
+            });
+            
         } catch (Exception e) {
+            e.printStackTrace();
             JOptionPane.showMessageDialog(this,
                 "Error saving profile: " + e.getMessage(),
-                "Database Error",
+                "Error",
                 JOptionPane.ERROR_MESSAGE);
         }
     }
@@ -529,7 +526,5 @@ public class MoreInfoView extends JFrame {
             }
         });
     }
-}
-    
 }
     

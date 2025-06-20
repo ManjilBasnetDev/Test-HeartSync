@@ -1,18 +1,17 @@
 package heartsync.database;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import com.google.gson.reflect.TypeToken;
+import heartsync.model.UserProfile;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class DatabaseManagerProfile {
     private static DatabaseManagerProfile instance;
+    private static final String PROFILES_PATH = "user_details";
 
-    private DatabaseManagerProfile() {
-        initializeTables();
-    }
+    private DatabaseManagerProfile() {}
 
     public static DatabaseManagerProfile getInstance() {
         if (instance == null) {
@@ -21,150 +20,97 @@ public class DatabaseManagerProfile {
         return instance;
     }
 
-    private void dropExistingTables() {
-        try (Connection conn = DatabaseConnection.getConnection()) {
-            // Drop tables in reverse order of dependencies
-            try (Statement stmt = conn.createStatement()) {
-                stmt.execute("DROP TABLE IF EXISTS user_hobbies");
-                stmt.execute("DROP TABLE IF EXISTS user_profiles");
-            }
-        } catch (SQLException e) {
-            System.err.println("Error dropping tables: " + e.getMessage());
-            throw new RuntimeException("Failed to drop tables", e);
-        }
-    }
-
-    private void initializeTables() {
-        // Drop existing tables first
-        dropExistingTables();
-        
-        try (Connection conn = DatabaseConnection.getConnection()) {
-            // Create user_profiles table with all required fields
-            try (PreparedStatement stmt = conn.prepareStatement(
-                "CREATE TABLE IF NOT EXISTS user_profiles (" +
-                "id INT AUTO_INCREMENT PRIMARY KEY, " +
-                "user_id INT NOT NULL UNIQUE, " +
-                "full_name VARCHAR(100) NOT NULL, " +
-                "height INT NOT NULL, " +
-                "age INT, " +
-                "weight INT NOT NULL, " +
-                "country VARCHAR(50) NOT NULL, " +
-                "address VARCHAR(200) NOT NULL, " +
-                "phone VARCHAR(20) NOT NULL, " +
-                "qualification VARCHAR(100) NOT NULL, " +
-                "gender VARCHAR(20) NOT NULL, " +
-                "preferences VARCHAR(20) NOT NULL, " +
-                "about_me TEXT NOT NULL, " +
-                "profile_pic_path VARCHAR(500), " +
-                "relation_choice VARCHAR(50) NOT NULL, " +
-                "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE" +
-                ")"
-            )) {
-                stmt.execute();
+    public void saveUserProfile(UserProfile profile) {
+        try {
+            String username = profile.getUsername();
+            if (username == null || username.trim().isEmpty()) {
+                throw new RuntimeException("Username cannot be null or empty");
             }
             
-            // Create user_hobbies table
-            try (PreparedStatement stmt = conn.prepareStatement(
-                "CREATE TABLE IF NOT EXISTS user_hobbies (" +
-                "id INT AUTO_INCREMENT PRIMARY KEY, " +
-                "user_id INT NOT NULL, " +
-                "hobby VARCHAR(100) NOT NULL, " +
-                "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE" +
-                ")"
-            )) {
-                stmt.execute();
+            System.out.println("Attempting to save profile for user: " + username);
+            
+            // First, try to create the user_details node if it doesn't exist
+            try {
+                Map<String, Object> testMap = FirebaseConfig.get(PROFILES_PATH, new TypeToken<Map<String, Object>>(){}.getType());
+                if (testMap == null) {
+                    System.out.println("Creating user_details node in Firebase");
+                    FirebaseConfig.set(PROFILES_PATH, new java.util.HashMap<>());
+                }
+            } catch (Exception e) {
+                System.out.println("Creating user_details node in Firebase");
+                FirebaseConfig.set(PROFILES_PATH, new java.util.HashMap<>());
             }
-        } catch (SQLException e) {
-            System.err.println("Error initializing database tables: " + e.getMessage());
-            throw new RuntimeException("Failed to initialize database tables", e);
+            
+            // Save directly to user_details/{username}
+            String path = PROFILES_PATH + "/" + username;
+            System.out.println("Saving to path: " + path);
+            
+            // Create a map of the profile data to ensure proper JSON structure
+            Map<String, Object> profileData = new java.util.HashMap<>();
+            profileData.put("username", profile.getUsername());
+            profileData.put("fullName", profile.getFullName());
+            profileData.put("height", profile.getHeight());
+            profileData.put("country", profile.getCountry());
+            profileData.put("address", profile.getAddress());
+            profileData.put("phoneNumber", profile.getPhoneNumber());
+            profileData.put("gender", profile.getGender());
+            profileData.put("education", profile.getEducation());
+            profileData.put("preferences", profile.getPreferences());
+            profileData.put("hobbies", profile.getHobbies());
+            profileData.put("relationshipGoal", profile.getRelationshipGoal());
+            profileData.put("aboutMe", profile.getAboutMe());
+            profileData.put("profilePicPath", profile.getProfilePicPath());
+            
+            FirebaseConfig.set(path, profileData);
+            System.out.println("Profile data saved successfully to Firebase");
+            
+            // Update the current user's profile in memory
+            UserProfile.setCurrentUser(profile);
+        } catch (Exception e) {
+            System.err.println("Error saving profile: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to save user profile: " + e.getMessage());
         }
     }
 
-    public int saveUserProfile(String username, String fullName, int height, int weight, String country, 
-                             String address, String phone, String qualification, 
-                             String gender, String preferences, String aboutMe, 
-                             String profilePicPath, String relationChoice, 
-                             List<String> hobbies) throws SQLException {
-        Connection conn = null;
+    public UserProfile getUserProfile(String username) {
         try {
-            conn = DatabaseConnection.getConnection();
-            conn.setAutoCommit(false);
-
-            // First, get the user_id from the users table
-            int userId;
-            try (PreparedStatement pstmt = conn.prepareStatement("SELECT id FROM users WHERE username = ?")) {
-                pstmt.setString(1, username);
-                try (ResultSet rs = pstmt.executeQuery()) {
-                    if (rs.next()) {
-                        userId = rs.getInt("id");
-                    } else {
-                        throw new SQLException("User not found: " + username);
-                    }
-                }
-            }
-
-            // Insert user profile with the correct user_id
-            String insertUserSQL = """
-                INSERT INTO user_profiles (user_id, full_name, height, age, weight, country, address, 
-                                      phone, qualification, gender, preferences, 
-                                      about_me, profile_pic_path, relation_choice)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """;
-
-            try (PreparedStatement pstmt = conn.prepareStatement(insertUserSQL, Statement.RETURN_GENERATED_KEYS)) {
-                pstmt.setInt(1, userId);
-                pstmt.setString(2, fullName);
-                pstmt.setInt(3, height);
-                pstmt.setNull(4, java.sql.Types.INTEGER); // TODO: Replace with actual age if available
-                pstmt.setInt(5, weight);
-                pstmt.setString(6, country);
-                pstmt.setString(7, address);
-                pstmt.setString(8, phone);
-                pstmt.setString(9, qualification);
-                pstmt.setString(10, gender);
-                pstmt.setString(11, preferences);
-                pstmt.setString(12, aboutMe);
-                pstmt.setString(13, profilePicPath);
-                pstmt.setString(14, relationChoice);
-
-                pstmt.executeUpdate();
-            }
-
-            // Insert hobbies
-            String insertHobbySQL = "INSERT INTO user_hobbies (user_id, hobby) VALUES (?, ?)";
-            try (PreparedStatement pstmt = conn.prepareStatement(insertHobbySQL)) {
-                for (String hobby : hobbies) {
-                    pstmt.setInt(1, userId);
-                    pstmt.setString(2, hobby);
-                    pstmt.addBatch();
-                }
-                pstmt.executeBatch();
-            }
-
-            conn.commit();
-            return userId;
-
-        } catch (SQLException e) {
-            if (conn != null) {
-                try {
-                    conn.rollback();
-                } catch (SQLException ex) {
-                    System.err.println("Error rolling back transaction: " + ex.getMessage());
-                }
-            }
-            throw e;
-        } finally {
-            if (conn != null) {
-                try {
-                    conn.setAutoCommit(true);
-                } catch (SQLException e) {
-                    System.err.println("Error resetting auto-commit: " + e.getMessage());
-                }
-            }
+            String path = PROFILES_PATH + "/" + username;
+            return FirebaseConfig.get(path, UserProfile.class);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+        return null;
     }
 
-    public void closeConnection() {
-        DatabaseConnection.closeConnection();
+    public List<UserProfile> getAllUserProfilesExcept(String username) {
+        try {
+            Map<String, UserProfile> profiles = FirebaseConfig.get(PROFILES_PATH, 
+                new TypeToken<Map<String, UserProfile>>(){}.getType());
+            
+            if (profiles != null) {
+                return profiles.entrySet().stream()
+                    .filter(entry -> !entry.getKey().equals(username))
+                    .map(Map.Entry::getValue)
+                    .collect(Collectors.toList());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return new ArrayList<>();
+    }
+
+    public void updateUserProfile(UserProfile profile) {
+        saveUserProfile(profile);
+    }
+
+    public void deleteUserProfile(String username) {
+        try {
+            String path = PROFILES_PATH + "/" + username;
+            FirebaseConfig.delete(path);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Failed to delete user profile: " + e.getMessage());
+        }
     }
 } 

@@ -1,55 +1,47 @@
 package heartsync.dao;
 
-import heartsync.database.DatabaseConnection;
 import heartsync.model.Contact;
-import java.sql.*;
+import heartsync.database.FirebaseConfig;
+import com.google.gson.reflect.TypeToken;
+import java.util.Map;
+import java.util.UUID;
+import java.io.IOException;
 
-/**
- * Data Access Object for handling Contact-related database operations.
- * Implements CRUD operations for Contact entities.
- */
 public class ContactDAO {
-    
-    public ContactDAO() {
-        // Table creation is now handled by DatabaseConnection initialization
-    }
-    
-    /**
-     * Saves a new contact to the database.
-     * @param contact The contact to save
-     * @return true if the save was successful, false otherwise
-     * @throws SQLException if there's an error executing the SQL
-     */
-    public boolean saveContact(Contact contact) throws SQLException {
-        if (contact == null) {
-            throw new IllegalArgumentException("Contact cannot be null");
-        }
+    private static final String CONTACTS_PATH = "contacts";
 
-        String sql = "INSERT INTO contacts (full_name, email, message) VALUES (?, ?, ?)";
-        
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+    public boolean saveContact(Contact contact) {
+        try {
+            // Generate a unique ID for the contact
+            String contactId = UUID.randomUUID().toString();
             
-            pstmt.setString(1, contact.getFullName());
-            pstmt.setString(2, contact.getEmail());
-            pstmt.setString(3, contact.getMessage());
+            // Get existing contacts
+            Map<String, Contact> contacts = FirebaseConfig.get(CONTACTS_PATH, 
+                new TypeToken<Map<String, Contact>>(){}.getType());
             
-            int affectedRows = pstmt.executeUpdate();
-            
-            if (affectedRows > 0) {
-                try (ResultSet generatedKeys = pstmt.getGeneratedKeys()) {
-                    if (generatedKeys.next()) {
-                        contact.setId(generatedKeys.getInt(1));
-                        System.out.println("Contact saved successfully with ID: " + contact.getId());
-                        return true;
-                    }
-                }
+            if (contacts == null) {
+                contacts = new java.util.HashMap<>();
             }
             
+            // Add the new contact
+            contacts.put(contactId, contact);
+            
+            // Save to Firebase
+            FirebaseConfig.set(CONTACTS_PATH, contacts);
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
             return false;
-        } catch (SQLException e) {
-            System.err.println("Error saving contact: " + e.getMessage());
-            throw e;
+        }
+    }
+
+    public Map<String, Contact> getAllContacts() {
+        try {
+            return FirebaseConfig.get(CONTACTS_PATH, 
+                new TypeToken<Map<String, Contact>>(){}.getType());
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
         }
     }
 } 

@@ -212,22 +212,33 @@ public class SecurityQuestionsDialog extends JDialog {
     }
 
     private boolean validateInput() {
-        if (favoriteColorField.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this,
-                "Please enter your favorite color.",
-                "Validation Error",
-                JOptionPane.WARNING_MESSAGE);
+        String color = favoriteColorField.getText().trim();
+        String school = firstSchoolField.getText().trim();
+
+        if (color.isEmpty()) {
+            validationLabel.setText("Please enter your favorite color");
+            favoriteColorField.requestFocus();
             return false;
         }
-        
-        if (firstSchoolField.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this,
-                "Please enter the name of your first school.",
-                "Validation Error",
-                JOptionPane.WARNING_MESSAGE);
+
+        if (school.isEmpty()) {
+            validationLabel.setText("Please enter your first school name");
+            firstSchoolField.requestFocus();
             return false;
         }
-        
+
+        if (color.length() < 3) {
+            validationLabel.setText("Favorite color must be at least 3 characters long");
+            favoriteColorField.requestFocus();
+            return false;
+        }
+
+        if (school.length() < 3) {
+            validationLabel.setText("School name must be at least 3 characters long");
+            firstSchoolField.requestFocus();
+            return false;
+        }
+
         return true;
     }
     
@@ -240,6 +251,22 @@ public class SecurityQuestionsDialog extends JDialog {
     }
     
     public String getFirstSchool() {
+        return firstSchoolField.getText().trim();
+    }
+
+    public String getSecurityQuestion1() {
+        return "What is your favorite color?";
+    }
+
+    public String getSecurityAnswer1() {
+        return favoriteColorField.getText().trim();
+    }
+
+    public String getSecurityQuestion2() {
+        return "What was the name of your first school?";
+    }
+
+    public String getSecurityAnswer2() {
         return firstSchoolField.getText().trim();
     }
 }

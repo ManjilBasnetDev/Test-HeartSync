@@ -1093,7 +1093,7 @@ is divided into following sections:
         <j2seproject3:depend srcdir="${src.dir}:${build.generated.subdirs}"/>
     </target>
     <target depends="init,deps-jar,-pre-pre-compile,-pre-compile, -copy-persistence-xml,-compile-depend" if="have.sources" name="-do-compile">
-        <j2seproject3:javac gensrcdir="${build.generated.sources.dir}"/>
+        <j2seproject3:javac/>
         <copy todir="${build.classes.dir}">
             <fileset dir="${src.dir}" excludes="${build.classes.excludes},${excludes}" includes="${includes}"/>
         </copy>
@@ -1116,7 +1116,7 @@ is divided into following sections:
     <target depends="init,deps-jar,-pre-pre-compile" name="-do-compile-single">
         <fail unless="javac.includes">Must select some files in the IDE or set javac.includes</fail>
         <j2seproject3:force-recompile/>
-        <j2seproject3:javac excludes="" gensrcdir="${build.generated.sources.dir}" includes="${javac.includes}, module-info.java" sourcepath="${src.dir}"/>
+        <j2seproject3:javac excludes="" includes="${javac.includes}, module-info.java" sourcepath="${src.dir}"/>
     </target>
     <target name="-post-compile-single">
         <!-- Empty placeholder for easier customization. -->

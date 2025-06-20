@@ -31,30 +31,47 @@ import javax.swing.event.DocumentListener;
 import heartsync.controller.ResetController;
 import heartsync.view.LoginView;
 import heartsync.controller.LoginController;
+import heartsync.view.HomePage;
 
 public class ResetPassword extends JFrame {
+    private final int userId;
     private final ResetController resetController;
     private JPasswordField newPasswordField;
     private JPasswordField confirmPasswordField;
     private JButton resetButton;
     private JLabel validationLabel;
     private JCheckBox showPasswordCheckbox;
-    private int userId;
+    private String username;
 
-    public ResetPassword(int userId) {
+    public ResetPassword(int userId, String username) {
+        super("HeartSync - Reset Password");
         this.userId = userId;
+        this.username = username;
         this.resetController = new ResetController();
+        
+        // Set both user ID and username in the controller
         resetController.setUserId(userId);
+        resetController.setUsername(username);
+        
+        // Initialize UI components first
         initComponents();
+        
+        // Set up validation and accessibility
         setupValidation();
         setupAccessibility();
+        
+        // Initial validation
+        if (newPasswordField != null && confirmPasswordField != null) {
+            validatePasswords();
+        }
     }
 
     private void initComponents() {
-        setTitle("HeartSync - Reset Password");
+        // Set window properties
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setMinimumSize(new Dimension(500, 400));
         setResizable(false);
+        setLocationRelativeTo(null); // Center the window
 
         // Main panel with pink background
         JPanel mainPanel = new JPanel(new BorderLayout(20, 20));
@@ -173,6 +190,9 @@ public class ResetPassword extends JFrame {
     }
 
     private void setupValidation() {
+        if (newPasswordField == null || confirmPasswordField == null || validationLabel == null) {
+            return; // UI components not initialized yet
+        }
         DocumentListener validationListener = new DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent e) {
@@ -195,6 +215,9 @@ public class ResetPassword extends JFrame {
     }
 
     private void validatePasswords() {
+        if (newPasswordField == null || confirmPasswordField == null) {
+            return; // UI components not initialized yet
+        }
         String password = new String(newPasswordField.getPassword());
         String confirm = new String(confirmPasswordField.getPassword());
         
@@ -220,10 +243,14 @@ public class ResetPassword extends JFrame {
               .append(" Passwords match");
         
         status.append("</html>");
-        validationLabel.setText(status.toString());
+        if (validationLabel != null) {
+            validationLabel.setText(status.toString());
+        }
 
         allValid = hasUppercase && hasSpecial && hasNumber && isLongEnough && passwordsMatch;
-        resetButton.setEnabled(allValid);
+        if (resetButton != null) {
+            resetButton.setEnabled(allValid);
+        }
     }
 
     private void setupAccessibility() {
@@ -239,40 +266,88 @@ public class ResetPassword extends JFrame {
 
     private void handleResetPassword() {
         String newPassword = new String(newPasswordField.getPassword());
+        String confirmPassword = new String(confirmPasswordField.getPassword());
+        
+        // Double-check client-side validation
+        if (newPassword.isEmpty() || confirmPassword.isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                "Password fields cannot be empty.",
+                "Validation Error",
+                JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        if (!newPassword.equals(confirmPassword)) {
+            JOptionPane.showMessageDialog(this,
+                "Passwords do not match. Please try again.",
+                "Validation Error",
+                JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        // Disable UI during operation
+        resetButton.setEnabled(false);
+        newPasswordField.setEnabled(false);
+        confirmPasswordField.setEnabled(false);
         
         try {
-            if (resetController.updatePassword(userId, newPassword)) {
+            System.out.println("Attempting to update password for user ID: " + userId);
+            System.out.println("Username from controller: " + username);
+            
+            // Update password through the controller
+            boolean success = resetController.updatePassword(userId, newPassword);
+            
+            if (success) {
+                System.out.println("Password update successful, showing success message...");
                 JOptionPane.showMessageDialog(this,
-                    "Password reset successful! Please login with your new password.",
-                    "Success",
+                    "Your password has been successfully updated!",
+                    "Password Updated",
                     JOptionPane.INFORMATION_MESSAGE);
+                // Close reset window
                 dispose();
-                // Use the static method to ensure consistent login view initialization
-                LoginController.createAndShowLoginView();
+                // Redirect to login screen
+                SwingUtilities.invokeLater(() -> LoginView.showLoginView());
+            
             } else {
-                JOptionPane.showMessageDialog(this,
-                    "Failed to reset password. Please try again.",
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE);
+                throw new Exception("Failed to update password. Please try again later.");
             }
         } catch (Exception ex) {
+            String errorMsg = "Failed to update password. ";
+            if (ex.getCause() != null) {
+                errorMsg += ex.getCause().getMessage();
+            } else if (ex.getMessage() != null) {
+                errorMsg += ex.getMessage();
+            } else {
+                errorMsg += "An unknown error occurred.";
+            }
+            
             JOptionPane.showMessageDialog(this,
-                "Error: " + ex.getMessage(),
-                "Error",
+                errorMsg,
+                "Password Update Failed",
                 JOptionPane.ERROR_MESSAGE);
+                
+            // Clear sensitive fields on error
+            newPasswordField.setText("");
+            confirmPasswordField.setText("");
+        } finally {
+            // Re-enable UI
+            SwingUtilities.invokeLater(() -> {
+                resetButton.setEnabled(true);
+                newPasswordField.setEnabled(true);
+                confirmPasswordField.setEnabled(true);
+                newPasswordField.requestFocus();
+            });
         }
     }
 
     public static void main(String[] args) {
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-        SwingUtilities.invokeLater(() -> {
-            // For testing purposes only
-            new ResetPassword(1).setVisible(true);
-        });
+        // For testing purposes only
+        // new ResetPassword(1, "testuser").setVisible(true);
     }
 }

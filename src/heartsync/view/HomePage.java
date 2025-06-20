@@ -4,6 +4,9 @@
  */
 package heartsync.view;
 
+import heartsync.navigation.WindowManager;
+import heartsync.model.User;
+
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.Rectangle2D;
@@ -35,11 +38,29 @@ public class HomePage extends JFrame {
     
     // Keep track of current navigation
     private JLabel currentNavItem;
+    
+    // Static instance tracker
+    private static HomePage instance;
+    
+    public static HomePage getInstance() {
+        if (instance == null || !instance.isDisplayable()) {
+            instance = new HomePage();
+        }
+        return instance;
+    }
+
+    private final User currentUser;
 
     /**
      * Creates new form ProfileSetup
      */
     public HomePage() {
+        this(null);  // Call the main constructor with null user for initial landing
+    }
+
+    public HomePage(User user) {
+        this.currentUser = user;
+        // Initialize the frame
         setTitle("HeartSync - Find Love");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1200, 900);
@@ -68,8 +89,8 @@ public class HomePage extends JFrame {
         
         mainPanel.add(contentCards, BorderLayout.CENTER);
         
-        // Add mainPanel to the frame
-        add(mainPanel);
+        // Add mainPanel to the frame's content pane
+        getContentPane().add(mainPanel);
         
         // Set home as current by default
         setCurrentNavItem(homeLabel);
@@ -146,6 +167,16 @@ public class HomePage extends JFrame {
         loginButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         loginButton.setPreferredSize(new Dimension(100, 35));
         
+        // Add login button click handler
+        loginButton.addActionListener(e -> {
+            setVisible(false);
+            dispose();
+            instance = null;
+            LoginView loginView = new LoginView();
+            loginView.setLocationRelativeTo(null);
+            loginView.setVisible(true);
+        });
+        
         // Add navigation items
         navPanel.add(logoPanel);
         navPanel.add(Box.createHorizontalStrut(50));
@@ -192,12 +223,6 @@ public class HomePage extends JFrame {
                 setCurrentNavItem(contactLabel);
                 cardLayout.show(contentCards, "contact");
             }
-        });
-        
-        loginButton.addActionListener(e -> {
-            LoginView loginView = new LoginView();
-new LoginController(loginView).showLoginView();
-            dispose(); // Close the home page when login page opens
         });
         
         return navPanel;
@@ -330,9 +355,10 @@ new LoginController(loginView).showLoginView();
         createAccountButton.setBounds(300, 500, 230, 55);
         
         loginButton.addActionListener(e -> {
-            LoginView loginView = new LoginView();
-new LoginController(loginView).showLoginView();
-            dispose(); // Close the home page when login page opens
+            // Use the static method to ensure consistent login view initialization
+            LoginController.createAndShowLoginView();
+            // Minimize the home page when login view opens
+            setState(JFrame.ICONIFIED);
         });
         
         createAccountButton.addActionListener(e -> {
@@ -352,8 +378,12 @@ new LoginController(loginView).showLoginView();
                 coupleImageLabel = new JLabel(new ImageIcon(coupleImg));
                 coupleImageLabel.setBounds(720, 20, 400, 560);
             } else {
-                System.err.println("Could not find couple image resource");
-                coupleImageLabel = new JLabel("Couple Image");
+                // Create a placeholder for missing couple image
+                coupleImageLabel = new JLabel("❤");
+                coupleImageLabel.setFont(new Font("SansSerif", Font.PLAIN, 48));
+                coupleImageLabel.setForeground(new Color(255, 89, 89));
+                coupleImageLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                coupleImageLabel.setBounds(720, 20, 400, 560);
             }
 
             // Load hand image
@@ -365,14 +395,26 @@ new LoginController(loginView).showLoginView();
                 handImageLabel = new JLabel(new ImageIcon(handImg));
                 handImageLabel.setBounds(450, 60, 200, 280);
             } else {
-                System.err.println("Could not find hand image resource");
-                handImageLabel = new JLabel("Hand Image");
+                // Create a placeholder for missing hand image
+                handImageLabel = new JLabel("♥");
+                handImageLabel.setFont(new Font("SansSerif", Font.PLAIN, 36));
+                handImageLabel.setForeground(new Color(255, 89, 89));
+                handImageLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                handImageLabel.setBounds(450, 60, 200, 280);
             }
         } catch (Exception e) {
-            e.printStackTrace();
-            System.err.println("Error loading images: " + e.getMessage());
-            coupleImageLabel = new JLabel("Couple Image");
-            handImageLabel = new JLabel("Hand Image");
+            // Create default placeholders if image loading fails
+            coupleImageLabel = new JLabel("❤");
+            coupleImageLabel.setFont(new Font("SansSerif", Font.PLAIN, 48));
+            coupleImageLabel.setForeground(new Color(255, 89, 89));
+            coupleImageLabel.setHorizontalAlignment(SwingConstants.CENTER);
+            coupleImageLabel.setBounds(720, 20, 400, 560);
+
+            handImageLabel = new JLabel("♥");
+            handImageLabel.setFont(new Font("SansSerif", Font.PLAIN, 36));
+            handImageLabel.setForeground(new Color(255, 89, 89));
+            handImageLabel.setHorizontalAlignment(SwingConstants.CENTER);
+            handImageLabel.setBounds(450, 60, 200, 280);
         }
         
         // Add components
@@ -784,28 +826,9 @@ new LoginController(loginView).showLoginView();
         return button;
     }
     
-    public static void main(String[] args) {
-        try {
-            // Use cross-platform look and feel
-            UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
-            
-            // Set button UI defaults
-            UIManager.put("Button.background", new Color(70, 130, 180));
-            UIManager.put("Button.foreground", Color.WHITE);
-            UIManager.put("Button.font", new Font("Arial", Font.BOLD, 14));
-            
-            // Set panel UI defaults
-            UIManager.put("Panel.background", new Color(255, 240, 245));
-            UIManager.put("Label.font", new Font("Arial", Font.BOLD, 14));
-            UIManager.put("TextField.font", new Font("Arial", Font.PLAIN, 14));
-            UIManager.put("TextArea.font", new Font("Arial", Font.PLAIN, 14));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        
-        SwingUtilities.invokeLater(() -> {
-            HomePage frame = new HomePage();
-            frame.setVisible(true);
-        });
+    private void btnContactsActionPerformed(java.awt.event.ActionEvent evt) {                                           
+        ContactsPage contactsPage = new ContactsPage();
+        contactsPage.setVisible(true);
+        this.dispose();
     }
 }

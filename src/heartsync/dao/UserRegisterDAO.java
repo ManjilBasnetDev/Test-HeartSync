@@ -1,261 +1,192 @@
 package heartsync.dao;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.List;
-
-import heartsync.database.DatabaseConnection;
 import heartsync.model.User;
+import heartsync.database.FirebaseConfig;
+import com.google.gson.reflect.TypeToken;
+import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.UUID;
+import java.io.IOException;
 
 public class UserRegisterDAO {
-    private Connection connection;
-    
-    public UserRegisterDAO() throws SQLException {
-        connection = DatabaseConnection.getConnection();
-    }
-    
-    public boolean createUser(User user) throws SQLException {
-        // First check if username already exists
-        if (usernameExists(user.getUsername(), connection)) {
-            throw new SQLException("Username already exists");
-        }
+    private String lastError;
 
-        // Include security questions in the initial insert if provided
-        boolean hasSecurityQuestions = user.getFavoriteColor() != null && user.getFirstSchool() != null;
-        String sql = "INSERT INTO users (username, password, user_type" +
-                    (hasSecurityQuestions ? ", favorite_color, first_school" : "") + 
-                    ") VALUES (?, ?, ?" + (hasSecurityQuestions ? ", ?, ?" : "") + ")";
-        
-        try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            int paramIndex = 1;
-            statement.setString(paramIndex++, user.getUsername());
-            statement.setString(paramIndex++, DatabaseConnection.hashPassword(user.getPassword()));
-            statement.setString(paramIndex++, user.getUserType() != null ? user.getUserType() : "USER");
-            
-            // Set security questions if provided
-            if (hasSecurityQuestions) {
-                statement.setString(paramIndex++, user.getFavoriteColor());
-                statement.setString(paramIndex, user.getFirstSchool());
+    public UserRegisterDAO() {
+        this.lastError = "";
+    }
+
+    public String getLastError() {
+        return lastError;
+    }
+
+    public boolean createUser(User user) {
+        try {
+            // Validate required fields
+            if (user.getUsername() == null || user.getUsername().trim().isEmpty()) {
+                lastError = "Username is required";
+                return false;
             }
-            
-            int rowsInserted = statement.executeUpdate();
-            
-            if (rowsInserted > 0) {
-                // Get the generated user ID
-                try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
-                    if (generatedKeys.next()) {
-                        user.setId(generatedKeys.getInt(1));
-                        
-                        // Update additional user info if provided (excluding security questions)
-                        if (user.getEmail() != null || user.getPhoneNumber() != null || 
-                            user.getDateOfBirth() != null) {
-                            updateUserAdditionalInfo(user);
-                        }
-                    }
-                }
-                return true;
+            if (user.getPassword() == null || user.getPassword().trim().isEmpty()) {
+                lastError = "Password is required";
+                return false;
             }
+            if (user.getSecurityQuestion() == null || user.getSecurityQuestion().trim().isEmpty()) {
+                lastError = "First security question is required";
+                return false;
+            }
+            if (user.getSecurityAnswer() == null || user.getSecurityAnswer().trim().isEmpty()) {
+                lastError = "First security answer is required";
+                return false;
+            }
+            if (user.getSecurityQuestion2() == null || user.getSecurityQuestion2().trim().isEmpty()) {
+                lastError = "Second security question is required";
+                return false;
+            }
+            if (user.getSecurityAnswer2() == null || user.getSecurityAnswer2().trim().isEmpty()) {
+                lastError = "Second security answer is required";
+                return false;
+            }
+
+            // Check if username exists
+            if (usernameExists(user.getUsername())) {
+                lastError = "Username already exists";
+                return false;
+            }
+
+            // Generate unique user ID
+            String userId = UUID.randomUUID().toString();
+            user.setUserId(userId);
+
+            // Save user to Firebase
+            FirebaseConfig.put(FirebaseConfig.getUserPath(userId), user);
+            return true;
+        } catch (IOException e) {
+            lastError = "Error creating account: " + e.getMessage();
+            e.printStackTrace();
             return false;
         }
     }
-    
-    private void updateUserAdditionalInfo(User user) throws SQLException {
-        StringBuilder sql = new StringBuilder("UPDATE users SET ");
-        boolean needsComma = false;
-        
-        if (user.getEmail() != null) {
-            sql.append("email = ?");
-            needsComma = true;
-        }
-        
-        if (user.getPhoneNumber() != null) {
-            if (needsComma) sql.append(", ");
-            sql.append("phone_number = ?");
-            needsComma = true;
-        }
-        
-        if (user.getDateOfBirth() != null) {
-            if (needsComma) sql.append(", ");
-            sql.append("date_of_birth = ?");
-            needsComma = true;
-        }
-        
-        // Add security questions if provided
-        if (user.getFavoriteColor() != null) {
-            if (needsComma) sql.append(", ");
-            sql.append("favorite_color = ?");
-            needsComma = true;
-        }
-        
-        if (user.getFirstSchool() != null) {
-            if (needsComma) sql.append(", ");
-            sql.append("first_school = ?");
-            needsComma = true;
-        }
-        
-        sql.append(" WHERE id = ?");
-        
-        try (PreparedStatement stmt = connection.prepareStatement(sql.toString())) {
-            int paramIndex = 1;
-            
-            if (user.getEmail() != null) {
-                stmt.setString(paramIndex++, user.getEmail());
-            }
-            
-            if (user.getPhoneNumber() != null) {
-                stmt.setString(paramIndex++, user.getPhoneNumber());
-            }
-            
-            if (user.getDateOfBirth() != null) {
-                stmt.setString(paramIndex++, user.getDateOfBirth());
-            }
-            
-            // Set security questions if provided
-            if (user.getFavoriteColor() != null) {
-                stmt.setString(paramIndex++, user.getFavoriteColor());
-            }
-            
-            if (user.getFirstSchool() != null) {
-                stmt.setString(paramIndex++, user.getFirstSchool());
-            }
-            
-            stmt.setInt(paramIndex, user.getId());
-            stmt.executeUpdate();
-        }
-    }
-    
-    private boolean usernameExists(String username, Connection conn) throws SQLException {
-        String sql = "SELECT COUNT(*) FROM users WHERE username = ?";
-        
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, username);
-            
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt(1) > 0;
-                }
+
+    private boolean usernameExists(String username) throws IOException {
+        Map<String, User> users = FirebaseConfig.get("users", new TypeToken<Map<String, User>>(){}.getType());
+        if (users != null) {
+            for (User user : users.values()) {
+                if (user.getUsername().equals(username)) return true;
             }
         }
         return false;
     }
-    
+
     public User getUser(String username) {
-        String sql = "SELECT * FROM users WHERE username = ?";
-        
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setString(1, username);
-            ResultSet rs = stmt.executeQuery();
-            
-            if (rs.next()) {
-                return extractUserFromResultSet(rs);
+        try {
+            Map<String, User> users = FirebaseConfig.get("users", new TypeToken<Map<String, User>>(){}.getType());
+            if (users != null) {
+                for (Map.Entry<String, User> entry : users.entrySet()) {
+                    User user = entry.getValue();
+                    if (user.getUsername().equals(username)) {
+                        user.setUserId(entry.getKey());
+                        return user;
+                    }
+                }
             }
-        } catch (SQLException e) {
-            System.out.println("Error retrieving user: " + e.getMessage());
+        } catch (IOException e) {
+            e.printStackTrace();
         }
         return null;
     }
-    
+
     public boolean validateUser(String username, String password) {
-        String sql = "SELECT * FROM users WHERE username = ? AND password = ?";
-        
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setString(1, username);
-            stmt.setString(2, password);
-            ResultSet rs = stmt.executeQuery();
-            
-            return rs.next(); // Returns true if user exists with given credentials
-        } catch (SQLException e) {
-            System.out.println("Error validating user: " + e.getMessage());
-            return false;
-        }
-    }
-    
-    public List<User> getAllUsers() {
-        List<User> users = new ArrayList<>();
-        String sql = "SELECT * FROM users";
-        
-        try (Statement stmt = connection.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
-            
-            while (rs.next()) {
-                users.add(extractUserFromResultSet(rs));
-            }
-        } catch (SQLException e) {
-            System.out.println("Error retrieving users: " + e.getMessage());
-        }
-        return users;
-    }
-    
-    public boolean updateUser(User user) {
-        String sql = "UPDATE users SET email = ?, phone_number = ?, date_of_birth = ?, " +
-                   "gender = ?, interests = ?, bio = ?, favorite_color = ?, first_school = ? " +
-                   "WHERE username = ?";
-        
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setString(1, user.getEmail());
-            stmt.setString(2, user.getPhoneNumber());
-            stmt.setString(3, user.getDateOfBirth());
-            stmt.setString(4, user.getGender());
-            stmt.setString(5, user.getInterests());
-            stmt.setString(6, user.getBio());
-            stmt.setString(7, user.getFavoriteColor());
-            stmt.setString(8, user.getFirstSchool());
-            stmt.setString(9, user.getUsername());
-            
-            return stmt.executeUpdate() > 0;
-        } catch (SQLException e) {
-            System.out.println("Error updating user: " + e.getMessage());
-            return false;
-        }
-    }
-    
-    public boolean deleteUser(String username) {
-        String sql = "DELETE FROM users WHERE username = ?";
-        
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setString(1, username);
-            return stmt.executeUpdate() > 0;
-        } catch (SQLException e) {
-            System.out.println("Error deleting user: " + e.getMessage());
-            return false;
-        }
-    }
-    
-    private User extractUserFromResultSet(ResultSet rs) throws SQLException {
-        User user = new User();
-        user.setId(rs.getInt("id"));
-        user.setUsername(rs.getString("username"));
-        user.setPassword(rs.getString("password"));
-        user.setEmail(rs.getString("email"));
-        user.setUserType(rs.getString("user_type"));
-        user.setPhoneNumber(rs.getString("phone_number"));
-        
-        // Handle date of birth
-        String dob = rs.getString("date_of_birth");
-        if (dob != null) {
-            user.setDateOfBirth(dob);
-        }
-        
-        user.setGender(rs.getString("gender"));
-        user.setInterests(rs.getString("interests"));
-        user.setBio(rs.getString("bio"));
-        user.setFavoriteColor(rs.getString("favorite_color"));
-        user.setFirstSchool(rs.getString("first_school"));
-        
-        // Handle created_at if it exists in the result set
         try {
-            java.sql.Date createdAt = rs.getDate("created_at");
-            if (createdAt != null) {
-                user.setCreatedAt(createdAt);
+            Map<String, User> users = FirebaseConfig.get("users", new TypeToken<Map<String, User>>(){}.getType());
+            if (users != null) {
+                for (User user : users.values()) {
+                    if (user.getUsername().equals(username) && user.getPassword().equals(password)) {
+                        return true;
+                    }
+                }
             }
-        } catch (SQLException e) {
-            // created_at column might not exist in all queries
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        
-        return user;
+        return false;
+    }
+
+    public List<User> getAllUsers() {
+        List<User> usersList = new ArrayList<>();
+        try {
+            Map<String, User> users = FirebaseConfig.get("users", new TypeToken<Map<String, User>>(){}.getType());
+            if (users != null) {
+                for (Map.Entry<String, User> entry : users.entrySet()) {
+                    User user = entry.getValue();
+                    user.setUserId(entry.getKey());
+                    usersList.add(user);
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return usersList;
+    }
+
+    public boolean updateUser(User user) {
+        try {
+            if (user.getUserId() == null) return false;
+            FirebaseConfig.put(FirebaseConfig.getUserPath(user.getUserId()), user);
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean deleteUser(String username) {
+        try {
+            Map<String, User> users = FirebaseConfig.get("users", new TypeToken<Map<String, User>>(){}.getType());
+            if (users != null) {
+                for (Map.Entry<String, User> entry : users.entrySet()) {
+                    User user = entry.getValue();
+                    if (user.getUsername().equals(username)) {
+                        FirebaseConfig.delete(FirebaseConfig.getUserPath(entry.getKey()));
+                        return true;
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean verifyUser(String userId) {
+        try {
+            Map<String, User> users = FirebaseConfig.get("users", new TypeToken<Map<String, User>>(){}.getType());
+            if (users != null && users.containsKey(userId)) {
+                User user = users.get(userId);
+                user.setUserType("verified");
+                FirebaseConfig.put(FirebaseConfig.getUserPath(userId), user);
+                return true;
+            }
+        } catch (IOException e) {
+            lastError = "Error verifying user: " + e.getMessage();
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean rejectUser(String userId) {
+        try {
+            Map<String, User> users = FirebaseConfig.get("users", new TypeToken<Map<String, User>>(){}.getType());
+            if (users != null && users.containsKey(userId)) {
+                User user = users.get(userId);
+                user.setUserType("rejected");
+                FirebaseConfig.put(FirebaseConfig.getUserPath(userId), user);
+                return true;
+            }
+        } catch (IOException e) {
+            lastError = "Error rejecting user: " + e.getMessage();
+            e.printStackTrace();
+        }
+        return false;
     }
 } 

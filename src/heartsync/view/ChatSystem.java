@@ -49,9 +49,9 @@ public class ChatSystem extends JFrame {
     private static final int WINDOW_RADIUS = 20;
     private static final Color THEME_COLOR = new Color(105, 0, 51); // #690033
     private static final Color TEXT_COLOR = Color.WHITE;
-    private static final int AVATAR_SIZE = 32;
-    private static final int CARD_RADIUS = 10;
-    private static final Font CHAT_FONT = new Font("Roboto", Font.PLAIN, 13);
+    private static final int AVATAR_SIZE = 36;
+    private static final int CARD_RADIUS = 8;
+    private static final Font CHAT_FONT = new Font("Roboto", Font.PLAIN, 14);
     
     private final JPanel mainPanel;
     private final JPanel headerPanel;
@@ -196,7 +196,8 @@ public class ChatSystem extends JFrame {
     
     private void displayMatchedUsers() {
         contentPanel.removeAll();
-        contentPanel.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
+        contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
+        contentPanel.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
         
         for (MatchedUser user : matchedUsers) {
             JPanel userPanel = createUserPanel(user);
@@ -217,6 +218,11 @@ public class ChatSystem extends JFrame {
     }
     
     private JPanel createUserPanel(MatchedUser user) {
+        // Wrapper panel for full width
+        JPanel wrapperPanel = new JPanel(new BorderLayout());
+        wrapperPanel.setBackground(new Color(0, 0, 0, 0));
+        wrapperPanel.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
+        
         // Main panel with rounded corners and shadow
         JPanel panel = new JPanel() {
             @Override
@@ -234,21 +240,11 @@ public class ChatSystem extends JFrame {
                 
                 g2.dispose();
             }
-
-            @Override
-            public Dimension getPreferredSize() {
-                // Control the height of the panel
-                Dimension size = super.getPreferredSize();
-                return new Dimension(size.width, 44); // Fixed height for consistency
-            }
         };
         
-        panel.setLayout(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        panel.setLayout(new FlowLayout(FlowLayout.LEFT, 10, 6));
         panel.setBackground(new Color(0, 0, 0, 0));
-        panel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createEmptyBorder(2, 2, 2, 2),
-            BorderFactory.createEmptyBorder(4, 8, 4, 8)
-        ));
+        panel.setBorder(BorderFactory.createEmptyBorder(2, 8, 2, 8));
         panel.setCursor(new Cursor(Cursor.HAND_CURSOR));
         
         // Profile picture (circular with white border)
@@ -283,6 +279,8 @@ public class ChatSystem extends JFrame {
         nameLabel.setForeground(TEXT_COLOR);
         panel.add(nameLabel);
         
+        wrapperPanel.add(panel, BorderLayout.CENTER);
+        
         // Click listener
         panel.addMouseListener(new MouseAdapter() {
             @Override
@@ -291,7 +289,7 @@ public class ChatSystem extends JFrame {
             }
         });
         
-        return panel;
+        return wrapperPanel;
     }
     
     private void openChat(MatchedUser user) {

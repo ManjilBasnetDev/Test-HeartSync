@@ -26,6 +26,8 @@ import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.JMenuItem;
 import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
@@ -130,7 +132,7 @@ public class MessageBox extends JFrame {
     private JPanel createHeaderPanel() {
         JPanel header = new JPanel(new BorderLayout());
         header.setBackground(HEADER_COLOR);
-        header.setPreferredSize(new Dimension(getWidth(), 60)); // Slightly reduced height
+        header.setPreferredSize(new Dimension(getWidth(), 60));
         
         // Left panel with back button and user info
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
@@ -155,19 +157,76 @@ public class MessageBox extends JFrame {
         
         header.add(leftPanel, BorderLayout.WEST);
         
-        // Close button with updated style
-        JButton closeButton = new JButton("×");
-        closeButton.setForeground(Color.WHITE);
-        closeButton.setBackground(HEADER_COLOR);
-        closeButton.setFont(new Font("Segoe UI", Font.BOLD, 24));
-        closeButton.setBorder(BorderFactory.createEmptyBorder(5, 15, 5, 15));
-        closeButton.setFocusPainted(false);
-        closeButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        closeButton.addActionListener(e -> dispose());
+        // Menu button and popup menu
+        JButton menuButton = new JButton("⋮"); // Vertical three dots
+        menuButton.setForeground(Color.WHITE);
+        menuButton.setBackground(HEADER_COLOR);
+        menuButton.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        menuButton.setBorder(BorderFactory.createEmptyBorder(5, 15, 5, 15));
+        menuButton.setFocusPainted(false);
+        menuButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        
+        // Create popup menu
+        JPopupMenu popupMenu = new JPopupMenu();
+        popupMenu.setBackground(Color.WHITE);
+        
+        // Block option
+        JMenuItem blockItem = new JMenuItem("Block User");
+        blockItem.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        blockItem.setBackground(Color.WHITE);
+        blockItem.addActionListener(e -> {
+            int confirm = JOptionPane.showConfirmDialog(
+                this,
+                "Are you sure you want to block " + userName + "?",
+                "Block User",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE
+            );
+            if (confirm == JOptionPane.YES_OPTION) {
+                // TODO: Implement block functionality
+                JOptionPane.showMessageDialog(
+                    this,
+                    userName + " has been blocked.",
+                    "User Blocked",
+                    JOptionPane.INFORMATION_MESSAGE
+                );
+                dispose();
+            }
+        });
+        
+        // Report option
+        JMenuItem reportItem = new JMenuItem("Report User");
+        reportItem.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        reportItem.setBackground(Color.WHITE);
+        reportItem.addActionListener(e -> {
+            String reason = JOptionPane.showInputDialog(
+                this,
+                "Please provide a reason for reporting " + userName + ":",
+                "Report User",
+                JOptionPane.QUESTION_MESSAGE
+            );
+            if (reason != null && !reason.trim().isEmpty()) {
+                // TODO: Implement report functionality
+                JOptionPane.showMessageDialog(
+                    this,
+                    "Thank you for your report. We will review it shortly.",
+                    "Report Submitted",
+                    JOptionPane.INFORMATION_MESSAGE
+                );
+            }
+        });
+        
+        popupMenu.add(blockItem);
+        popupMenu.addSeparator();
+        popupMenu.add(reportItem);
+        
+        menuButton.addActionListener(e -> {
+            popupMenu.show(menuButton, 0, menuButton.getHeight());
+        });
         
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         buttonPanel.setOpaque(false);
-        buttonPanel.add(closeButton);
+        buttonPanel.add(menuButton);
         header.add(buttonPanel, BorderLayout.EAST);
         
         return header;

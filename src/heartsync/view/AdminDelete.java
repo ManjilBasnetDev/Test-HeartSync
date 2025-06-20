@@ -117,8 +117,9 @@ public class AdminDelete extends javax.swing.JFrame {
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
-        jLabel4.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        jLabel4.setText("Enter usename to confirm");
+        jLabel4.setFont(new java.awt.Font("Segoe UI", Font.BOLD, 15));
+        jLabel4.setForeground(new Color(51, 51, 51));
+        jLabel4.setText("Enter username to confirm");
 
         jButton1.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         jButton1.setText("Delete User Account");
@@ -426,7 +427,6 @@ public class AdminDelete extends javax.swing.JFrame {
         jLabel4.setFont(new Font("Segoe UI", Font.BOLD, 15));
         jLabel4.setForeground(new Color(51, 51, 51));
         jLabel4.setText("Enter username to confirm");
-        jLabel4.setPreferredSize(null);
 
         // Modern text field styling
         jTextField1.setFont(new Font("Segoe UI", Font.PLAIN, 15));

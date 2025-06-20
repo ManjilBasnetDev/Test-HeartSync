@@ -394,109 +394,170 @@ public class AdminDelete extends javax.swing.JFrame {
     }
 
     private void styleDeletePanel() {
-        // Style the main panel with a softer background and better padding
-        jPanel1.setBackground(new Color(252, 240, 243));
-        jPanel1.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30)); // Slightly less padding for fit
+        // Set up modern font
+        Font modernFont = new Font("Segoe UI", Font.PLAIN, 15);
+        try {
+            modernFont = new Font("Roboto", Font.PLAIN, 15);
+        } catch (Exception e) { /* fallback to Segoe UI */ }
 
-        // Style the title with a more modern font and color
-        jLabel1.setFont(new Font("Segoe UI", Font.BOLD, 38));
-        jLabel1.setForeground(new Color(51, 51, 51));
-        jLabel1.setText(""); // Ensure full text, no ellipsis
-        jLabel1.setPreferredSize(new Dimension(250, 50));
-        jLabel1.setMinimumSize(new Dimension(200, 40));
-        jLabel1.setMaximumSize(new Dimension(400, 60));
+        // Outer background
+        getContentPane().setBackground(Color.decode("#ffeef4"));
+        jPanel1.setBackground(new Color(0,0,0,0)); // transparent to show outer bg
+        jPanel1.setBorder(null);
+        jPanel1.setLayout(new GridBagLayout());
 
-        // Style the warning panel with a softer look
-        jPanel2.setBackground(new Color(255, 255, 255));
-        jPanel2.setBorder(BorderFactory.createCompoundBorder(
+        // Card panel (inner)
+        JPanel cardPanel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(new Color(0,0,0,20));
+                g2.fillRoundRect(6, 8, getWidth()-12, getHeight()-12, 32, 32); // shadow
+                g2.dispose();
+            }
+        };
+        cardPanel.setOpaque(false);
+        cardPanel.setLayout(new BoxLayout(cardPanel, BoxLayout.Y_AXIS));
+        cardPanel.setBackground(Color.WHITE);
+        cardPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createEmptyBorder(32, 32, 32, 32),
+            BorderFactory.createLineBorder(new Color(255, 255, 255, 0), 1, true)
+        ));
+        cardPanel.setMaximumSize(new Dimension(480, 420));
+
+        // --- Warning Box ---
+        JPanel warningBox = new JPanel();
+        warningBox.setOpaque(false);
+        warningBox.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 0));
+        JLabel warningIcon = new JLabel("\u26A0\uFE0F"); // ⚠️
+        warningIcon.setFont(modernFont.deriveFont(Font.BOLD, 22f));
+        warningIcon.setForeground(new Color(220, 53, 69));
+        JLabel warningLabel = new JLabel("<html><b>Warning: Deleting your account will permanently<br>remove all your data and cannot be undone.</b></html>");
+        warningLabel.setFont(modernFont.deriveFont(Font.BOLD, 15f));
+        warningLabel.setForeground(new Color(220, 53, 69));
+        warningBox.add(warningIcon);
+        warningBox.add(warningLabel);
+        warningBox.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(255, 182, 193), 1, true),
-            BorderFactory.createEmptyBorder(16, 16, 16, 16)
+            BorderFactory.createEmptyBorder(18, 18, 18, 18)
         ));
 
-        // Style the warning labels with better typography
-        jLabel2.setFont(new Font("Segoe UI", Font.BOLD, 15));
-        jLabel3.setFont(new Font("Segoe UI", Font.BOLD, 15));
-        jLabel2.setForeground(new Color(51, 51, 51));
-        jLabel3.setForeground(new Color(51, 51, 51));
-        jLabel2.setText("Warning: Deleting your account will permanently");
-        jLabel3.setText("remove all your data and cannot be undone.");
-        jLabel2.setPreferredSize(null);
-        jLabel3.setPreferredSize(null);
+        // --- Username Label ---
+        JLabel usernameLabel = new JLabel("Enter username to confirm");
+        usernameLabel.setFont(modernFont.deriveFont(Font.BOLD, 15f));
+        usernameLabel.setForeground(Color.BLACK);
+        usernameLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        usernameLabel.setBorder(BorderFactory.createEmptyBorder(18, 0, 6, 0));
 
-        // Style the username label and field with modern look
-        jLabel4.setFont(new Font("Segoe UI", Font.BOLD, 15));
-        jLabel4.setForeground(new Color(51, 51, 51));
-        jLabel4.setText("Enter username to confirm");
-
-        // Modern text field styling
-        jTextField1.setFont(new Font("Segoe UI", Font.PLAIN, 15));
+        // --- Text Field ---
+        jTextField1.setFont(modernFont.deriveFont(Font.PLAIN, 15f));
         jTextField1.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(255, 182, 193), 1, true),
+            BorderFactory.createLineBorder(new Color(255, 182, 193), 2, true),
             BorderFactory.createEmptyBorder(10, 12, 10, 12)
         ));
         jTextField1.setBackground(Color.WHITE);
-        jTextField1.setPreferredSize(new Dimension(320, 38));
+        jTextField1.setMaximumSize(new Dimension(400, 38));
+        jTextField1.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // Modern button styling
-        jButton1.setFont(new Font("Segoe UI", Font.BOLD, 15));
-        jButton1.setBackground(new Color(255, 105, 180));
+        // --- Delete Button ---
+        jButton1.setFont(modernFont.deriveFont(Font.BOLD, 16f));
+        jButton1.setBackground(Color.decode("#ff69b4"));
         jButton1.setForeground(Color.WHITE);
-        jButton1.setBorderPainted(false);
+        jButton1.setBorder(BorderFactory.createEmptyBorder(12, 0, 12, 0));
         jButton1.setFocusPainted(false);
         jButton1.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        jButton1.setBorder(BorderFactory.createEmptyBorder(10, 30, 10, 30));
-        jButton1.setPreferredSize(new Dimension(320, 44));
+        jButton1.setMaximumSize(new Dimension(400, 44));
+        jButton1.setAlignmentX(Component.LEFT_ALIGNMENT);
+        jButton1.setOpaque(true);
+        jButton1.setBorderPainted(false);
         jButton1.setText("Delete User Account");
-        jButton1.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(255, 105, 180), 1, true),
-            BorderFactory.createEmptyBorder(10, 30, 10, 30)
-        ));
+        jButton1.setEnabled(false); // initially disabled
+        // Hover effect
+        jButton1.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                if (jButton1.isEnabled())
+                    jButton1.setBackground(new Color(230, 20, 110));
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                jButton1.setBackground(Color.decode("#ff69b4"));
+            }
+        });
 
-        // Style the confirmation message
-        jLabel5.setFont(new Font("Segoe UI", Font.ITALIC, 13));
-        jLabel5.setForeground(new Color(102, 102, 102));
+        // --- Cancel Button ---
+        JButton cancelButton = new JButton("Cancel");
+        cancelButton.setFont(modernFont.deriveFont(Font.BOLD, 15f));
+        cancelButton.setBackground(new Color(220, 220, 220));
+        cancelButton.setForeground(Color.DARK_GRAY);
+        cancelButton.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+        cancelButton.setFocusPainted(false);
+        cancelButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        cancelButton.setMaximumSize(new Dimension(400, 40));
+        cancelButton.setAlignmentX(Component.LEFT_ALIGNMENT);
+        cancelButton.setOpaque(true);
+        cancelButton.setBorderPainted(false);
+        cancelButton.addActionListener(e -> this.dispose());
+
+        // --- Confirmation Message ---
+        jLabel5.setFont(modernFont.deriveFont(Font.ITALIC, 12f));
+        jLabel5.setForeground(new Color(120, 120, 120));
         jLabel5.setText("We'll send a confirmation email to verify this action. Check your inbox.");
-        jLabel5.setPreferredSize(null);
+        jLabel5.setAlignmentX(Component.LEFT_ALIGNMENT);
+        jLabel5.setBorder(BorderFactory.createEmptyBorder(18, 0, 0, 0));
 
-        // Enhanced hover effect for the delete button
-        jButton1.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                jButton1.setBackground(new Color(255, 92, 165));
-                jButton1.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(new Color(255, 92, 165), 1, true),
-                    BorderFactory.createEmptyBorder(10, 30, 10, 30)
-                ));
-            }
-            @Override
-            public void mouseExited(MouseEvent e) {
-                jButton1.setBackground(new Color(255, 105, 180));
-                jButton1.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(new Color(255, 105, 180), 1, true),
-                    BorderFactory.createEmptyBorder(10, 30, 10, 30)
-                ));
+        // --- Enable Delete button only if username is filled ---
+        jTextField1.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { check(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { check(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { check(); }
+            private void check() {
+                jButton1.setEnabled(!jTextField1.getText().trim().isEmpty() && !jTextField1.getText().equals("Enter username"));
             }
         });
 
-        // Enhanced placeholder text styling
-        jTextField1.setText("Enter username");
-        jTextField1.setForeground(new Color(153, 153, 153));
-        jTextField1.addFocusListener(new FocusAdapter() {
-            @Override
-            public void focusGained(FocusEvent e) {
-                if (jTextField1.getText().equals("Enter username")) {
-                    jTextField1.setText("");
-                    jTextField1.setForeground(new Color(51, 51, 51));
-                }
-            }
-            @Override
-            public void focusLost(FocusEvent e) {
-                if (jTextField1.getText().isEmpty()) {
-                    jTextField1.setText("Enter username");
-                    jTextField1.setForeground(new Color(153, 153, 153));
+        // --- Confirmation popup before deletion ---
+        for (java.awt.event.ActionListener al : jButton1.getActionListeners())
+            jButton1.removeActionListener(al);
+        jButton1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                String username = jTextField1.getText().trim();
+                if (username.isEmpty()) return;
+                int choice = JOptionPane.showConfirmDialog(cardPanel,
+                    "Are you sure you want to delete the account for user: " + username + "?\nThis action cannot be undone.",
+                    "Confirm Delete",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE);
+                if (choice == JOptionPane.YES_OPTION) {
+                    jButton1ActionPerformed(evt);
                 }
             }
         });
+
+        // --- Layout ---
+        cardPanel.add(Box.createVerticalStrut(10));
+        cardPanel.add(warningBox);
+        cardPanel.add(Box.createVerticalStrut(30));
+        cardPanel.add(usernameLabel);
+        cardPanel.add(jTextField1);
+        cardPanel.add(Box.createVerticalStrut(24));
+        cardPanel.add(jButton1);
+        cardPanel.add(Box.createVerticalStrut(10));
+        cardPanel.add(cancelButton);
+        cardPanel.add(jLabel5);
+        cardPanel.add(Box.createVerticalGlue());
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.weightx = 1.0;
+        gbc.weighty = 1.0;
+        gbc.anchor = GridBagConstraints.CENTER;
+        gbc.fill = GridBagConstraints.NONE;
+        jPanel1.removeAll();
+        jPanel1.add(cardPanel, gbc);
+        jPanel1.revalidate();
+        jPanel1.repaint();
     }
 
     private JPanel createVerifyPanel() {

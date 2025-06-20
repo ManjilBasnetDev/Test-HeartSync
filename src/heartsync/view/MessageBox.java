@@ -39,6 +39,7 @@ import javax.swing.JOptionPane;
 import heartsync.model.User;
 import heartsync.model.Chat;
 import heartsync.dao.ChatDAO;
+import heartsync.dao.ReportDAO;
 
 public class MessageBox extends JFrame {
     private static final int WINDOW_RADIUS = 20;
@@ -158,7 +159,7 @@ public class MessageBox extends JFrame {
         header.add(leftPanel, BorderLayout.WEST);
         
         // Menu button and popup menu
-        JButton menuButton = new JButton("⋮"); // Vertical three dots
+        JButton menuButton = new JButton("⋮");
         menuButton.setForeground(Color.WHITE);
         menuButton.setBackground(HEADER_COLOR);
         menuButton.setFont(new Font("Segoe UI", Font.BOLD, 20));
@@ -194,7 +195,7 @@ public class MessageBox extends JFrame {
             }
         });
         
-        // Report option
+        // Report option with ReportDAO integration
         JMenuItem reportItem = new JMenuItem("Report User");
         reportItem.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         reportItem.setBackground(Color.WHITE);
@@ -206,13 +207,22 @@ public class MessageBox extends JFrame {
                 JOptionPane.QUESTION_MESSAGE
             );
             if (reason != null && !reason.trim().isEmpty()) {
-                // TODO: Implement report functionality
-                JOptionPane.showMessageDialog(
-                    this,
-                    "Thank you for your report. We will review it shortly.",
-                    "Report Submitted",
-                    JOptionPane.INFORMATION_MESSAGE
-                );
+                ReportDAO reportDAO = new ReportDAO();
+                if (reportDAO.reportUser(otherUserId, currentUserId, reason)) {
+                    JOptionPane.showMessageDialog(
+                        this,
+                        "Thank you for your report. We will review it shortly.",
+                        "Report Submitted",
+                        JOptionPane.INFORMATION_MESSAGE
+                    );
+                } else {
+                    JOptionPane.showMessageDialog(
+                        this,
+                        "Failed to submit report. Please try again later.",
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE
+                    );
+                }
             }
         });
         

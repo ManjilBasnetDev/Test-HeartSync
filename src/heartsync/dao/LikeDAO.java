@@ -12,6 +12,7 @@ import com.google.gson.reflect.TypeToken;
 import heartsync.database.FirebaseConfig;
 import heartsync.model.Chat;
 import heartsync.view.MatchNotification;
+import heartsync.dao.MatchDAO;
 
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
@@ -19,54 +20,67 @@ import java.awt.KeyboardFocusManager;
 import java.awt.Window;
 
 public class LikeDAO {
-    private static final String LIKES_PATH = "user_likes";
+    private static final String LIKES_PATH = "likes";
     private static final String PASSES_PATH = "user_passes";
     private static final String MATCHES_PATH = "matches";
     private static final String MESSAGES_PATH = "messages";
     
-    public boolean addLike(String userId, String likedUserId) {
+    private final MatchDAO matchDAO;
+
+    public LikeDAO() {
+        this.matchDAO = new MatchDAO();
+    }
+
+    public void saveLike(String currentUserId, String likedUserId) {
         try {
-            System.out.println("Adding like: " + userId + " likes " + likedUserId);
-            
-            // Add the like to user_likes
-            FirebaseConfig.put(LIKES_PATH + "/" + userId + "/" + likedUserId, true);
-            System.out.println("Added to user_likes");
-            
-            // Add the liker to user_likers of the liked user
-            FirebaseConfig.put("user_likers/" + likedUserId + "/" + userId, true);
-            System.out.println("Added to user_likers");
-            
-            // Check if there's a mutual like by checking if the liked user has liked us back
-            Boolean otherUserLike = FirebaseConfig.get(LIKES_PATH + "/" + likedUserId + "/" + userId, Boolean.class);
-            System.out.println("Checked if " + likedUserId + " likes " + userId + ": " + otherUserLike);
-            
-            // If there's a mutual like, create the match
-            if (otherUserLike != null && otherUserLike) {
-                // Check if match already exists
-                Boolean existingMatch = FirebaseConfig.get(MATCHES_PATH + "/" + userId + "/" + likedUserId, Boolean.class);
-                System.out.println("Checked existing match: " + existingMatch);
-                
-                if (existingMatch == null || !existingMatch) {
-                    System.out.println("Creating new match");
-                    createMatch(userId, likedUserId);
-                    
-                    // Show match notification
-                    SwingUtilities.invokeLater(() -> {
-                        Window activeWindow = KeyboardFocusManager.getCurrentKeyboardFocusManager().getActiveWindow();
-                        JFrame parentFrame = (activeWindow instanceof JFrame) ? 
-                            (JFrame) activeWindow : 
-                            new JFrame();
-                        new MatchNotification(parentFrame, userId, likedUserId).setVisible(true);
-                    });
-                }
-            }
-            return true;
-        } catch (IOException e) {
+            // Save the like
+            String likePath = LIKES_PATH + "/" + currentUserId + "/" + likedUserId;
+            FirebaseConfig.set(likePath, true);
+
+            // Check for match and handle match-related operations
+            matchDAO.checkAndCreateMatch(currentUserId, likedUserId);
+        } catch (Exception e) {
+            System.err.println("Error saving like: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to save like: " + e.getMessage());
+        }
+    }
+
+    public boolean hasLiked(String userId, String otherUserId) {
+        try {
+            String likePath = LIKES_PATH + "/" + userId + "/" + otherUserId;
+            Boolean liked = FirebaseConfig.get(likePath, Boolean.class);
+            return Boolean.TRUE.equals(liked);
+        } catch (Exception e) {
+            System.err.println("Error checking like status: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
     }
-    
+
+    public Map<String, Boolean> getLikes(String userId) {
+        try {
+            String likesPath = LIKES_PATH + "/" + userId;
+            Map<String, Boolean> likes = FirebaseConfig.get(likesPath, new TypeToken<Map<String, Boolean>>(){}.getType());
+            return likes != null ? likes : new HashMap<>();
+        } catch (Exception e) {
+            System.err.println("Error getting likes: " + e.getMessage());
+            e.printStackTrace();
+            return new HashMap<>();
+        }
+    }
+
+    public void removeLike(String userId, String otherUserId) {
+        try {
+            String likePath = LIKES_PATH + "/" + userId + "/" + otherUserId;
+            FirebaseConfig.delete(likePath);
+        } catch (Exception e) {
+            System.err.println("Error removing like: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to remove like: " + e.getMessage());
+        }
+    }
+
     public boolean addPass(String userId, String passedUserId) {
         try {
             FirebaseConfig.put(PASSES_PATH + "/" + userId + "/" + passedUserId, true);
@@ -230,25 +244,6 @@ public class LikeDAO {
             e.printStackTrace();
         }
         return likers;
-    }
-
-    public boolean removeLike(String userId, String dislikedUserId) {
-        try {
-            // Remove from user_likes
-            FirebaseConfig.delete(LIKES_PATH + "/" + userId + "/" + dislikedUserId);
-            
-            // Remove from user_likers of the disliked user
-            FirebaseConfig.delete("user_likers/" + dislikedUserId + "/" + userId);
-
-            // If users were matched, unmatch them
-            if (isMatched(userId, dislikedUserId)) {
-                unmatch(userId, dislikedUserId);
-            }
-            return true;
-        } catch (IOException e) {
-            e.printStackTrace();
-            return false;
-        }
     }
 
     private void unmatch(String userId1, String userId2) throws IOException {

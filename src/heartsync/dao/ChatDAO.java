@@ -14,6 +14,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.HashMap;
 
 /**
  * Handles all database operations related to Chat.
@@ -21,6 +22,8 @@ import java.util.stream.Collectors;
  * @author Manjil
  */
 public class ChatDAO {
+    private static final String MESSAGES_PATH = "messages";
+    private static final String MATCHES_PATH = "matches";
 
     public String getChatId(String user1, String user2) {
         if (user1.compareTo(user2) > 0) {
@@ -74,6 +77,67 @@ public class ChatDAO {
         } catch (IOException e) {
             e.printStackTrace();
             return null;
+        }
+    }
+
+    public List<String> getMatchedChats(String currentUserId) {
+        try {
+            // Get all chat metadata
+            Map<String, Map<String, Object>> allChats = FirebaseConfig.get(MESSAGES_PATH, 
+                new TypeToken<Map<String, Map<String, Object>>>(){}.getType());
+
+            if (allChats == null) {
+                return new ArrayList<>();
+            }
+
+            return allChats.entrySet().stream()
+                .filter(entry -> {
+                    Map<String, Object> meta = (Map<String, Object>) entry.getValue().get("meta");
+                    if (meta != null) {
+                        String user1 = (String) meta.get("user1");
+                        String user2 = (String) meta.get("user2");
+                        return currentUserId.equals(user1) || currentUserId.equals(user2);
+                    }
+                    return false;
+                })
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+        } catch (Exception e) {
+            System.err.println("Error getting matched chats: " + e.getMessage());
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
+    }
+
+    public Map<String, Object> getChatMetadata(String chatId) {
+        try {
+            String metaPath = MESSAGES_PATH + "/" + chatId + "/meta";
+            return FirebaseConfig.get(metaPath, new TypeToken<Map<String, Object>>(){}.getType());
+        } catch (Exception e) {
+            System.err.println("Error getting chat metadata: " + e.getMessage());
+            e.printStackTrace();
+            return new HashMap<>();
+        }
+    }
+
+    public String getChatIdForUsers(String user1Id, String user2Id) {
+        // Create chat ID by sorting user IDs alphabetically
+        return user1Id.compareTo(user2Id) < 0 
+            ? user1Id + "_" + user2Id 
+            : user2Id + "_" + user1Id;
+    }
+
+    public void updateLastMessage(String chatId, String message) {
+        try {
+            Map<String, Object> updates = new HashMap<>();
+            updates.put("lastMessage", message);
+            updates.put("timestamp", System.currentTimeMillis());
+            
+            String metaPath = MESSAGES_PATH + "/" + chatId + "/meta";
+            FirebaseConfig.patch(metaPath, updates);
+        } catch (Exception e) {
+            System.err.println("Error updating last message: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 } 

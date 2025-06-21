@@ -2,22 +2,18 @@ package heartsync.dao;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
 import java.util.UUID;
+
+import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
 
 import com.google.gson.reflect.TypeToken;
 
 import heartsync.database.FirebaseConfig;
 import heartsync.model.Chat;
-import heartsync.view.MatchNotification;
-import heartsync.dao.MatchDAO;
-
-import javax.swing.JFrame;
-import javax.swing.SwingUtilities;
-import java.awt.KeyboardFocusManager;
-import java.awt.Window;
 
 public class LikeDAO {
     private static final String LIKES_PATH = "likes";
@@ -33,12 +29,70 @@ public class LikeDAO {
 
     public void saveLike(String currentUserId, String likedUserId) {
         try {
-            // Save the like
+            System.out.println("Attempting to save like from " + currentUserId + " to " + likedUserId);
+            
+            // Save the like using username
             String likePath = LIKES_PATH + "/" + currentUserId + "/" + likedUserId;
             FirebaseConfig.set(likePath, true);
+            System.out.println("Like saved successfully at path: " + likePath);
 
-            // Check for match and handle match-related operations
-            matchDAO.checkAndCreateMatch(currentUserId, likedUserId);
+            // Check for mutual like directly
+            String mutualLikePath = LIKES_PATH + "/" + likedUserId + "/" + currentUserId;
+            Boolean mutualLike = FirebaseConfig.get(mutualLikePath, Boolean.class);
+            System.out.println("Checking mutual like at path: " + mutualLikePath + ", result: " + mutualLike);
+
+            if (Boolean.TRUE.equals(mutualLike)) {
+                System.out.println("Mutual like detected! Creating match...");
+                
+                // Create match entries for both users
+                FirebaseConfig.set(MATCHES_PATH + "/" + currentUserId + "/" + likedUserId, true);
+                FirebaseConfig.set(MATCHES_PATH + "/" + likedUserId + "/" + currentUserId, true);
+                System.out.println("Match entries created in database");
+
+                // Initialize chat
+                String chatId = currentUserId.compareTo(likedUserId) < 0 
+                    ? currentUserId + "_" + likedUserId 
+                    : likedUserId + "_" + currentUserId;
+                
+                // Create chat metadata
+                Map<String, Object> metadata = new HashMap<>();
+                metadata.put("user1", currentUserId);
+                metadata.put("user2", likedUserId);
+                metadata.put("lastMessage", "");
+                metadata.put("timestamp", System.currentTimeMillis());
+                
+                Map<String, Object> messageData = new HashMap<>();
+                messageData.put("meta", metadata);
+                messageData.put("messages", new HashMap<>());
+                
+                FirebaseConfig.set(MESSAGES_PATH + "/" + chatId, messageData);
+                System.out.println("Chat initialized with ID: " + chatId);
+
+                // Create welcome message
+                Chat welcomeChat = new Chat();
+                welcomeChat.setMessageId(UUID.randomUUID().toString());
+                welcomeChat.setChatId(chatId);
+                welcomeChat.setSenderId("system");
+                welcomeChat.setMessage("You are now matched! Say hello! 👋");
+                welcomeChat.setTimestamp(System.currentTimeMillis());
+                
+                FirebaseConfig.set(MESSAGES_PATH + "/" + chatId + "/messages/" + welcomeChat.getMessageId(), welcomeChat);
+                System.out.println("Welcome message created");
+
+                // Update metadata with welcome message
+                Map<String, Object> updatedMeta = new HashMap<>();
+                updatedMeta.put("lastMessage", welcomeChat.getMessage());
+                updatedMeta.put("timestamp", welcomeChat.getTimestamp());
+                FirebaseConfig.patch(MESSAGES_PATH + "/" + chatId + "/meta", updatedMeta);
+
+                // Show match notification
+                SwingUtilities.invokeLater(() -> {
+                    JOptionPane.showMessageDialog(null,
+                        "🎉 It's a Match! 🎉\nYou and the other person liked each other!",
+                        "New Match!",
+                        JOptionPane.INFORMATION_MESSAGE);
+                });
+            }
         } catch (Exception e) {
             System.err.println("Error saving like: " + e.getMessage());
             e.printStackTrace();

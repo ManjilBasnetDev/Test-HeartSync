@@ -25,12 +25,18 @@ public class MatchDAO {
             Boolean hasLiked = FirebaseConfig.get(otherUserLikePath, Boolean.class);
             System.out.println("Has " + likedUserId + " liked " + currentUserId + "? " + hasLiked);
 
+            // Check if current user has liked the other user (should be true at this point)
+            String currentUserLikePath = LIKES_PATH + "/" + currentUserId + "/" + likedUserId;
+            Boolean currentUserLiked = FirebaseConfig.get(currentUserLikePath, Boolean.class);
+            System.out.println("Has " + currentUserId + " liked " + likedUserId + "? " + currentUserLiked);
+
             // Check if match already exists
             String matchPath = MATCHES_PATH + "/" + currentUserId + "/" + likedUserId;
             Boolean matchExists = FirebaseConfig.get(matchPath, Boolean.class);
             System.out.println("Does match already exist? " + matchExists);
 
-            if (hasLiked != null && hasLiked && !Boolean.TRUE.equals(matchExists)) {
+            // Both users must have liked each other and match shouldn't already exist
+            if (Boolean.TRUE.equals(hasLiked) && Boolean.TRUE.equals(currentUserLiked) && !Boolean.TRUE.equals(matchExists)) {
                 System.out.println("Creating new match!");
                 // It's a match! Create match records for both users
                 createMatchRecord(currentUserId, likedUserId);
@@ -47,6 +53,8 @@ public class MatchDAO {
                     "🎉 It's a Match! 🎉\nYou and the other person liked each other!", 
                     "New Match!", 
                     JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                System.out.println("No match created. Either one user hasn't liked the other, or match already exists.");
             }
         } catch (Exception e) {
             System.err.println("Error checking for match: " + e.getMessage());

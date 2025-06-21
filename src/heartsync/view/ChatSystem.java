@@ -1,342 +1,193 @@
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ */
 package heartsync.view;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Cursor;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.Font;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.GridLayout;
-import java.awt.Image;
-import java.awt.Point;
-import java.awt.RenderingHints;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.geom.Ellipse2D;
-import java.awt.geom.RoundRectangle2D;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Map;
-
-import javax.swing.BorderFactory;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.ImageIcon;
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JSeparator;
-import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
-import javax.swing.border.EmptyBorder;
-import javax.swing.border.CompoundBorder;
-
+import heartsync.dao.ChatDAO;
+import heartsync.dao.LikeDAO;
+import heartsync.dao.UserDAO;
+import heartsync.model.Chat;
 import heartsync.model.User;
 import heartsync.model.UserProfile;
-import heartsync.database.DatabaseManagerProfile;
-import heartsync.database.FirebaseConfig;
-import heartsync.navigation.WindowManager;
-import com.google.gson.reflect.TypeToken;
 
+import javax.swing.*;
+import javax.swing.border.Border;
+import javax.swing.border.EmptyBorder;
+import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.stream.Collectors;
+
+/**
+ * Main chat window with a split-pane layout.
+ * Displays a list of matched users on the left and the conversation on the right.
+ *
+ * @author Manjil
+ */
 public class ChatSystem extends JFrame {
-    private static final int WINDOW_RADIUS = 20;
-    private static final Color THEME_COLOR = new Color(105, 0, 51); // #690033
-    private static final Color TEXT_COLOR = Color.WHITE;
-    private static final int AVATAR_SIZE = 36;
-    private static final int CARD_RADIUS = 8;
-    private static final Font CHAT_FONT = new Font("Roboto", Font.PLAIN, 14);
-    
-    private final JPanel mainPanel;
-    private final JPanel headerPanel;
-    private final JPanel contentPanel;
-    private final ArrayList<MatchedUser> matchedUsers;
-    
-    private static class MatchedUser {
-        String name;
-        String imagePath;
-        String userId;
-        
-        MatchedUser(String name, String imagePath, String userId) {
-            this.name = name;
-            this.imagePath = imagePath;
-            this.userId = userId;
-        }
-    }
-    
-    public ChatSystem() {
-        setTitle("HeartSync");
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setSize(900, 600);
-        setLocationRelativeTo(null);
-        setUndecorated(true);
-        
-        // Main panel
-        mainPanel = new JPanel(new BorderLayout());
-        mainPanel.setBackground(Color.WHITE);
-        
-        // Header Panel
-        headerPanel = createHeaderPanel();
-        mainPanel.add(headerPanel, BorderLayout.NORTH);
-        
-        // Content Panel (Main area)
-        contentPanel = new JPanel();
-        contentPanel.setBackground(Color.WHITE);
-        contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
-        contentPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        
-        JScrollPane scrollPane = new JScrollPane(contentPanel);
-        scrollPane.setBorder(null);
-        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
-        mainPanel.add(scrollPane, BorderLayout.CENTER);
-        
-        setContentPane(mainPanel);
-        
-        // Initialize matched users
-        matchedUsers = new ArrayList<>();
-        loadMatchedUsers();
-        
-        // Make window draggable
-        setupWindowDragging();
-    }
-    
-    private JPanel createHeaderPanel() {
-        JPanel header = new JPanel(new BorderLayout());
-        header.setBackground(THEME_COLOR);
-        header.setPreferredSize(new Dimension(getWidth(), 70));
-        
-        // Left side with back button
-        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 10));
-        leftPanel.setOpaque(false);
 
-        // Back button as a white arrow
-        JButton backButton = new JButton("←");
-        backButton.setForeground(TEXT_COLOR);
-        backButton.setFont(new Font("Arial", Font.BOLD, 28));
-        backButton.setBackground(THEME_COLOR);
-        backButton.setBorder(null);
-        backButton.setFocusPainted(false);
-        backButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        backButton.addActionListener(e -> {
-            dispose();
-            WindowManager.show(Swipe.class, Swipe::new, null);
-        });
-        leftPanel.add(backButton);
-        
-        // Center logo
-        JLabel logo = new JLabel("HEARTSYNC");
-        logo.setFont(new Font("Arial", Font.BOLD, 24));
-        logo.setForeground(TEXT_COLOR);
-        logo.setHorizontalAlignment(SwingConstants.CENTER);
-        
-        // Right menu button
-        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 20, 10));
-        rightPanel.setOpaque(false);
-        JButton menuButton = new JButton("☰");
-        menuButton.setForeground(TEXT_COLOR);
-        menuButton.setFont(new Font("Arial", Font.BOLD, 24));
-        menuButton.setBackground(THEME_COLOR);
-        menuButton.setBorder(null);
-        menuButton.setFocusPainted(false);
-        menuButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        rightPanel.add(menuButton);
-        
-        header.add(leftPanel, BorderLayout.WEST);
-        header.add(logo, BorderLayout.CENTER);
-        header.add(rightPanel, BorderLayout.EAST);
-        
-        return header;
+    private final User currentUser;
+    private final LikeDAO likeDAO;
+    private final UserDAO userDAO;
+    private final ChatDAO chatDAO;
+
+    private JSplitPane splitPane;
+    private JPanel contactListPanel;
+    private ConversationView conversationView;
+    private JScrollPane contactListScrollPane;
+
+    private static final Color BACKGROUND_COLOR = new Color(245, 245, 245);
+    private static final Color CONTACT_ITEM_COLOR = new Color(255, 255, 255);
+    private static final Color CONTACT_ITEM_HOVER_COLOR = new Color(230, 240, 255);
+    private static final Color SELECTED_CONTACT_COLOR = new Color(200, 220, 255);
+    private static final Font NAME_FONT = new Font("Arial", Font.BOLD, 14);
+    private static final Font MESSAGE_FONT = new Font("Arial", Font.PLAIN, 12);
+    private static final Color BORDER_COLOR = new Color(220, 220, 220);
+
+    public ChatSystem(User currentUser) {
+        this.currentUser = currentUser;
+        this.likeDAO = new LikeDAO();
+        this.userDAO = new UserDAO();
+        this.chatDAO = new ChatDAO();
+
+        setTitle("HeartSync Messenger");
+        setSize(900, 700);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setLocationRelativeTo(null);
+        setLayout(new BorderLayout());
+
+        initComponents();
+        loadMatchedUsers();
     }
-    
+
+    private void initComponents() {
+        // Left side: Panel to hold the list of contacts
+        contactListPanel = new JPanel();
+        contactListPanel.setLayout(new BoxLayout(contactListPanel, BoxLayout.Y_AXIS));
+        contactListPanel.setBackground(BACKGROUND_COLOR);
+        contactListPanel.setBorder(new EmptyBorder(10, 0, 10, 0));
+
+        contactListScrollPane = new JScrollPane(contactListPanel);
+        contactListScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        contactListScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        contactListScrollPane.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, BORDER_COLOR));
+
+        // Right side: Panel to show the conversation
+        conversationView = new ConversationView(currentUser, null); // Initially no user selected
+
+        // Split pane to divide contacts and conversation
+        splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, contactListScrollPane, conversationView);
+        splitPane.setDividerLocation(250);
+        splitPane.setResizeWeight(0.1);
+        splitPane.setOneTouchExpandable(true);
+        splitPane.setBorder(null);
+
+        add(splitPane, BorderLayout.CENTER);
+    }
+
     private void loadMatchedUsers() {
-        matchedUsers.clear();
-        String currentUserId = User.getCurrentUser().getUserId();
-        
-        try {
-            // Get current user's matches
-            Map<String, Boolean> matches = FirebaseConfig.get("matches/" + currentUserId, 
-                new TypeToken<Map<String, Boolean>>(){}.getType());
-            
-            if (matches != null && !matches.isEmpty()) {
-                Map<String, User> users = FirebaseConfig.get("users", 
-                    new TypeToken<Map<String, User>>(){}.getType());
-                
-                for (String matchedUserId : matches.keySet()) {
-                    if (matches.get(matchedUserId)) {  // Only if it's a true match
-                        User matchedUser = users.get(matchedUserId);
-                        if (matchedUser != null) {
-                            MatchedUser user = new MatchedUser(
-                                matchedUser.getUsername(),
-                                "/ImagePicker/RajeshHamalPhoto.png", // Default image for now
-                                matchedUserId
-                            );
-                            matchedUsers.add(user);
-                        }
-                    }
-                }
+        contactListPanel.removeAll();
+
+        List<String> matchedUserIds = likeDAO.getMatches(currentUser.getUsername());
+        List<UserProfile> matchedProfiles = matchedUserIds.stream()
+                                                          .map(userDAO::findByUsername)
+                                                          .filter(java.util.Objects::nonNull)
+                                                          .collect(Collectors.toList());
+
+        if (matchedProfiles.isEmpty()) {
+            JLabel noMatchesLabel = new JLabel("No matches yet. Keep exploring!");
+            noMatchesLabel.setFont(new Font("Arial", Font.ITALIC, 14));
+            noMatchesLabel.setHorizontalAlignment(SwingConstants.CENTER);
+            contactListPanel.add(noMatchesLabel);
+        } else {
+            for (UserProfile matchedProfile : matchedProfiles) {
+                JPanel contactItem = createContactItem(matchedProfile);
+                contactListPanel.add(contactItem);
+                contactListPanel.add(Box.createRigidArea(new Dimension(0, 5)));
             }
-            
-            // Update UI with matched users
-            displayMatchedUsers();
-            
-        } catch (IOException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this,
-                "Error loading matches: " + e.getMessage(),
-                "Error",
-                JOptionPane.ERROR_MESSAGE);
         }
+
+        contactListPanel.revalidate();
+        contactListPanel.repaint();
     }
-    
-    private void displayMatchedUsers() {
-        contentPanel.removeAll();
-        contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
-        contentPanel.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
-        
-        for (MatchedUser user : matchedUsers) {
-            JPanel userPanel = createUserPanel(user);
-            contentPanel.add(userPanel);
-            contentPanel.add(Box.createRigidArea(new Dimension(0, 6)));
-        }
-        
-        if (matchedUsers.isEmpty()) {
-            JLabel noMatchesLabel = new JLabel("No matches yet");
-            noMatchesLabel.setFont(CHAT_FONT);
-            noMatchesLabel.setForeground(Color.GRAY);
-            noMatchesLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-            contentPanel.add(noMatchesLabel);
-        }
-        
-        contentPanel.revalidate();
-        contentPanel.repaint();
-    }
-    
-    private JPanel createUserPanel(MatchedUser user) {
-        // Wrapper panel for full width
-        JPanel wrapperPanel = new JPanel(new BorderLayout());
-        wrapperPanel.setBackground(new Color(0, 0, 0, 0));
-        wrapperPanel.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
-        
-        // Main panel with rounded corners and shadow
-        JPanel panel = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                
-                // Draw shadow (more subtle)
-                g2.setColor(new Color(0, 0, 0, 15));
-                g2.fillRoundRect(1, 1, getWidth() - 2, getHeight() - 2, CARD_RADIUS, CARD_RADIUS);
-                
-                // Draw background
-                g2.setColor(THEME_COLOR);
-                g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, CARD_RADIUS, CARD_RADIUS);
-                
-                g2.dispose();
-            }
-        };
-        
-        panel.setLayout(new FlowLayout(FlowLayout.LEFT, 10, 6));
-        panel.setBackground(new Color(0, 0, 0, 0));
-        panel.setBorder(BorderFactory.createEmptyBorder(2, 8, 2, 8));
+
+    private JPanel createContactItem(UserProfile matchedProfile) {
+        JPanel panel = new JPanel(new BorderLayout(10, 0));
+        panel.setBackground(CONTACT_ITEM_COLOR);
+        panel.setBorder(BorderFactory.createCompoundBorder(
+            new EmptyBorder(5, 10, 5, 10), // Margin
+            BorderFactory.createMatteBorder(0, 0, 1, 0, BORDER_COLOR) // Bottom border
+        ));
         panel.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        
-        // Profile picture (circular with white border)
-        try {
-            ImageIcon originalIcon = new ImageIcon(getClass().getResource(user.imagePath));
-            Image image = originalIcon.getImage().getScaledInstance(AVATAR_SIZE, AVATAR_SIZE, Image.SCALE_SMOOTH);
-            JLabel imageLabel = new JLabel(new ImageIcon(image)) {
-                @Override
-                protected void paintComponent(Graphics g) {
-                    Graphics2D g2 = (Graphics2D) g.create();
-                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                    
-                    // Draw white border (thinner)
-                    g2.setColor(Color.WHITE);
-                    g2.fill(new Ellipse2D.Float(0, 0, getWidth(), getHeight()));
-                    
-                    // Draw image
-                    g2.setClip(new Ellipse2D.Float(1, 1, getWidth() - 2, getHeight() - 2));
-                    super.paintComponent(g2);
-                    g2.dispose();
-                }
-            };
-            imageLabel.setPreferredSize(new Dimension(AVATAR_SIZE, AVATAR_SIZE));
-            panel.add(imageLabel);
-        } catch (Exception e) {
-            e.printStackTrace();
+        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 70));
+
+        // Profile picture (placeholder)
+        // In a real app, you would load the user's image here
+        JLabel picLabel = new JLabel("👤");
+        picLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 24));
+        picLabel.setBorder(new EmptyBorder(0, 5, 0, 5));
+        panel.add(picLabel, BorderLayout.WEST);
+
+        // Name and last message
+        JPanel textPanel = new JPanel();
+        textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
+        textPanel.setOpaque(false);
+
+        JLabel nameLabel = new JLabel(matchedProfile.getFullName());
+        nameLabel.setFont(NAME_FONT);
+        textPanel.add(nameLabel);
+
+        // Fetch and display the last message
+        Chat lastChat = chatDAO.getLastMessage(currentUser.getUsername(), matchedProfile.getUsername());
+        String lastMessageText = (lastChat != null) ? lastChat.getMessage() : "No messages yet.";
+        if (lastMessageText.length() > 30) {
+            lastMessageText = lastMessageText.substring(0, 27) + "...";
         }
-        
-        // Name label
-        JLabel nameLabel = new JLabel(user.name.toUpperCase());
-        nameLabel.setFont(CHAT_FONT);
-        nameLabel.setForeground(TEXT_COLOR);
-        panel.add(nameLabel);
-        
-        wrapperPanel.add(panel, BorderLayout.CENTER);
-        
-        // Click listener
+        JLabel lastMessageLabel = new JLabel(lastMessageText);
+        lastMessageLabel.setFont(MESSAGE_FONT);
+        lastMessageLabel.setForeground(Color.GRAY);
+        textPanel.add(lastMessageLabel);
+
+        panel.add(textPanel, BorderLayout.CENTER);
+
+        // Mouse listener for selection and hover effects
         panel.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                openChat(user);
+                // When a contact is clicked, update the conversation view
+                conversationView.setParticipant(matchedProfile);
+                setSelectedContact(panel);
             }
-        });
-        
-        return wrapperPanel;
-    }
-    
-    private void openChat(MatchedUser user) {
-        SwingUtilities.invokeLater(() -> {
-            MessageBox messageBox = new MessageBox(user.name, user.imagePath, user.userId);
-            messageBox.setVisible(true);
-        });
-    }
-    
-    private void setupWindowDragging() {
-        MouseAdapter dragListener = new MouseAdapter() {
-            private Point mouseDownCompCoords;
-            
+
             @Override
-            public void mousePressed(MouseEvent e) {
-                mouseDownCompCoords = e.getPoint();
-            }
-            
-            @Override
-            public void mouseReleased(MouseEvent e) {
-                mouseDownCompCoords = null;
-            }
-            
-            @Override
-            public void mouseDragged(MouseEvent e) {
-                if (mouseDownCompCoords != null) {
-                    Point currCoords = e.getLocationOnScreen();
-                    setLocation(currCoords.x - mouseDownCompCoords.x, 
-                              currCoords.y - mouseDownCompCoords.y);
+            public void mouseEntered(MouseEvent e) {
+                if (!panel.getBackground().equals(SELECTED_CONTACT_COLOR)) {
+                    panel.setBackground(CONTACT_ITEM_HOVER_COLOR);
                 }
             }
-        };
-        
-        headerPanel.addMouseListener(dragListener);
-        headerPanel.addMouseMotionListener(dragListener);
-    }
-    
-    public static void main(String args[]) {
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        
-        SwingUtilities.invokeLater(() -> {
-            ChatSystem frame = new ChatSystem();
-            frame.setVisible(true);
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                 if (!panel.getBackground().equals(SELECTED_CONTACT_COLOR)) {
+                    panel.setBackground(CONTACT_ITEM_COLOR);
+                }
+            }
         });
+
+        return panel;
+    }
+
+    private void setSelectedContact(JPanel selectedPanel) {
+        // Reset background of all contact items
+        for (Component component : contactListPanel.getComponents()) {
+            if (component instanceof JPanel) {
+                component.setBackground(CONTACT_ITEM_COLOR);
+            }
+        }
+        // Set background for the selected one
+        selectedPanel.setBackground(SELECTED_CONTACT_COLOR);
     }
 } 

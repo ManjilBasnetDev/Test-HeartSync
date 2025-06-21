@@ -352,45 +352,40 @@ public class Swipe extends JFrame {
             label.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
-                    setActiveNav(label); // Set active style
+                    User currentUser = User.getCurrentUser(); // Get the current user
+                    if (currentUser == null) {
+                        JOptionPane.showMessageDialog(null, "You must be logged in to use this feature.", "Error", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
 
                     if (label == exploreLabel) {
-                        cardLayout.show(contentCards, "EXPLORE");
-                    } else if (label == profileLabel) {
-                        cardLayout.show(contentCards, "PROFILE");
+                        showExplore();
                     } else if (label == chatLabel) {
-                        WindowManager.show(ChatSystem.class, ChatSystem::new, Swipe.this);
-                    } else if (label == matchedLabel) {
-                        List<String> matchedIds = likeDAO.getMatches(currentUserId);
-                        UserCardListView matchedView = new UserCardListView(matchedIds, "Matched Users", currentUserId);
-                        contentCards.add(matchedView, "MATCHED");
-                        cardLayout.show(contentCards, "MATCHED");
+                        // Correctly open ChatSystem with the current user
+                        new ChatSystem(currentUser).setVisible(true);
+                        dispose();
+                    } else if (label == profileLabel) {
+                        showProfile();
                     } else if (label == myLikesLabel) {
                         List<String> likedIds = likeDAO.getLikedUsers(currentUserId);
-                        UserCardListView likesView = new UserCardListView(likedIds, "My Likes", currentUserId);
-                        contentCards.add(likesView, "LIKES");
-                        cardLayout.show(contentCards, "LIKES");
+                        new UserListView(likedIds, "My Likes", currentUserId).setVisible(true);
+                        dispose();
                     } else if (label == myLikersLabel) {
                         List<String> likerIds = likeDAO.getLikersOfUser(currentUserId);
-                        UserCardListView likersView = new UserCardListView(likerIds, "My Likers", currentUserId);
-                        contentCards.add(likersView, "LIKERS");
-                        cardLayout.show(contentCards, "LIKERS");
+                        new UserListView(likerIds, "My Likers", currentUserId).setVisible(true);
+                        dispose();
+                    } else if (label == matchedLabel) {
+                        List<String> matchedIds = likeDAO.getMatches(currentUserId);
+                        new UserListView(matchedIds, "Matched Users", currentUserId).setVisible(true);
+                        dispose();
                     } else if (label == logoutLabel) {
-                        // Handle logout
-                        int choice = JOptionPane.showConfirmDialog(
-                            Swipe.this,
-                            "Are you sure you want to logout?",
-                            "Logout Confirmation",
-                            JOptionPane.YES_NO_OPTION
-                        );
+                        int choice = JOptionPane.showConfirmDialog(null, "Are you sure you want to logout?", "Logout", JOptionPane.YES_NO_OPTION);
                         if (choice == JOptionPane.YES_OPTION) {
-                            WindowManager.show(LoginView.class, LoginView::new, Swipe.this);
+                            new LoginView().setVisible(true);
                             dispose();
-                            heartsync.view.HomePage.showHomePage();
                         }
                     }
-                    contentCards.revalidate();
-                    contentCards.repaint();
+                    setActiveNav(label);
                 }
                 
                 @Override

@@ -14,6 +14,7 @@ import java.awt.image.BufferedImage;
 import heartsync.dao.LikeDAO;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import heartsync.model.User;
 
 public class UserCardListView extends JPanel {
 
@@ -190,8 +191,10 @@ public class UserCardListView extends JPanel {
         if ("Matched Users".equals(title)) {
             JButton chatButton = createStyledButton("Chat", new Color(41, 128, 185));
             chatButton.addActionListener(e -> {
-                 new ChatSystem().setVisible(true);
-                 SwingUtilities.getWindowAncestor(this).dispose();
+                  User chatUser = new User();
+                  chatUser.setUsername(user.getUsername());
+                  new ChatSystem(chatUser).setVisible(true);
+                  SwingUtilities.getWindowAncestor(this).dispose();
             });
             buttonPanel.add(chatButton);
 

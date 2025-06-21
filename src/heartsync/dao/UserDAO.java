@@ -1,11 +1,21 @@
 package heartsync.dao;
 
 import heartsync.model.User;
+import heartsync.model.UserProfile;
 import heartsync.database.FirebaseConfig;
+import heartsync.database.DatabaseManagerProfile;
 import com.google.gson.reflect.TypeToken;
+import com.google.gson.Gson;
 import java.util.Map;
 import java.util.UUID;
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import javax.swing.JOptionPane;
+import java.util.ArrayList;
+import java.util.List;
 
 public class UserDAO {
     public UserDAO() {}
@@ -110,5 +120,62 @@ public class UserDAO {
     // Get user by username (alias)
     public User getUser(String username) {
         return getUserByUsername(username);
+    }
+
+    public User findByEmail(String email) {
+        // This is a placeholder. You would implement the database logic here.
+        // For now, it returns null as it's not the source of the current error.
+        return null;
+    }
+
+    public UserProfile findByUsername(String username) {
+        try {
+            String path = "user_details/" + username;
+            Map<String, Object> profileData = FirebaseConfig.get(path, new TypeToken<Map<String, Object>>(){}.getType());
+            if (profileData != null) {
+                UserProfile profile = new UserProfile();
+                profile.setUsername((String) profileData.getOrDefault("username", ""));
+                profile.setFullName((String) profileData.getOrDefault("fullName", ""));
+                profile.setCountry((String) profileData.getOrDefault("country", ""));
+                profile.setAddress((String) profileData.getOrDefault("address", ""));
+                profile.setPhoneNumber((String) profileData.getOrDefault("phoneNumber", ""));
+                profile.setGender((String) profileData.getOrDefault("gender", ""));
+                profile.setEducation((String) profileData.getOrDefault("education", ""));
+                profile.setPreferences((String) profileData.getOrDefault("preferences", ""));
+                Object hobbiesObj = profileData.get("hobbies");
+                if (hobbiesObj instanceof List) {
+                    profile.setHobbies((List<String>) hobbiesObj);
+                }
+                profile.setRelationshipGoal((String) profileData.getOrDefault("relationshipGoal", ""));
+                profile.setAboutMe((String) profileData.getOrDefault("aboutMe", ""));
+                profile.setProfilePicPath((String) profileData.getOrDefault("profilePicPath", ""));
+                return profile;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public void updateUserProfile(String username, UserProfile profile) {
+        try {
+            String path = "user_details/" + username;
+            Map<String, Object> profileData = new java.util.HashMap<>();
+            profileData.put("username", profile.getUsername());
+            profileData.put("fullName", profile.getFullName());
+            profileData.put("country", profile.getCountry());
+            profileData.put("address", profile.getAddress());
+            profileData.put("phoneNumber", profile.getPhoneNumber());
+            profileData.put("gender", profile.getGender());
+            profileData.put("education", profile.getEducation());
+            profileData.put("preferences", profile.getPreferences());
+            profileData.put("hobbies", profile.getHobbies());
+            profileData.put("relationshipGoal", profile.getRelationshipGoal());
+            profileData.put("aboutMe", profile.getAboutMe());
+            profileData.put("profilePicPath", profile.getProfilePicPath());
+            FirebaseConfig.set(path, profileData);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

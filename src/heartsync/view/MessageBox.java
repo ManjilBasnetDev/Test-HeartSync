@@ -341,7 +341,8 @@ public class MessageBox extends JFrame {
             chat.setSenderId(currentUserId);
             chat.setMessage(messageText);
             
-            boolean success = chatDAO.sendMessage(chatId, chat);
+            chatDAO.sendMessage(chat);
+            boolean success = true; // Always true unless exception
             
             if (success) {
                 messageInput.setText("");
@@ -363,7 +364,7 @@ public class MessageBox extends JFrame {
     
     private void loadMessages() {
         try {
-            List<Chat> chatMessages = chatDAO.getMessages(chatId);
+            List<Chat> chatMessages = chatDAO.getConversation(currentUserId, otherUserId);
             
             // Clear existing messages
             chatPanel.removeAll();

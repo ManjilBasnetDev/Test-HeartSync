@@ -1,282 +1,327 @@
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ */
 package heartsync.view;
 
 import heartsync.dao.ChatDAO;
+import heartsync.dao.ReportDAO;
 import heartsync.model.Chat;
 import heartsync.model.User;
 import heartsync.model.UserProfile;
-import heartsync.database.FirebaseStorageManager;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.awt.geom.Ellipse2D;
-import java.awt.geom.RoundRectangle2D;
-import java.awt.image.BufferedImage;
-import java.net.URL;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
-import javax.imageio.ImageIO;
+import javax.swing.Timer;
 
-public class ConversationView extends JFrame {
+/**
+ * A JPanel that displays the chat conversation with a selected participant.
+ *
+ * @author Manjil
+ */
+public class ConversationView extends JPanel {
 
-    private final UserProfile recipient;
-    private final String currentUserId;
+    private final User currentUser;
+    private UserProfile participant;
     private final ChatDAO chatDAO;
-    private final String chatId;
+    private final ReportDAO reportDAO;
 
     private JPanel messagesPanel;
+    private JScrollPane scrollPane;
     private JTextField messageField;
+    private JButton sendButton;
+    private JLabel participantNameLabel;
+    private Timer refreshTimer;
 
-    public ConversationView(UserProfile recipient) {
-        this.recipient = recipient;
-        this.currentUserId = User.getCurrentUser().getUserId();
+    private static final Color BUBBLE_SENT_COLOR = new Color(0, 132, 255);
+    private static final Color BUBBLE_RECEIVED_COLOR = new Color(229, 229, 229);
+    private static final Color TEXT_SENT_COLOR = Color.WHITE;
+    private static final Color TEXT_RECEIVED_COLOR = Color.BLACK;
+
+    public ConversationView(User currentUser, UserProfile initialParticipant) {
+        this.currentUser = currentUser;
+        this.participant = initialParticipant;
         this.chatDAO = new ChatDAO();
-        this.chatId = chatDAO.getChatId(currentUserId, recipient.getUsername());
-        initUI();
-        loadMessages();
+        this.reportDAO = new ReportDAO();
+
+        initComponents();
+        if (this.participant != null) {
+            loadConversation();
+        } else {
+            showPlaceholder();
+        }
     }
 
-    private void initUI() {
-        setTitle(recipient.getFullName());
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setSize(400, 700);
-        setLocationRelativeTo(null);
+    private void initComponents() {
         setLayout(new BorderLayout());
+        setBackground(Color.WHITE);
 
-        add(createHeader(), BorderLayout.NORTH);
-        add(createMessagesScrollPane(), BorderLayout.CENTER);
-        add(createInputPanel(), BorderLayout.SOUTH);
-    }
+        // Header Panel
+        JPanel headerPanel = createHeaderPanel();
+        add(headerPanel, BorderLayout.NORTH);
 
-    private JPanel createHeader() {
-        JPanel header = new JPanel(new BorderLayout(10, 0));
-        header.setBackground(Color.WHITE);
-        header.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(220, 220, 220)));
-        header.setPreferredSize(new Dimension(getWidth(), 60));
-
-        JButton backButton = new JButton("←");
-        backButton.setFont(new Font("Segoe UI", Font.BOLD, 24));
-        backButton.setBorder(BorderFactory.createEmptyBorder(0,15,0,0));
-        backButton.setFocusPainted(false);
-        backButton.setContentAreaFilled(false);
-        backButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        backButton.addActionListener(e -> {
-            new ChatSystem().setVisible(true);
-            dispose();
-        });
-        
-        JLabel nameLabel = new JLabel(recipient.getFullName());
-        nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        
-        JLabel imageLabel = new JLabel();
-        imageLabel.setPreferredSize(new Dimension(40, 40));
-        loadRecipientImage(imageLabel, recipient.getUsername());
-        
-        JPanel userInfoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
-        userInfoPanel.setOpaque(false);
-        userInfoPanel.add(imageLabel);
-        userInfoPanel.add(nameLabel);
-
-        header.add(backButton, BorderLayout.WEST);
-        header.add(userInfoPanel, BorderLayout.CENTER);
-
-        return header;
-    }
-
-    private JScrollPane createMessagesScrollPane() {
+        // Messages Panel
         messagesPanel = new JPanel();
         messagesPanel.setLayout(new BoxLayout(messagesPanel, BoxLayout.Y_AXIS));
-        messagesPanel.setBackground(new Color(249, 249, 249));
+        messagesPanel.setBackground(Color.WHITE);
         messagesPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
 
-        JScrollPane scrollPane = new JScrollPane(messagesPanel);
-        scrollPane.setBorder(null);
+        scrollPane = new JScrollPane(messagesPanel);
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-        
-        // Scroll to bottom automatically
-        JScrollBar verticalScrollBar = scrollPane.getVerticalScrollBar();
-        verticalScrollBar.setUnitIncrement(16);
-        verticalScrollBar.addAdjustmentListener(e -> {
-            if (!e.getValueIsAdjusting()) {
-                e.getAdjustable().setValue(e.getAdjustable().getMaximum());
+        scrollPane.setBorder(null);
+        add(scrollPane, BorderLayout.CENTER);
+
+        // Input Panel
+        JPanel inputPanel = createInputPanel();
+        add(inputPanel, BorderLayout.SOUTH);
+
+        // Timer to refresh messages every 5 seconds
+        refreshTimer = new Timer(5000, e -> {
+            if (participant != null) {
+                loadConversation();
             }
         });
+        refreshTimer.start();
+    }
+    
+    private void showPlaceholder() {
+        messagesPanel.removeAll();
+        participantNameLabel.setText("Select a conversation");
+        
+        JPanel placeholder = new JPanel(new GridBagLayout());
+        placeholder.setOpaque(false);
+        JLabel placeholderLabel = new JLabel("Select a contact from the left to start chatting.");
+        placeholderLabel.setFont(new Font("Arial", Font.ITALIC, 16));
+        placeholderLabel.setForeground(Color.GRAY);
+        placeholder.add(placeholderLabel);
+        
+        messagesPanel.add(placeholder);
+        
+        messageField.setEnabled(false);
+        sendButton.setEnabled(false);
+        
+        messagesPanel.revalidate();
+        messagesPanel.repaint();
+    }
 
-        return scrollPane;
+    private JPanel createHeaderPanel() {
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setBackground(new Color(247, 247, 247));
+        headerPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(220, 220, 220)));
+        headerPanel.setPreferredSize(new Dimension(0, 60));
+
+        participantNameLabel = new JLabel();
+        participantNameLabel.setFont(new Font("Arial", Font.BOLD, 18));
+        participantNameLabel.setBorder(new EmptyBorder(0, 20, 0, 0));
+        headerPanel.add(participantNameLabel, BorderLayout.CENTER);
+
+        // More options button (e.g., for report/block)
+        JButton optionsButton = new JButton("⋮");
+        optionsButton.setFont(new Font("Arial", Font.BOLD, 20));
+        optionsButton.setBorderPainted(false);
+        optionsButton.setContentAreaFilled(false);
+        optionsButton.setFocusPainted(false);
+        optionsButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        
+        JPopupMenu optionsMenu = new JPopupMenu();
+        JMenuItem reportItem = new JMenuItem("Report User");
+        JMenuItem blockItem = new JMenuItem("Block User");
+        
+        reportItem.addActionListener(e -> reportUser());
+        blockItem.addActionListener(e -> blockUser());
+
+        optionsMenu.add(reportItem);
+        optionsMenu.add(blockItem);
+
+        optionsButton.addActionListener(e -> {
+             if (participant != null) {
+                optionsMenu.show(optionsButton, 0, optionsButton.getHeight());
+            }
+        });
+        
+        headerPanel.add(optionsButton, BorderLayout.EAST);
+
+        return headerPanel;
     }
 
     private JPanel createInputPanel() {
         JPanel inputPanel = new JPanel(new BorderLayout(10, 0));
-        inputPanel.setBackground(Color.WHITE);
+        inputPanel.setBackground(new Color(247, 247, 247));
         inputPanel.setBorder(new EmptyBorder(10, 15, 10, 15));
 
         messageField = new JTextField();
-        messageField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        messageField.setFont(new Font("Arial", Font.PLAIN, 14));
         messageField.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createMatteBorder(1, 1, 1, 1, new Color(220, 220, 220)),
+            BorderFactory.createMatteBorder(1, 1, 1, 1, new Color(200, 200, 200)),
             new EmptyBorder(10, 10, 10, 10)
         ));
-        
-        JButton sendButton = new JButton("Send");
-        sendButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        sendButton.setBackground(new Color(0, 149, 246));
+        messageField.addActionListener(e -> sendMessage());
+        inputPanel.add(messageField, BorderLayout.CENTER);
+
+        sendButton = new JButton("Send");
+        sendButton.setFont(new Font("Arial", Font.BOLD, 14));
+        sendButton.setBackground(new Color(0, 132, 255));
         sendButton.setForeground(Color.WHITE);
         sendButton.setFocusPainted(false);
         sendButton.setBorder(new EmptyBorder(10, 20, 10, 20));
-        sendButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-
+        sendButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         sendButton.addActionListener(e -> sendMessage());
-        messageField.addActionListener(e -> sendMessage());
-
-        inputPanel.add(messageField, BorderLayout.CENTER);
         inputPanel.add(sendButton, BorderLayout.EAST);
 
         return inputPanel;
     }
 
+    public void setParticipant(UserProfile participant) {
+        this.participant = participant;
+        if (this.participant != null) {
+            messageField.setEnabled(true);
+            sendButton.setEnabled(true);
+            loadConversation();
+        } else {
+            showPlaceholder();
+        }
+    }
+
+    private void loadConversation() {
+        if (participant == null) return;
+
+        participantNameLabel.setText(participant.getFullName());
+        messagesPanel.removeAll();
+        
+        List<Chat> conversation = chatDAO.getConversation(currentUser.getUsername(), participant.getUsername());
+        for (Chat chat : conversation) {
+            boolean isSentByMe = chat.getSenderId().equals(currentUser.getUsername());
+            JPanel messageBubble = createMessageBubble(chat, isSentByMe);
+            messagesPanel.add(messageBubble);
+            messagesPanel.add(Box.createVerticalStrut(5));
+        }
+
+        messagesPanel.revalidate();
+        messagesPanel.repaint();
+
+        // Scroll to the bottom
+        SwingUtilities.invokeLater(() -> {
+            JScrollBar vertical = scrollPane.getVerticalScrollBar();
+            vertical.setValue(vertical.getMaximum());
+        });
+    }
+
     private void sendMessage() {
-        String text = messageField.getText().trim();
-        if (text.isEmpty()) {
+        String messageText = messageField.getText().trim();
+        if (messageText.isEmpty() || participant == null) {
             return;
         }
 
-        Chat message = new Chat();
-        message.setSenderId(currentUserId);
-        message.setReceiverId(recipient.getUsername());
-        message.setMessage(text);
+        Chat chat = new Chat();
+        chat.setSenderId(currentUser.getUsername());
+        chat.setReceiverId(participant.getUsername());
+        chat.setMessage(messageText);
+        chat.setTimestamp(System.currentTimeMillis());
 
-        boolean success = chatDAO.sendMessage(chatId, message);
-        
-        if (success) {
+        try {
+            chatDAO.sendMessage(chat);
             messageField.setText("");
-            addMessageBubble(message);
-        } else {
-            JOptionPane.showMessageDialog(this, "Failed to send message. Please try again.", "Error", JOptionPane.ERROR_MESSAGE);
+            loadConversation(); // Refresh conversation to show the new message
+        } catch (IOException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Failed to send message.", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    private void loadMessages() {
-        new SwingWorker<List<Chat>, Void>() {
-            @Override
-            protected List<Chat> doInBackground() {
-                return chatDAO.getMessages(chatId);
-            }
-
-            @Override
-            protected void done() {
-                try {
-                    List<Chat> messages = get();
-                    for (Chat message : messages) {
-                        addMessageBubble(message);
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }.execute();
-    }
-    
-    private void addMessageBubble(Chat message) {
-        boolean isSentByMe = message.getSenderId().equals(currentUserId);
-        JPanel bubblePanel = new MessageBubble(message.getMessage(), isSentByMe);
-        
+    private JPanel createMessageBubble(Chat chat, boolean isSentByMe) {
+        // Wrapper panel to align the bubble
         JPanel wrapper = new JPanel(new BorderLayout());
         wrapper.setOpaque(false);
-        wrapper.add(bubblePanel, isSentByMe ? BorderLayout.EAST : BorderLayout.WEST);
-        wrapper.setMaximumSize(new Dimension(Integer.MAX_VALUE, bubblePanel.getPreferredSize().height));
-        
-        messagesPanel.add(wrapper);
-        messagesPanel.add(Box.createVerticalStrut(5));
-        messagesPanel.revalidate();
-        messagesPanel.repaint();
-    }
-    
-    private void loadRecipientImage(JLabel imageLabel, String username) {
-         new SwingWorker<ImageIcon, Void>() {
-            @Override
-            protected ImageIcon doInBackground() throws Exception {
-                String firebaseUrl = FirebaseStorageManager.getProfileImageUrl(username);
-                Image image;
-                if (firebaseUrl != null && !firebaseUrl.isEmpty()) {
-                    image = ImageIO.read(new URL(firebaseUrl));
-                } else {
-                    image = ImageIO.read(getClass().getResource("/ImagePicker/RajeshHamalPhoto.png"));
-                }
-                
-                Image scaledImage = image.getScaledInstance(40, 40, Image.SCALE_SMOOTH);
-                BufferedImage circularImage = new BufferedImage(40, 40, BufferedImage.TYPE_INT_ARGB);
-                Graphics2D g2 = circularImage.createGraphics();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setClip(new Ellipse2D.Float(0, 0, 40, 40));
-                g2.drawImage(scaledImage, 0, 0, null);
-                g2.dispose();
-                return new ImageIcon(circularImage);
-            }
 
-            @Override
-            protected void done() {
-                try {
-                    imageLabel.setIcon(get());
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }.execute();
-    }
-}
-
-class MessageBubble extends JPanel {
-    private String message;
-    private boolean isSentByMe;
-
-    MessageBubble(String message, boolean isSentByMe) {
-        this.message = message;
-        this.isSentByMe = isSentByMe;
-        setLayout(new BorderLayout());
-        setOpaque(false);
-        setBorder(new EmptyBorder(5, 10, 5, 10));
-    }
-
-    @Override
-    protected void paintComponent(Graphics g) {
-        super.paintComponent(g);
-        Graphics2D g2 = (Graphics2D) g.create();
-        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        // The actual bubble with text
+        JTextArea messageArea = new JTextArea(chat.getMessage());
+        messageArea.setEditable(false);
+        messageArea.setLineWrap(true);
+        messageArea.setWrapStyleWord(true);
+        messageArea.setFont(new Font("Arial", Font.PLAIN, 14));
+        messageArea.setMargin(new Insets(8, 12, 8, 12));
 
         if (isSentByMe) {
-            g2.setColor(new Color(0, 149, 246));
+            messageArea.setBackground(BUBBLE_SENT_COLOR);
+            messageArea.setForeground(TEXT_SENT_COLOR);
+            wrapper.add(messageArea, BorderLayout.EAST);
         } else {
-            g2.setColor(new Color(229, 229, 229));
+            messageArea.setBackground(BUBBLE_RECEIVED_COLOR);
+            messageArea.setForeground(TEXT_RECEIVED_COLOR);
+            wrapper.add(messageArea, BorderLayout.WEST);
         }
         
-        g2.fill(new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), 20, 20));
-        g2.dispose();
+        // Add timestamp below the bubble
+        SimpleDateFormat sdf = new SimpleDateFormat("MMM dd, HH:mm");
+        JLabel timestampLabel = new JLabel(sdf.format(new Date(chat.getTimestamp())));
+        timestampLabel.setFont(new Font("Arial", Font.PLAIN, 10));
+        timestampLabel.setForeground(Color.GRAY);
+        timestampLabel.setBorder(new EmptyBorder(2, 12, 2, 12));
+
+        if(isSentByMe) {
+            timestampLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+        } else {
+            timestampLabel.setHorizontalAlignment(SwingConstants.LEFT);
+        }
+
+        JPanel finalBubble = new JPanel(new BorderLayout());
+        finalBubble.setOpaque(false);
+        finalBubble.add(wrapper, BorderLayout.CENTER);
+        finalBubble.add(timestampLabel, BorderLayout.SOUTH);
+
+        return finalBubble;
     }
 
-    @Override
-    public Dimension getPreferredSize() {
-        JTextArea temp = new JTextArea(message);
-        temp.setLineWrap(true);
-        temp.setWrapStyleWord(true);
-        temp.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        temp.setBorder(new EmptyBorder(10, 10, 10, 10));
-        temp.setSize(new Dimension(200, Short.MAX_VALUE));
-        return temp.getPreferredSize();
+    private void reportUser() {
+        int choice = JOptionPane.showConfirmDialog(this,
+                "Are you sure you want to report " + participant.getFullName() + "?",
+                "Report User",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE);
+        
+        if (choice == JOptionPane.YES_OPTION) {
+            boolean success = reportDAO.reportUser(participant.getUsername(), currentUser.getUsername(), "Inappropriate behavior.");
+            if (success) {
+                JOptionPane.showMessageDialog(this, "User reported successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(this, "Failed to report user.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    private void blockUser() {
+       int choice = JOptionPane.showConfirmDialog(this,
+                "Are you sure you want to block " + participant.getFullName() + "?\nThis will unmatch you and delete the conversation.",
+                "Block User",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE);
+        
+        if (choice == JOptionPane.YES_OPTION) {
+            // Here you would call a DAO method to block the user.
+            // For example: likeDAO.removeMatch(currentUser.getUsername(), participant.getUsername());
+            JOptionPane.showMessageDialog(this, participant.getFullName() + " has been blocked.", "Blocked", JOptionPane.INFORMATION_MESSAGE);
+            
+            // Refresh the main chat system or close this window
+            // This is a bit tricky without a direct reference to the parent.
+            // A better approach would be to fire an event that ChatSystem listens to.
+            SwingUtilities.getWindowAncestor(this).dispose();
+             new ChatSystem(currentUser).setVisible(true);
+
+        }
     }
     
     @Override
-    public void addNotify() {
-        super.addNotify();
-        JTextArea text = new JTextArea(message);
-        text.setLineWrap(true);
-        text.setWrapStyleWord(true);
-        text.setEditable(false);
-        text.setOpaque(false);
-        text.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        text.setForeground(isSentByMe ? Color.WHITE : Color.BLACK);
-        text.setBorder(new EmptyBorder(5,5,5,5));
-        add(text, BorderLayout.CENTER);
+    public void removeNotify() {
+        super.removeNotify();
+        // Stop the timer when the component is removed
+        if (refreshTimer != null) {
+            refreshTimer.stop();
+        }
     }
-} 
+}

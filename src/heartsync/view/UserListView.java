@@ -2,6 +2,7 @@ package heartsync.view;
 
 import heartsync.database.DatabaseManagerProfile;
 import heartsync.model.UserProfile;
+import heartsync.model.User;
 
 import javax.swing.*;
 import java.awt.*;
@@ -116,10 +117,11 @@ public class UserListView extends JPanel {
         if ("Matched Users".equals(title)) {
             JButton chatButton = new JButton("Chat");
             chatButton.addActionListener(e -> {
-                 // TODO: Open a specific chat window with this user.
-                 // The current ChatSystem opens a list of all chats.
-                 // This needs to be refactored to support direct chats.
-                 new ChatSystem().setVisible(true);
+                // This is a placeholder action. The actual implementation
+                // may require passing more specific user info.
+                // The current ChatSystem opens a list of all chats.
+                // This needs to be refactored to support direct chats.
+                new ChatSystem(User.getCurrentUser()).setVisible(true);
             });
             infoPanel.add(chatButton);
         }

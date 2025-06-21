@@ -12,6 +12,8 @@ import java.awt.geom.Ellipse2D;
 import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
 import heartsync.dao.LikeDAO;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 public class UserCardListView extends JPanel {
 
@@ -172,6 +174,13 @@ public class UserCardListView extends JPanel {
         card.add(usernameLabel);
         
         card.add(Box.createVerticalStrut(15));
+        
+        card.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                new UserProfileView(user).setVisible(true);
+            }
+        });
         
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
         buttonPanel.setBackground(Color.WHITE);

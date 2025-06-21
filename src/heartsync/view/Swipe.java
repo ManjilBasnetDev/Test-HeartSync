@@ -77,6 +77,7 @@ import heartsync.model.User;
 import heartsync.model.UserProfile;
 import heartsync.navigation.WindowManager;
 import heartsync.view.ChatSystem;
+import heartsync.view.UserProfileView;
 
 import com.google.gson.reflect.TypeToken;
 
@@ -342,12 +343,12 @@ public class Swipe extends JFrame {
         allNavLabels = java.util.Arrays.asList(exploreLabel, profileLabel, chatLabel, matchedLabel, myLikesLabel, myLikersLabel, logoutLabel);
 
         Font navFont = new Font("Segoe UI", Font.BOLD, 16);
-
+        
         for (JLabel label : allNavLabels) {
             label.setFont(navFont);
             label.setForeground(NAV_COLOR);
             label.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
+            
             label.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
@@ -391,14 +392,14 @@ public class Swipe extends JFrame {
                     contentCards.revalidate();
                     contentCards.repaint();
                 }
-
+                
                 @Override
                 public void mouseEntered(MouseEvent e) {
                     if (!label.getForeground().equals(NAV_ACTIVE_COLOR)) {
                         label.setForeground(NAV_ACTIVE_COLOR.darker());
                     }
                 }
-
+                
                 @Override
                 public void mouseExited(MouseEvent e) {
                     if (!label.getForeground().equals(NAV_ACTIVE_COLOR)) {
@@ -407,7 +408,7 @@ public class Swipe extends JFrame {
                 }
             });
         }
-
+        
         // Add all labels to the navigation panel
         for (JLabel label : allNavLabels) {
             navigationPanel.add(label);
@@ -617,6 +618,18 @@ public class Swipe extends JFrame {
                 g2.fillRect(0, getHeight() - 120, getWidth(), 120);
             }
         };
+        photoContainer.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        photoContainer.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (profiles.isEmpty()) return;
+                ProfileData currentProfileData = profiles.get(currentIndex);
+                UserProfile userProfile = DatabaseManagerProfile.getInstance().getUserProfile(currentProfileData.userId);
+                if (userProfile != null) {
+                    new UserProfileView(userProfile).setVisible(true);
+                }
+            }
+        });
         photoContainer.setOpaque(false);
         photoContainer.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
 
@@ -1043,7 +1056,7 @@ public class Swipe extends JFrame {
                 currentIndex = 0;
             }
             
-            showCurrentProfile();
+                showCurrentProfile();
 
         } else {
             JOptionPane.showMessageDialog(this,
@@ -1070,7 +1083,7 @@ public class Swipe extends JFrame {
                 currentIndex = 0;
             }
             
-            showCurrentProfile();
+                showCurrentProfile();
         } else {
             JOptionPane.showMessageDialog(this,
                 "Error saving pass. Please try again.",
@@ -1312,7 +1325,7 @@ public class Swipe extends JFrame {
     private void openProfileEditor() {
         String currentUsername = heartsync.model.User.getCurrentUser().getUsername();
         UserProfile userProfile = DatabaseManagerProfile.getInstance().getUserProfile(currentUsername);
-
+        
         if (userProfile != null) {
             UserProfileController controller = new UserProfileController(userProfile, currentUsername);
             new ProfileSetupView(controller).setVisible(true);

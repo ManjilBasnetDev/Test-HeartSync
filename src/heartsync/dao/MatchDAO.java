@@ -1,11 +1,14 @@
 package heartsync.dao;
 
-import heartsync.database.FirebaseConfig;
-import com.google.gson.reflect.TypeToken;
-import java.util.Map;
-import java.util.HashMap;
-import javax.swing.JOptionPane;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.swing.JOptionPane;
+
+import com.google.gson.reflect.TypeToken;
+
+import heartsync.database.FirebaseConfig;
 
 public class MatchDAO {
     private static final String LIKES_PATH = "likes";
@@ -15,22 +18,35 @@ public class MatchDAO {
 
     public void checkAndCreateMatch(String currentUserId, String likedUserId) {
         try {
+            System.out.println("Checking for match between " + currentUserId + " and " + likedUserId);
+            
             // Check if the other user has already liked the current user
             String otherUserLikePath = LIKES_PATH + "/" + likedUserId + "/" + currentUserId;
             Boolean hasLiked = FirebaseConfig.get(otherUserLikePath, Boolean.class);
+            System.out.println("Has " + likedUserId + " liked " + currentUserId + "? " + hasLiked);
 
-            if (Boolean.TRUE.equals(hasLiked)) {
+            // Check if match already exists
+            String matchPath = MATCHES_PATH + "/" + currentUserId + "/" + likedUserId;
+            Boolean matchExists = FirebaseConfig.get(matchPath, Boolean.class);
+            System.out.println("Does match already exist? " + matchExists);
+
+            if (hasLiked != null && hasLiked && !Boolean.TRUE.equals(matchExists)) {
+                System.out.println("Creating new match!");
                 // It's a match! Create match records for both users
                 createMatchRecord(currentUserId, likedUserId);
                 
                 // Initialize chat
                 initializeChat(currentUserId, likedUserId);
                 
-                // Show match notification to current user
-                JOptionPane.showMessageDialog(null, "It's a Match!");
-                
-                // Create notification for the other user
+                // Create notification for both users
                 createMatchNotification(currentUserId, likedUserId);
+                createMatchNotification(likedUserId, currentUserId);
+                
+                // Show match notification to current user
+                JOptionPane.showMessageDialog(null, 
+                    "🎉 It's a Match! 🎉\nYou and the other person liked each other!", 
+                    "New Match!", 
+                    JOptionPane.INFORMATION_MESSAGE);
             }
         } catch (Exception e) {
             System.err.println("Error checking for match: " + e.getMessage());
@@ -40,17 +56,13 @@ public class MatchDAO {
 
     private void createMatchRecord(String user1Id, String user2Id) {
         try {
-            // Check if match already exists
-            String matchPath = MATCHES_PATH + "/" + user1Id + "/" + user2Id;
-            Boolean exists = FirebaseConfig.get(matchPath, Boolean.class);
+            System.out.println("Creating match record between " + user1Id + " and " + user2Id);
             
-            if (!Boolean.TRUE.equals(exists)) {
-                // Create match records for both users
-                Map<String, Boolean> matchData = new HashMap<>();
-                matchData.put(user2Id, true);
-                FirebaseConfig.set(MATCHES_PATH + "/" + user1Id + "/" + user2Id, true);
-                FirebaseConfig.set(MATCHES_PATH + "/" + user2Id + "/" + user1Id, true);
-            }
+            // Create match records for both users
+            FirebaseConfig.set(MATCHES_PATH + "/" + user1Id + "/" + user2Id, true);
+            FirebaseConfig.set(MATCHES_PATH + "/" + user2Id + "/" + user1Id, true);
+            
+            System.out.println("Match records created successfully");
         } catch (Exception e) {
             System.err.println("Error creating match record: " + e.getMessage());
             e.printStackTrace();

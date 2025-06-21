@@ -172,4 +172,50 @@ public class LikeDAO {
         }
         return matches;
     }
+
+    // Get all users who liked a specific user
+    public List<String> getLikersOfUser(String userId) {
+        List<String> likers = new ArrayList<>();
+        try {
+            // This is inefficient and not scalable.
+            // A better approach would be to have a dedicated `likers` node in Firebase.
+            // For now, we iterate through all likes.
+            Map<String, Map<String, Boolean>> allLikes = FirebaseConfig.get(LIKES_PATH,
+                new TypeToken<Map<String, Map<String, Boolean>>>(){}.getType());
+
+            if (allLikes != null) {
+                for (Map.Entry<String, Map<String, Boolean>> entry : allLikes.entrySet()) {
+                    String otherUserId = entry.getKey();
+                    Map<String, Boolean> likedMap = entry.getValue();
+                    if (likedMap != null && likedMap.containsKey(userId)) {
+                        likers.add(otherUserId);
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return likers;
+    }
+
+    public boolean removeLike(String userId, String dislikedUserId) {
+        try {
+            // Remove the like entry
+            FirebaseConfig.delete(LIKES_PATH + "/" + userId + "/" + dislikedUserId);
+
+            // If users were matched, unmatch them
+            if (isMatched(userId, dislikedUserId)) {
+                unmatch(userId, dislikedUserId);
+            }
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    private void unmatch(String userId1, String userId2) throws IOException {
+        FirebaseConfig.delete(MATCHES_PATH + "/" + userId1 + "/" + userId2);
+        FirebaseConfig.delete(MATCHES_PATH + "/" + userId2 + "/" + userId1);
+    }
 } 

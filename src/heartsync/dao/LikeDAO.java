@@ -11,6 +11,12 @@ import com.google.gson.reflect.TypeToken;
 
 import heartsync.database.FirebaseConfig;
 import heartsync.model.Chat;
+import heartsync.view.MatchNotification;
+
+import javax.swing.JFrame;
+import javax.swing.SwingUtilities;
+import java.awt.KeyboardFocusManager;
+import java.awt.Window;
 
 public class LikeDAO {
     private static final String LIKES_PATH = "user_likes";
@@ -20,29 +26,38 @@ public class LikeDAO {
     
     public boolean addLike(String userId, String likedUserId) {
         try {
+            System.out.println("Adding like: " + userId + " likes " + likedUserId);
+            
             // Add the like to user_likes
             FirebaseConfig.put(LIKES_PATH + "/" + userId + "/" + likedUserId, true);
+            System.out.println("Added to user_likes");
             
             // Add the liker to user_likers of the liked user
             FirebaseConfig.put("user_likers/" + likedUserId + "/" + userId, true);
+            System.out.println("Added to user_likers");
             
             // Check if there's a mutual like by checking if the liked user has liked us back
-            Map<String, Boolean> otherUserLikes = FirebaseConfig.get(LIKES_PATH + "/" + likedUserId, 
-                new TypeToken<Map<String, Boolean>>(){}.getType());
+            Boolean otherUserLike = FirebaseConfig.get(LIKES_PATH + "/" + likedUserId + "/" + userId, Boolean.class);
+            System.out.println("Checked if " + likedUserId + " likes " + userId + ": " + otherUserLike);
             
             // If there's a mutual like, create the match
-            if (otherUserLikes != null && otherUserLikes.containsKey(userId) && otherUserLikes.get(userId)) {
+            if (otherUserLike != null && otherUserLike) {
                 // Check if match already exists
-                Map<String, Boolean> existingMatches = FirebaseConfig.get(MATCHES_PATH + "/" + userId,
-                    new TypeToken<Map<String, Boolean>>(){}.getType());
+                Boolean existingMatch = FirebaseConfig.get(MATCHES_PATH + "/" + userId + "/" + likedUserId, Boolean.class);
+                System.out.println("Checked existing match: " + existingMatch);
                 
-                boolean matchExists = existingMatches != null && 
-                                    existingMatches.containsKey(likedUserId) && 
-                                    existingMatches.get(likedUserId);
-                
-                if (!matchExists) {
-                    System.out.println("Creating match between " + userId + " and " + likedUserId);
+                if (existingMatch == null || !existingMatch) {
+                    System.out.println("Creating new match");
                     createMatch(userId, likedUserId);
+                    
+                    // Show match notification
+                    SwingUtilities.invokeLater(() -> {
+                        Window activeWindow = KeyboardFocusManager.getCurrentKeyboardFocusManager().getActiveWindow();
+                        JFrame parentFrame = (activeWindow instanceof JFrame) ? 
+                            (JFrame) activeWindow : 
+                            new JFrame();
+                        new MatchNotification(parentFrame, userId, likedUserId).setVisible(true);
+                    });
                 }
             }
             return true;

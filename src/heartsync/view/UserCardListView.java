@@ -1,20 +1,46 @@
 package heartsync.view;
 
-import heartsync.database.DatabaseManagerProfile;
-import heartsync.model.UserProfile;
-import javax.swing.*;
-import java.awt.*;
-import java.net.URL;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import javax.imageio.ImageIO;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Container;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GridBagLayout;
+import java.awt.Image;
+import java.awt.RenderingHints;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
+import java.net.URL;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+
+import javax.imageio.ImageIO;
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
+
 import heartsync.dao.LikeDAO;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import heartsync.database.DatabaseManagerProfile;
 import heartsync.model.User;
+import heartsync.model.UserProfile;
 
 public class UserCardListView extends JPanel {
 
@@ -246,7 +272,7 @@ public class UserCardListView extends JPanel {
         } else if ("My Likers".equals(title)) {
             JButton likeBackButton = createStyledButton("Like Back", new Color(46, 204, 113));
             likeBackButton.addActionListener(e -> {
-                likeDAO.addLike(currentUserId, user.getUsername());
+                likeDAO.saveLike(currentUserId, user.getUsername());
                 Container parent = card.getParent();
                 if (parent != null) {
                     parent.remove(card);

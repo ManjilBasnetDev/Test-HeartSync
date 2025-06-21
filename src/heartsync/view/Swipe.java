@@ -23,34 +23,28 @@ import java.awt.GridLayout;
 import java.awt.Image;
 import java.awt.Insets;
 import java.awt.MediaTracker;
-import java.awt.Point;
 import java.awt.RenderingHints;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Ellipse2D;
-import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.IOException;
 import java.net.URL;
 import java.time.LocalDate;
 import java.time.Period;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.DefaultListModel;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -59,35 +53,26 @@ import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JLayeredPane;
+import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
-import javax.swing.ScrollPaneConstants;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
 import javax.swing.UIManager;
 import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
-import javax.swing.SwingWorker;
-import javax.swing.DefaultListModel;
-import javax.swing.JList;
 
 import heartsync.controller.UserProfileController;
 import heartsync.dao.LikeDAO;
 import heartsync.database.DatabaseManagerProfile;
-import heartsync.database.FirebaseConfig;
 import heartsync.model.User;
 import heartsync.model.UserProfile;
-import heartsync.navigation.WindowManager;
-import heartsync.view.ChatSystem;
-import heartsync.view.UserProfileView;
-import heartsync.view.UserCardListView;
-
-import com.google.gson.reflect.TypeToken;
 
 /**
  * Modern swipe interface for browsing through potential matches.
@@ -1040,8 +1025,10 @@ public class Swipe extends JFrame {
         if (profiles.isEmpty()) return;
         ProfileData profile = profiles.get(currentIndex);
         
-        // Add to likes in Firebase and check for match
-        if (likeDAO.addLike(currentUserId, profile.userId)) {
+        try {
+            // Add to likes in Firebase and check for match
+            likeDAO.saveLike(currentUserId, profile.userId);
+            
             // Check if it's a match immediately after adding the like
             if (likeDAO.isMatched(currentUserId, profile.userId)) {
                 // Create a custom match notification dialog
@@ -1126,11 +1113,12 @@ public class Swipe extends JFrame {
             }
             
             showCurrentProfile();
-        } else {
+        } catch (Exception e) {
             JOptionPane.showMessageDialog(this,
                 "Error saving like. Please try again.",
                 "Error",
                 JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
         }
     }
 

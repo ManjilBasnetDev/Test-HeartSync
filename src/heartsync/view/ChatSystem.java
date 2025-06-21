@@ -46,6 +46,7 @@ public class ChatSystem extends JFrame {
     private static final Font NAME_FONT = new Font("Arial", Font.BOLD, 14);
     private static final Font MESSAGE_FONT = new Font("Arial", Font.PLAIN, 12);
     private static final Color BORDER_COLOR = new Color(220, 220, 220);
+    private static final Color CONTACT_LIST_BACKGROUND_COLOR = new Color(255, 240, 245); // Light pink
 
     public ChatSystem(User currentUser) {
         this.currentUser = currentUser;
@@ -67,10 +68,11 @@ public class ChatSystem extends JFrame {
         // Left side: Panel to hold the list of contacts
         contactListPanel = new JPanel();
         contactListPanel.setLayout(new BoxLayout(contactListPanel, BoxLayout.Y_AXIS));
-        contactListPanel.setBackground(BACKGROUND_COLOR);
+        contactListPanel.setBackground(CONTACT_LIST_BACKGROUND_COLOR);
         contactListPanel.setBorder(new EmptyBorder(10, 0, 10, 0));
 
         contactListScrollPane = new JScrollPane(contactListPanel);
+        contactListScrollPane.getViewport().setBackground(CONTACT_LIST_BACKGROUND_COLOR);
         contactListScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         contactListScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         contactListScrollPane.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, BORDER_COLOR));
@@ -86,6 +88,19 @@ public class ChatSystem extends JFrame {
         splitPane.setBorder(null);
 
         add(splitPane, BorderLayout.CENTER);
+
+        // Add a header with a back button
+        JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        headerPanel.setBackground(new Color(230, 230, 250)); // Light lavender for the header
+        JButton backButton = new JButton("← Back to Explore");
+        backButton.setFont(new Font("Arial", Font.BOLD, 12));
+        backButton.setFocusPainted(false);
+        backButton.addActionListener(e -> {
+            new Swipe().setVisible(true);
+            dispose();
+        });
+        headerPanel.add(backButton);
+        add(headerPanel, BorderLayout.NORTH);
     }
 
     private void loadMatchedUsers() {

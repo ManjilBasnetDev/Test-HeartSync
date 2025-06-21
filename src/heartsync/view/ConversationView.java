@@ -18,6 +18,9 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import javax.swing.Timer;
+import java.awt.geom.Area;
+import java.awt.geom.RoundRectangle2D;
+import javax.swing.border.AbstractBorder;
 
 /**
  * A JPanel that displays the chat conversation with a selected participant.
@@ -42,6 +45,7 @@ public class ConversationView extends JPanel {
     private static final Color BUBBLE_RECEIVED_COLOR = new Color(229, 229, 229);
     private static final Color TEXT_SENT_COLOR = Color.WHITE;
     private static final Color TEXT_RECEIVED_COLOR = Color.BLACK;
+    private static final Color CHAT_BACKGROUND_COLOR = new Color(244, 247, 252);
 
     public ConversationView(User currentUser, UserProfile initialParticipant) {
         this.currentUser = currentUser;
@@ -59,7 +63,7 @@ public class ConversationView extends JPanel {
 
     private void initComponents() {
         setLayout(new BorderLayout());
-        setBackground(Color.WHITE);
+        setBackground(CHAT_BACKGROUND_COLOR);
 
         // Header Panel
         JPanel headerPanel = createHeaderPanel();
@@ -68,7 +72,7 @@ public class ConversationView extends JPanel {
         // Messages Panel
         messagesPanel = new JPanel();
         messagesPanel.setLayout(new BoxLayout(messagesPanel, BoxLayout.Y_AXIS));
-        messagesPanel.setBackground(Color.WHITE);
+        messagesPanel.setBackground(CHAT_BACKGROUND_COLOR);
         messagesPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
 
         scrollPane = new JScrollPane(messagesPanel);
@@ -155,22 +159,57 @@ public class ConversationView extends JPanel {
         inputPanel.setBackground(new Color(247, 247, 247));
         inputPanel.setBorder(new EmptyBorder(10, 15, 10, 15));
 
-        messageField = new JTextField();
+        messageField = new JTextField("Type a message...");
         messageField.setFont(new Font("Arial", Font.PLAIN, 14));
+        messageField.setForeground(Color.GRAY);
         messageField.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createMatteBorder(1, 1, 1, 1, new Color(200, 200, 200)),
+            BorderFactory.createMatteBorder(1, 1, 1, 1, new Color(220, 220, 220)),
             new EmptyBorder(10, 10, 10, 10)
         ));
+        
+        messageField.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusGained(java.awt.event.FocusEvent evt) {
+                if (messageField.getText().equals("Type a message...")) {
+                    messageField.setText("");
+                    messageField.setForeground(Color.BLACK);
+                }
+            }
+            public void focusLost(java.awt.event.FocusEvent evt) {
+                if (messageField.getText().isEmpty()) {
+                    messageField.setForeground(Color.GRAY);
+                    messageField.setText("Type a message...");
+                }
+            }
+        });
+
         messageField.addActionListener(e -> sendMessage());
         inputPanel.add(messageField, BorderLayout.CENTER);
 
-        sendButton = new JButton("Send");
-        sendButton.setFont(new Font("Arial", Font.BOLD, 14));
-        sendButton.setBackground(new Color(0, 132, 255));
+        // Modern, circular send button
+        sendButton = new JButton("➤") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g;
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                if (getModel().isPressed()) {
+                    g2.setColor(BUBBLE_SENT_COLOR.darker());
+                } else if (getModel().isRollover()) {
+                    g2.setColor(BUBBLE_SENT_COLOR.brighter());
+                } else {
+                    g2.setColor(BUBBLE_SENT_COLOR);
+                }
+                g2.fillOval(0, 0, getWidth(), getHeight());
+                
+                super.paintComponent(g);
+            }
+        };
+        sendButton.setFont(new Font("Arial", Font.BOLD, 16));
         sendButton.setForeground(Color.WHITE);
         sendButton.setFocusPainted(false);
-        sendButton.setBorder(new EmptyBorder(10, 20, 10, 20));
+        sendButton.setContentAreaFilled(false);
+        sendButton.setBorder(null);
         sendButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        sendButton.setPreferredSize(new Dimension(45, 45));
         sendButton.addActionListener(e -> sendMessage());
         inputPanel.add(sendButton, BorderLayout.EAST);
 
@@ -214,7 +253,7 @@ public class ConversationView extends JPanel {
 
     private void sendMessage() {
         String messageText = messageField.getText().trim();
-        if (messageText.isEmpty() || participant == null) {
+        if (messageText.isEmpty() || participant == null || messageText.equals("Type a message...")) {
             return;
         }
 
@@ -235,47 +274,50 @@ public class ConversationView extends JPanel {
     }
 
     private JPanel createMessageBubble(Chat chat, boolean isSentByMe) {
-        // Wrapper panel to align the bubble
-        JPanel wrapper = new JPanel(new BorderLayout());
-        wrapper.setOpaque(false);
-
-        // The actual bubble with text
+        // 1. The JTextArea for the message
         JTextArea messageArea = new JTextArea(chat.getMessage());
+        messageArea.setOpaque(false);
         messageArea.setEditable(false);
         messageArea.setLineWrap(true);
         messageArea.setWrapStyleWord(true);
         messageArea.setFont(new Font("Arial", Font.PLAIN, 14));
-        messageArea.setMargin(new Insets(8, 12, 8, 12));
+        messageArea.setForeground(isSentByMe ? TEXT_SENT_COLOR : TEXT_RECEIVED_COLOR);
 
-        if (isSentByMe) {
-            messageArea.setBackground(BUBBLE_SENT_COLOR);
-            messageArea.setForeground(TEXT_SENT_COLOR);
-            wrapper.add(messageArea, BorderLayout.EAST);
-        } else {
-            messageArea.setBackground(BUBBLE_RECEIVED_COLOR);
-            messageArea.setForeground(TEXT_RECEIVED_COLOR);
-            wrapper.add(messageArea, BorderLayout.WEST);
-        }
+        // 2. The bubble panel with a custom border for the shape
+        JPanel bubble = new JPanel(new BorderLayout());
+        bubble.add(messageArea, BorderLayout.CENTER);
+        bubble.setOpaque(false);
+        bubble.setBorder(new BubbleBorder(isSentByMe ? BUBBLE_SENT_COLOR : BUBBLE_RECEIVED_COLOR, 2, 4, 16, isSentByMe));
         
-        // Add timestamp below the bubble
+        // Constrain the bubble's max width
+        bubble.setMaximumSize(new Dimension(350, 1000));
+        bubble.setPreferredSize(bubble.getPreferredSize());
+
+
+        // 3. The timestamp label
         SimpleDateFormat sdf = new SimpleDateFormat("MMM dd, HH:mm");
         JLabel timestampLabel = new JLabel(sdf.format(new Date(chat.getTimestamp())));
         timestampLabel.setFont(new Font("Arial", Font.PLAIN, 10));
         timestampLabel.setForeground(Color.GRAY);
-        timestampLabel.setBorder(new EmptyBorder(2, 12, 2, 12));
+        timestampLabel.setBorder(new EmptyBorder(2, isSentByMe ? 0 : 12, 0, isSentByMe ? 12 : 0));
 
-        if(isSentByMe) {
+
+        // 4. Combine bubble and timestamp
+        JPanel bubbleWithTimestamp = new JPanel(new BorderLayout());
+        bubbleWithTimestamp.setOpaque(false);
+        bubbleWithTimestamp.add(bubble, BorderLayout.CENTER);
+        bubbleWithTimestamp.add(timestampLabel, BorderLayout.SOUTH);
+        if (isSentByMe) {
             timestampLabel.setHorizontalAlignment(SwingConstants.RIGHT);
-        } else {
-            timestampLabel.setHorizontalAlignment(SwingConstants.LEFT);
         }
 
-        JPanel finalBubble = new JPanel(new BorderLayout());
-        finalBubble.setOpaque(false);
-        finalBubble.add(wrapper, BorderLayout.CENTER);
-        finalBubble.add(timestampLabel, BorderLayout.SOUTH);
+        // 5. Use a wrapper with FlowLayout to prevent stretching and align left/right
+        JPanel wrapper = new JPanel(new FlowLayout(isSentByMe ? FlowLayout.RIGHT : FlowLayout.LEFT, 0, 0));
+        wrapper.setOpaque(false);
+        wrapper.add(bubbleWithTimestamp);
+        wrapper.setBorder(new EmptyBorder(4, 0, 4, 0));
 
-        return finalBubble;
+        return wrapper;
     }
 
     private void reportUser() {
@@ -322,6 +364,72 @@ public class ConversationView extends JPanel {
         // Stop the timer when the component is removed
         if (refreshTimer != null) {
             refreshTimer.stop();
+        }
+    }
+
+    // Custom Border to create the bubble shape with a pointer
+    class BubbleBorder extends AbstractBorder {
+        private final Color color;
+        private final int thickness;
+        private final int radii;
+        private final int pointerSize;
+        private final boolean sentByMe;
+
+        BubbleBorder(Color color, int thickness, int radii, int pointerSize, boolean sentByMe) {
+            this.color = color;
+            this.thickness = thickness;
+            this.radii = radii;
+            this.pointerSize = pointerSize;
+            this.sentByMe = sentByMe;
+        }
+
+        @Override
+        public Insets getBorderInsets(Component c) {
+            return getBorderInsets(c, new Insets(thickness, thickness, thickness, thickness));
+        }
+
+        @Override
+        public Insets getBorderInsets(Component c, Insets insets) {
+            insets.left = insets.right = insets.top = insets.bottom = thickness + radii;
+            if (sentByMe) {
+                insets.right += pointerSize;
+            } else {
+                insets.left += pointerSize;
+            }
+            return insets;
+        }
+
+        @Override
+        public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(color);
+
+            int r = radii;
+            RoundRectangle2D.Double bubble;
+            Polygon pointer = new Polygon();
+
+            if (sentByMe) {
+                bubble = new RoundRectangle2D.Double(x, y, width - pointerSize - 1, height - 1, r, r);
+                int pX = x + width - pointerSize - 1;
+                int pY = y + height / 2;
+                pointer.addPoint(pX, pY - pointerSize);
+                pointer.addPoint(pX, pY + pointerSize);
+                pointer.addPoint(x + width - 1, pY);
+            } else {
+                bubble = new RoundRectangle2D.Double(x + pointerSize, y, width - pointerSize - 1, height - 1, r, r);
+                int pX = x + pointerSize;
+                int pY = y + height / 2;
+                pointer.addPoint(pX, pY - pointerSize);
+                pointer.addPoint(pX, pY + pointerSize);
+                pointer.addPoint(x, pY);
+            }
+            
+            Area area = new Area(bubble);
+            area.add(new Area(pointer));
+
+            g2.fill(area);
+            g2.dispose();
         }
     }
 }

@@ -234,9 +234,12 @@ public class UserCardListView extends JPanel {
                 );
                 if (choice == JOptionPane.YES_OPTION) {
                     likeDAO.removeLike(currentUserId, user.getUsername());
-                    card.getParent().remove(card);
-                    card.getParent().revalidate();
-                    card.getParent().repaint();
+                    Container parent = card.getParent();
+                    if (parent != null) {
+                        parent.remove(card);
+                        parent.revalidate();
+                        parent.repaint();
+                    }
                 }
             });
             buttonPanel.add(dislikeButton);
@@ -244,18 +247,24 @@ public class UserCardListView extends JPanel {
             JButton likeBackButton = createStyledButton("Like Back", new Color(46, 204, 113));
             likeBackButton.addActionListener(e -> {
                 likeDAO.addLike(currentUserId, user.getUsername());
-                card.getParent().remove(card);
-                card.getParent().revalidate();
-                card.getParent().repaint();
+                Container parent = card.getParent();
+                if (parent != null) {
+                    parent.remove(card);
+                    parent.revalidate();
+                    parent.repaint();
+                }
             });
             buttonPanel.add(likeBackButton);
 
             JButton passButton = createStyledButton("Pass", new Color(231, 76, 60));
             passButton.addActionListener(e -> {
                 likeDAO.addPass(currentUserId, user.getUsername());
-                card.getParent().remove(card);
-                card.getParent().revalidate();
-                card.getParent().repaint();
+                Container parent = card.getParent();
+                if (parent != null) {
+                    parent.remove(card);
+                    parent.revalidate();
+                    parent.repaint();
+                }
             });
             buttonPanel.add(passButton);
         }

@@ -16,12 +16,14 @@ import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.awt.MediaTracker;
+import java.awt.geom.Ellipse2D;
+import java.awt.image.BufferedImage;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.stream.Collectors;
+import javax.imageio.ImageIO;
 
 /**
  * Main chat window with a split-pane layout.
@@ -120,16 +122,56 @@ public class ChatSystem extends JFrame {
         contactListPanel.removeAll();
 
         List<String> matchedUserIds = likeDAO.getMatches(currentUser.getUsername());
+        
+        // Add a header showing total matches
+        JLabel matchesHeader = new JLabel(String.format("  Matches (%d)", matchedUserIds.size()));
+        matchesHeader.setFont(new Font("Arial", Font.BOLD, 16));
+        matchesHeader.setBorder(new EmptyBorder(10, 10, 10, 10));
+        contactListPanel.add(matchesHeader);
+        contactListPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+
         List<UserProfile> matchedProfiles = matchedUserIds.stream()
                                                           .map(userId -> DatabaseManagerProfile.getInstance().getUserProfile(userId))
                                                           .filter(java.util.Objects::nonNull)
                                                           .collect(Collectors.toList());
 
         if (matchedProfiles.isEmpty()) {
-            JLabel noMatchesLabel = new JLabel("No matches yet. Keep exploring!");
-            noMatchesLabel.setFont(new Font("Arial", Font.ITALIC, 14));
-            noMatchesLabel.setHorizontalAlignment(SwingConstants.CENTER);
-            contactListPanel.add(noMatchesLabel);
+            JPanel noMatchesPanel = new JPanel();
+            noMatchesPanel.setLayout(new BoxLayout(noMatchesPanel, BoxLayout.Y_AXIS));
+            noMatchesPanel.setBackground(CONTACT_LIST_BACKGROUND_COLOR);
+            noMatchesPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
+
+            JLabel emojiLabel = new JLabel("💝");
+            emojiLabel.setFont(new Font("Segoe UI", Font.PLAIN, 48));
+            emojiLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            
+            JLabel noMatchesLabel = new JLabel("No matches yet");
+            noMatchesLabel.setFont(new Font("Arial", Font.BOLD, 16));
+            noMatchesLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            
+            JLabel subtitleLabel = new JLabel("Keep exploring to find your match!");
+            subtitleLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+            subtitleLabel.setForeground(Color.GRAY);
+            subtitleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+            JButton exploreButton = new JButton("Explore Now");
+            exploreButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+            exploreButton.addActionListener(e -> {
+                new Swipe().setVisible(true);
+                dispose();
+            });
+
+            noMatchesPanel.add(Box.createVerticalGlue());
+            noMatchesPanel.add(emojiLabel);
+            noMatchesPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+            noMatchesPanel.add(noMatchesLabel);
+            noMatchesPanel.add(Box.createRigidArea(new Dimension(0, 5)));
+            noMatchesPanel.add(subtitleLabel);
+            noMatchesPanel.add(Box.createRigidArea(new Dimension(0, 20)));
+            noMatchesPanel.add(exploreButton);
+            noMatchesPanel.add(Box.createVerticalGlue());
+
+            contactListPanel.add(noMatchesPanel);
         } else {
             for (UserProfile matchedProfile : matchedProfiles) {
                 JPanel contactItem = createContactItem(matchedProfile);
@@ -152,11 +194,64 @@ public class ChatSystem extends JFrame {
         panel.setCursor(new Cursor(Cursor.HAND_CURSOR));
         panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 70));
 
-        // Profile picture (placeholder)
-        // In a real app, you would load the user's image here
-        JLabel picLabel = new JLabel("👤");
-        picLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 24));
-        picLabel.setBorder(new EmptyBorder(0, 5, 0, 5));
+        // Profile picture
+        JLabel picLabel = new JLabel();
+        picLabel.setPreferredSize(new Dimension(50, 50));
+        picLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        
+        // Load profile picture asynchronously
+        new SwingWorker<ImageIcon, Void>() {
+            @Override
+            protected ImageIcon doInBackground() throws Exception {
+                Image image = null;
+                String picPath = matchedProfile.getProfilePicPath();
+                
+                if (picPath != null && !picPath.isEmpty()) {
+                    if (picPath.startsWith("data:image")) {
+                        // Handle Base64 image data
+                        String base64Image = picPath.substring(picPath.indexOf(",") + 1);
+                        byte[] imageBytes = java.util.Base64.getDecoder().decode(base64Image);
+                        try (java.io.ByteArrayInputStream bis = new java.io.ByteArrayInputStream(imageBytes)) {
+                            image = ImageIO.read(bis);
+                        }
+                    } else if (picPath.startsWith("http")) {
+                        image = ImageIO.read(new java.net.URL(picPath));
+                    }
+                }
+                
+                if (image != null) {
+                    // Create circular avatar
+                    int size = 50;
+                    BufferedImage circularImage = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
+                    Graphics2D g2 = circularImage.createGraphics();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2.setClip(new java.awt.geom.Ellipse2D.Float(0, 0, size, size));
+                    g2.drawImage(image.getScaledInstance(size, size, Image.SCALE_SMOOTH), 0, 0, null);
+                    g2.dispose();
+                    return new ImageIcon(circularImage);
+                }
+                return null;
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    ImageIcon icon = get();
+                    if (icon != null) {
+                        picLabel.setIcon(icon);
+                    } else {
+                        picLabel.setText("👤");
+                        picLabel.setFont(new Font("Segoe UI", Font.PLAIN, 24));
+                        picLabel.setForeground(new Color(108, 117, 125));
+                    }
+                } catch (Exception e) {
+                    picLabel.setText("👤");
+                    picLabel.setFont(new Font("Segoe UI", Font.PLAIN, 24));
+                    picLabel.setForeground(new Color(108, 117, 125));
+                }
+            }
+        }.execute();
+
         panel.add(picLabel, BorderLayout.WEST);
 
         // Name and last message
@@ -167,6 +262,12 @@ public class ChatSystem extends JFrame {
         JLabel nameLabel = new JLabel(matchedProfile.getFullName());
         nameLabel.setFont(NAME_FONT);
         textPanel.add(nameLabel);
+
+        // Add user ID label
+        JLabel userIdLabel = new JLabel("@" + matchedProfile.getUsername());
+        userIdLabel.setFont(new Font("Arial", Font.ITALIC, 11));
+        userIdLabel.setForeground(new Color(128, 128, 128));
+        textPanel.add(userIdLabel);
 
         // Fetch and display the last message
         Chat lastChat = chatDAO.getLastMessage(currentUser.getUsername(), matchedProfile.getUsername());
@@ -180,6 +281,15 @@ public class ChatSystem extends JFrame {
         textPanel.add(lastMessageLabel);
 
         panel.add(textPanel, BorderLayout.CENTER);
+
+        // Add online status indicator
+        JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
+        statusPanel.setOpaque(false);
+        JLabel statusDot = new JLabel("●");
+        statusDot.setFont(new Font("Arial", Font.BOLD, 12));
+        statusDot.setForeground(new Color(46, 204, 113)); // Green for online
+        statusPanel.add(statusDot);
+        panel.add(statusPanel, BorderLayout.EAST);
 
         // Mouse listener for selection and hover effects
         panel.addMouseListener(new MouseAdapter() {

@@ -247,27 +247,84 @@ public class MessageBox extends JFrame {
         inputPanel.setBackground(BACKGROUND_COLOR); // Match main background
         inputPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
         
-        messageInput = new JTextField();
-        messageInput.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        messageInput.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(219, 112, 147), 1), // Match header color
-            new EmptyBorder(8, 12, 8, 12)
-        ));
-        messageInput.setBackground(new Color(255, 255, 255)); // White background for input
+        // Create a wrapper panel for the input field to handle rounded corners
+        JPanel inputWrapper = new JPanel(new BorderLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g;
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(new Color(248, 248, 248)); // #f8f8f8
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 40, 40); // 20px radius * 2 for both sides
+            }
+        };
+        inputWrapper.setOpaque(false);
+        inputWrapper.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 10)); // Space for the send button
         
-        JButton sendButton = new JButton("Send");
-        sendButton.setBackground(HEADER_COLOR);
-        sendButton.setForeground(Color.WHITE);
-        sendButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        sendButton.setBorder(new EmptyBorder(8, 20, 8, 20));
+        // Modern text field
+        messageInput = new JTextField() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g;
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(new Color(248, 248, 248)); // #f8f8f8
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 40, 40);
+                super.paintComponent(g);
+            }
+        };
+        messageInput.setOpaque(false);
+        messageInput.setBorder(BorderFactory.createEmptyBorder(10, 14, 10, 14));
+        messageInput.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        messageInput.setBackground(new Color(248, 248, 248));
+        
+        // Circular send button
+        JButton sendButton = new JButton() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g;
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                if (getModel().isPressed()) {
+                    g2.setColor(new Color(219, 64, 112)); // Darker pink when pressed
+                } else if (getModel().isRollover()) {
+                    g2.setColor(new Color(239, 84, 132)); // Lighter pink on hover
+                } else {
+                    g2.setColor(new Color(231, 84, 128)); // #e75480
+                }
+                
+                g2.fillOval(0, 0, 40, 40);
+                
+                // Draw send arrow
+                g2.setColor(Color.WHITE);
+                int[] xPoints = {12, 28, 12};
+                int[] yPoints = {12, 20, 28};
+                g2.setStroke(new java.awt.BasicStroke(2));
+                g2.fillPolygon(xPoints, yPoints, 3);
+            }
+            
+            @Override
+            public Dimension getPreferredSize() {
+                return new Dimension(40, 40);
+            }
+            
+            @Override
+            public Dimension getMinimumSize() {
+                return getPreferredSize();
+            }
+            
+            @Override
+            public Dimension getMaximumSize() {
+                return getPreferredSize();
+            }
+        };
+        sendButton.setContentAreaFilled(false);
+        sendButton.setBorderPainted(false);
         sendButton.setFocusPainted(false);
         sendButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        sendButton.addActionListener(e -> sendMessage());
         
-        ActionListener sendAction = e -> sendMessage();
-        sendButton.addActionListener(sendAction);
-        messageInput.addActionListener(sendAction);
-        
-        inputPanel.add(messageInput, BorderLayout.CENTER);
+        // Add components
+        inputWrapper.add(messageInput, BorderLayout.CENTER);
+        inputPanel.add(inputWrapper, BorderLayout.CENTER);
         inputPanel.add(sendButton, BorderLayout.EAST);
         
         return inputPanel;

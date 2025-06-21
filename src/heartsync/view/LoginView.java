@@ -40,10 +40,8 @@ public class LoginView extends javax.swing.JFrame {
         // --- Back Button Logic ---
         jButton1.addActionListener(evt -> {
             dispose(); // Close login view
-            // Create and show a fresh HomePage
-            HomePage homePage = new HomePage();
-            homePage.setLocationRelativeTo(null);
-            homePage.setVisible(true);
+            // Show a fresh HomePage
+            heartsync.view.HomePage.showHomePage();
         });
         
         // --- Show/Hide Toggle Logic ---

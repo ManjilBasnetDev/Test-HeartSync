@@ -68,6 +68,8 @@ import javax.swing.UIManager;
 import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.SwingWorker;
+import javax.swing.DefaultListModel;
+import javax.swing.JList;
 
 import heartsync.controller.UserProfileController;
 import heartsync.dao.LikeDAO;
@@ -78,6 +80,7 @@ import heartsync.model.UserProfile;
 import heartsync.navigation.WindowManager;
 import heartsync.view.ChatSystem;
 import heartsync.view.UserProfileView;
+import heartsync.view.UserCardListView;
 
 import com.google.gson.reflect.TypeToken;
 
@@ -368,16 +371,19 @@ public class Swipe extends JFrame {
                         showProfile();
                     } else if (label == myLikesLabel) {
                         List<String> likedIds = likeDAO.getLikedUsers(currentUserId);
-                        new UserListView(likedIds, "My Likes", currentUserId).setVisible(true);
-                        dispose();
+                        JPanel likesPanel = new UserCardListView(likedIds, "My Likes", currentUserId);
+                        contentCards.add(likesPanel, "MY_LIKES");
+                        cardLayout.show(contentCards, "MY_LIKES");
                     } else if (label == myLikersLabel) {
                         List<String> likerIds = likeDAO.getLikersOfUser(currentUserId);
-                        new UserListView(likerIds, "My Likers", currentUserId).setVisible(true);
-                        dispose();
+                        JPanel likersPanel = new UserCardListView(likerIds, "My Likers", currentUserId);
+                        contentCards.add(likersPanel, "MY_LIKERS");
+                        cardLayout.show(contentCards, "MY_LIKERS");
                     } else if (label == matchedLabel) {
                         List<String> matchedIds = likeDAO.getMatches(currentUserId);
-                        new UserListView(matchedIds, "Matched Users", currentUserId).setVisible(true);
-                        dispose();
+                        JPanel matchedPanel = new UserCardListView(matchedIds, "Matched Users", currentUserId);
+                        contentCards.add(matchedPanel, "MATCHED_USERS");
+                        cardLayout.show(contentCards, "MATCHED_USERS");
                     } else if (label == logoutLabel) {
                         int choice = JOptionPane.showConfirmDialog(null, "Are you sure you want to logout?", "Logout", JOptionPane.YES_NO_OPTION);
                         if (choice == JOptionPane.YES_OPTION) {
@@ -408,6 +414,22 @@ public class Swipe extends JFrame {
         for (JLabel label : allNavLabels) {
             navigationPanel.add(label);
         }
+
+        // Add notifications label
+        JLabel notifLabel = new JLabel("🔔 Notifications");
+        notifLabel.setFont(navFont);
+        notifLabel.setForeground(NAV_COLOR);
+        notifLabel.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        notifLabel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                showNotifications();
+            }
+        });
+        navigationPanel.add(notifLabel);
+        // Add notifLabel to allNavLabels for highlighting
+        allNavLabels = new java.util.ArrayList<>(allNavLabels);
+        allNavLabels.add(notifLabel);
     }
 
     private void setupSearchPanel() {
@@ -1271,6 +1293,13 @@ public class Swipe extends JFrame {
         editButton.addActionListener(e -> openProfileEditor());
         container.add(editButton, gbc);
 
+        // --- Delete Account Button ---
+        gbc.gridy = 4;
+        JButton deleteButton = createProfileButton("Delete Account");
+        deleteButton.setBackground(new Color(231, 76, 60));
+        deleteButton.addActionListener(e -> handleDeleteAccount());
+        container.add(deleteButton, gbc);
+
         JScrollPane scrollPane = new JScrollPane(container);
         scrollPane.setBorder(null);
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
@@ -1704,5 +1733,77 @@ public class Swipe extends JFrame {
             File[] files = fileChooser.getSelectedFiles();
             // TODO: Handle the selected files (upload to server/database)
         }
+    }
+
+    private void handleDeleteAccount() {
+        User currentUser = User.getCurrentUser();
+        if (currentUser == null) {
+            JOptionPane.showMessageDialog(this, "No user is currently logged in.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        String password = JOptionPane.showInputDialog(this, "Enter your password to confirm deletion:", "Delete Account", JOptionPane.WARNING_MESSAGE);
+        if (password == null) return; // Cancelled
+        if (!password.equals(currentUser.getPassword())) {
+            JOptionPane.showMessageDialog(this, "Incorrect password. Account not deleted.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        int confirm = JOptionPane.showConfirmDialog(this, "Are you sure you want to delete your account? This action cannot be undone.", "Confirm Delete", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+        if (confirm != JOptionPane.YES_OPTION) return;
+        heartsync.dao.UserRegisterDAO userDAO = new heartsync.dao.UserRegisterDAO();
+        boolean deleted = userDAO.deleteUser(currentUser.getUsername());
+        if (deleted) {
+            JOptionPane.showMessageDialog(this, "Your account has been deleted. Goodbye!", "Account Deleted", JOptionPane.INFORMATION_MESSAGE);
+            // Log out and return to login screen
+            heartsync.model.User.setCurrentUser(null);
+            new heartsync.view.LoginView().setVisible(true);
+            SwingUtilities.getWindowAncestor(this).dispose();
+        } else {
+            JOptionPane.showMessageDialog(this, "Failed to delete account. Please try again.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void showNotifications() {
+        User currentUser = User.getCurrentUser();
+        if (currentUser == null) {
+            JOptionPane.showMessageDialog(this, "You must be logged in to view notifications.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        java.util.List<String> notifications = fetchNotifications(currentUser.getUserId());
+        JPanel notifPanel = new JPanel(new BorderLayout());
+        notifPanel.setBackground(BACKGROUND_COLOR);
+        JLabel title = new JLabel("Notifications", SwingConstants.CENTER);
+        title.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        notifPanel.add(title, BorderLayout.NORTH);
+        DefaultListModel<String> model = new DefaultListModel<>();
+        for (String notif : notifications) model.addElement(notif);
+        JList<String> notifList = new JList<>(model);
+        notifList.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        notifPanel.add(new JScrollPane(notifList), BorderLayout.CENTER);
+        contentCards.add(notifPanel, "NOTIFICATIONS");
+        cardLayout.show(contentCards, "NOTIFICATIONS");
+        // Highlight the notifications label
+        setActiveNav(getNotifLabel());
+    }
+
+    private java.util.List<String> fetchNotifications(String userId) {
+        java.util.List<String> notifications = new java.util.ArrayList<>();
+        try {
+            // Fetch notifications from Firebase: notifications/{userId}
+            java.util.Map<String, String> notifMap = heartsync.database.FirebaseConfig.get("notifications/" + userId, new com.google.gson.reflect.TypeToken<java.util.Map<String, String>>(){}.getType());
+            if (notifMap != null) {
+                notifications.addAll(notifMap.values());
+            }
+        } catch (Exception e) {
+            notifications.add("Failed to fetch notifications.");
+        }
+        return notifications;
+    }
+
+    // Helper to get the notifications label
+    private JLabel getNotifLabel() {
+        for (JLabel label : allNavLabels) {
+            if (label.getText().contains("Notifications")) return label;
+        }
+        return null;
     }
 }

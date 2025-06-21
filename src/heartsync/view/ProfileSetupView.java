@@ -17,6 +17,8 @@ import java.awt.RenderingHints;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.io.File;
+import java.io.IOException;
+import java.net.URL;
 
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListCellRenderer;
@@ -37,6 +39,7 @@ import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.SwingWorker;
 
 import heartsync.controller.UserProfileController;
 import heartsync.model.UserProfile;
@@ -380,19 +383,56 @@ public class ProfileSetupView extends JFrame {
         int result = fileChooser.showOpenDialog(this);
         if (result == JFileChooser.APPROVE_OPTION) {
             File selectedFile = fileChooser.getSelectedFile();
-            profilePicPath = selectedFile.getAbsolutePath();
             
-            try {
-                ImageIcon imageIcon = new ImageIcon(profilePicPath);
-                Image image = imageIcon.getImage().getScaledInstance(150, 150, Image.SCALE_SMOOTH);
-                profilePicLabel.setIcon(new ImageIcon(image));
-                controller.setProfilePicture(profilePicPath);
-            } catch (Exception e) {
-                JOptionPane.showMessageDialog(this,
-                    "Error loading image: " + e.getMessage(),
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE);
-            }
+            // Show loading indicator
+            setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+            profilePicLabel.setIcon(null);
+            profilePicLabel.setText("Uploading...");
+            
+            // Use SwingWorker to handle the upload in background
+            new SwingWorker<String, Void>() {
+                @Override
+                protected String doInBackground() throws Exception {
+                    // Get the username from the controller
+                    String username = controller.getCurrentUsername();
+                    if (username == null || username.isEmpty()) {
+                        throw new IOException("Username not found. Please ensure you are logged in.");
+                    }
+                    return FirebaseStorageManager.uploadProfilePicture(selectedFile, username);
+                }
+
+                @Override
+                protected void done() {
+                    try {
+                        String downloadUrl = get();
+                        if (downloadUrl != null) {
+                            // Update UI with the uploaded image
+                            ImageIcon imageIcon = new ImageIcon(downloadUrl);
+                            Image image = imageIcon.getImage().getScaledInstance(150, 150, Image.SCALE_SMOOTH);
+                            profilePicLabel.setIcon(new ImageIcon(image));
+                            profilePicLabel.setText("");
+                            
+                            // Save the download URL to the controller
+                            controller.setProfilePicture(downloadUrl);
+                        } else {
+                            JOptionPane.showMessageDialog(ProfileSetupView.this,
+                                "Failed to upload image. Please try again.",
+                                "Upload Error",
+                                JOptionPane.ERROR_MESSAGE);
+                            profilePicLabel.setText("No image");
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        JOptionPane.showMessageDialog(ProfileSetupView.this,
+                            "Error uploading image: " + e.getMessage(),
+                            "Error",
+                            JOptionPane.ERROR_MESSAGE);
+                        profilePicLabel.setText("No image");
+                    } finally {
+                        setCursor(Cursor.getDefaultCursor());
+                    }
+                }
+            }.execute();
         }
     }
 

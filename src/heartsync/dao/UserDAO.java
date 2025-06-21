@@ -178,4 +178,15 @@ public class UserDAO {
             e.printStackTrace();
         }
     }
+
+    public boolean updateUser(User user) {
+        try {
+            if (user.getUserId() == null) return false;
+            FirebaseConfig.put(FirebaseConfig.getUserPath(user.getUserId()), user);
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 }

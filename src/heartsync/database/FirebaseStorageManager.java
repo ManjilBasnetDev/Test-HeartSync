@@ -3,86 +3,106 @@ package heartsync.database;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.UUID;
+import java.awt.image.BufferedImage;
+import javax.imageio.ImageIO;
+import java.io.ByteArrayOutputStream;
+import java.util.Base64;
 import heartsync.dao.UserDAO;
 import heartsync.model.User;
+import heartsync.model.UserProfile;
 
 public class FirebaseStorageManager {
-    private static final String STORAGE_URL = "https://firebasestorage.googleapis.com/v0/b/heartsync-96435.appspot.com/o/";
-    private static final String STORAGE_TOKEN = "?alt=media";
+    private static final int MAX_IMAGE_SIZE = 800; // Maximum width or height in pixels
     private static final UserDAO userDAO = new UserDAO();
 
-    public static String getProfileImageUrl(String userId) {
+    public static String getProfileImageUrl(String username) {
         try {
-            // Get user from database to check if they have a profile picture URL
-            User user = userDAO.getUserById(userId);
-            if (user != null && user.getProfilePictureUrl() != null && !user.getProfilePictureUrl().isEmpty()) {
-                return user.getProfilePictureUrl();
+            // Get user profile to check if they have a profile picture
+            UserProfile profile = DatabaseManagerProfile.getInstance().getUserProfile(username);
+            if (profile != null && profile.getProfilePicPath() != null && !profile.getProfilePicPath().isEmpty()) {
+                return profile.getProfilePicPath();
             }
-            // Return null to trigger fallback mechanism
             return null;
         } catch (Exception e) {
             e.printStackTrace();
-            // Return null on error to trigger fallback mechanism
             return null;
         }
     }
 
-    public static String uploadProfilePicture(String filePath) throws IOException {
-        File file = new File(filePath);
-        if (!file.exists()) {
-            throw new IOException("File not found: " + filePath);
+    public static String uploadProfilePicture(File imageFile, String username) throws IOException {
+        if (!imageFile.exists()) {
+            throw new IOException("File not found: " + imageFile.getAbsolutePath());
         }
 
-        // Generate a unique filename
-        String fileName = "profile_pictures/" + UUID.randomUUID().toString() + "_" + file.getName();
-        String encodedFileName = java.net.URLEncoder.encode(fileName, "UTF-8");
+        // Read and resize the image
+        BufferedImage originalImage = ImageIO.read(imageFile);
+        BufferedImage resizedImage = resizeImage(originalImage);
 
-        // Create upload URL
-        URL url = new URL(STORAGE_URL + encodedFileName);
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setDoOutput(true);
-        conn.setRequestMethod("POST");
-        conn.setRequestProperty("Content-Type", "application/octet-stream");
-
-        // Read and upload file
-        try (FileInputStream fis = new FileInputStream(file)) {
-            byte[] buffer = new byte[4096];
-            int bytesRead;
-            while ((bytesRead = fis.read(buffer)) != -1) {
-                conn.getOutputStream().write(buffer, 0, bytesRead);
+        // Convert to Base64
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ImageIO.write(resizedImage, "png", baos);
+        String base64Image = Base64.getEncoder().encodeToString(baos.toByteArray());
+        
+        // Create data URL
+        String dataUrl = "data:image/png;base64," + base64Image;
+        
+        // Store in Firebase Database
+        try {
+            // Try to get the user profile
+            UserProfile profile = DatabaseManagerProfile.getInstance().getUserProfile(username);
+            
+            if (profile != null) {
+                // Update profile with the Base64 image
+                profile.setProfilePicPath(dataUrl);
+                DatabaseManagerProfile.getInstance().updateUserProfile(profile);
+            } else {
+                // If profile doesn't exist yet, create one
+                profile = new UserProfile();
+                profile.setUsername(username);
+                profile.setProfilePicPath(dataUrl);
+                DatabaseManagerProfile.getInstance().saveUserProfile(profile);
             }
+            
+            return dataUrl;
+        } catch (Exception e) {
+            throw new IOException("Failed to update profile with image: " + e.getMessage());
         }
-
-        // Get response
-        int responseCode = conn.getResponseCode();
-        if (responseCode != HttpURLConnection.HTTP_OK) {
-            throw new IOException("Failed to upload file. Response code: " + responseCode);
-        }
-
-        // Return the download URL
-        return STORAGE_URL + encodedFileName + STORAGE_TOKEN;
     }
 
-    public static void deleteProfilePicture(String downloadUrl) throws IOException {
-        if (downloadUrl == null || !downloadUrl.startsWith(STORAGE_URL)) {
-            return;
-        }
-
-        // Extract file path from download URL
-        String filePath = downloadUrl.substring(STORAGE_URL.length());
-        filePath = filePath.substring(0, filePath.indexOf(STORAGE_TOKEN));
+    private static BufferedImage resizeImage(BufferedImage originalImage) {
+        int originalWidth = originalImage.getWidth();
+        int originalHeight = originalImage.getHeight();
         
-        // Create delete URL
-        URL url = new URL(STORAGE_URL + filePath);
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestMethod("DELETE");
+        // Calculate new dimensions while maintaining aspect ratio
+        int newWidth = originalWidth;
+        int newHeight = originalHeight;
+        
+        if (originalWidth > MAX_IMAGE_SIZE || originalHeight > MAX_IMAGE_SIZE) {
+            if (originalWidth > originalHeight) {
+                newWidth = MAX_IMAGE_SIZE;
+                newHeight = (int) ((float) originalHeight / originalWidth * MAX_IMAGE_SIZE);
+            } else {
+                newHeight = MAX_IMAGE_SIZE;
+                newWidth = (int) ((float) originalWidth / originalHeight * MAX_IMAGE_SIZE);
+            }
+        }
+        
+        // Create new image
+        BufferedImage resizedImage = new BufferedImage(newWidth, newHeight, BufferedImage.TYPE_INT_ARGB);
+        resizedImage.createGraphics().drawImage(originalImage, 0, 0, newWidth, newHeight, null);
+        return resizedImage;
+    }
 
-        int responseCode = conn.getResponseCode();
-        if (responseCode != HttpURLConnection.HTTP_OK) {
-            throw new IOException("Failed to delete file. Response code: " + responseCode);
+    public static void deleteProfilePicture(String username) throws IOException {
+        try {
+            // Get and update the user profile
+            UserProfile profile = DatabaseManagerProfile.getInstance().getUserProfile(username);
+            if (profile != null) {
+                profile.setProfilePicPath(null);
+                DatabaseManagerProfile.getInstance().updateUserProfile(profile);
+            }
+        } catch (Exception e) {
+            throw new IOException("Failed to delete profile picture: " + e.getMessage());
         }
     }
 } 

@@ -32,6 +32,7 @@ import java.awt.event.MouseEvent;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -39,6 +40,7 @@ import java.time.LocalDate;
 import java.time.Period;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -906,15 +908,25 @@ public class Swipe extends JFrame {
         ProfileData profile = profiles.get(currentIndex);
         if (profile.photos.isEmpty()) {
             imageLabel.setIcon(null);
-            imageLabel.setText("No photos available");
+            imageLabel.setText("👤");
+            imageLabel.setFont(new Font("Segoe UI", Font.PLAIN, 48));
+            imageLabel.setForeground(SEARCH_ICON_COLOR);
             return;
         }
         String photoPath = profile.photos.get(profile.currentPhotoIndex);
         try {
             Image image = null;
             
-            // First try to load from Firebase Storage URL
-            if (photoPath.startsWith("http") || photoPath.startsWith("https")) {
+            // Handle Base64 image data
+            if (photoPath.startsWith("data:image")) {
+                String base64Image = photoPath.substring(photoPath.indexOf(",") + 1);
+                byte[] imageBytes = Base64.getDecoder().decode(base64Image);
+                try (ByteArrayInputStream bis = new ByteArrayInputStream(imageBytes)) {
+                    image = ImageIO.read(bis);
+                }
+            }
+            // Handle URL-based images
+            else if (photoPath.startsWith("http") || photoPath.startsWith("https")) {
                 try {
                     URL imageUrl = new URL(photoPath);
                     image = ImageIO.read(imageUrl);
@@ -922,41 +934,11 @@ public class Swipe extends JFrame {
                     System.out.println("Failed to load image from URL: " + photoPath);
                 }
             }
-            
-            // Then try as absolute path
-            if (image == null && photoPath.startsWith("/")) {
-                File file = new File(photoPath);
-                if (file.exists()) {
-                    image = ImageIO.read(file);
-                }
-            }
-            
-            // Then try as relative path in ImagePicker directory
-            if (image == null) {
-                File file = new File("src/ImagePicker/" + photoPath);
-                if (file.exists()) {
-                    image = ImageIO.read(file);
-                }
-            }
-            
-            // Finally try as resource
-            if (image == null) {
+            // Handle local resource images
+            else {
                 URL resourceUrl = getClass().getResource("/ImagePicker/" + photoPath);
                 if (resourceUrl != null) {
                     image = ImageIO.read(resourceUrl);
-                }
-            }
-            
-            // Try loading from Firebase Storage using the user ID
-            if (image == null && profile.userId != null) {
-                try {
-                    String firebaseUrl = heartsync.database.FirebaseStorageManager.getProfileImageUrl(profile.userId);
-                    if (firebaseUrl != null && !firebaseUrl.isEmpty()) {
-                        URL imageUrl = new URL(firebaseUrl);
-                        image = ImageIO.read(imageUrl);
-                    }
-                } catch (Exception e) {
-                    System.out.println("Failed to load image from Firebase for user: " + profile.userId);
                 }
             }
             
@@ -980,16 +962,15 @@ public class Swipe extends JFrame {
                 imageLabel.setIcon(new ImageIcon(scaledImage));
                 imageLabel.setText("");
             } else {
-                // Set a default placeholder image
                 imageLabel.setIcon(null);
-                imageLabel.setText("📷");
+                imageLabel.setText("👤");
                 imageLabel.setFont(new Font("Segoe UI", Font.PLAIN, 48));
                 imageLabel.setForeground(SEARCH_ICON_COLOR);
             }
         } catch (Exception e) {
             e.printStackTrace();
             imageLabel.setIcon(null);
-            imageLabel.setText("📷");
+            imageLabel.setText("👤");
             imageLabel.setFont(new Font("Segoe UI", Font.PLAIN, 48));
             imageLabel.setForeground(SEARCH_ICON_COLOR);
         }
@@ -1007,7 +988,7 @@ public class Swipe extends JFrame {
             bioLabel.setText(html);
             bioLabel.setHorizontalAlignment(SwingConstants.CENTER);
             imageLabel.setIcon(null);
-            imageLabel.setText("📷");
+            imageLabel.setText("👤");
             imageLabel.setFont(new Font("Segoe UI", Font.PLAIN, 48));
             imageLabel.setForeground(SEARCH_ICON_COLOR);
             return;
@@ -1180,75 +1161,73 @@ public class Swipe extends JFrame {
     }
 
     private JLabel createProfilePicture() {
-        JLabel profilePicture = new JLabel() {
+        JLabel profilePicLabel = new JLabel() {
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
-                Graphics2D g2 = (Graphics2D) g;
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                Ellipse2D.Double circle = new Ellipse2D.Double(0, 0, getWidth() - 1, getHeight() - 1);
-                g2.setClip(circle);
-                
-                BufferedImage img = null;
-                String profilePicPath = UserProfile.getCurrentUser().getProfilePicPath();
-                
-                // Try to load the profile picture
-                if (profilePicPath != null && !profilePicPath.isEmpty()) {
-                    try {
-                        // First try as absolute path
-                        File file = new File(profilePicPath);
-                        if (file.exists()) {
-                            img = ImageIO.read(file);
-                        }
-                        
-                        // Then try in ImagePicker directory
-                        if (img == null) {
-                            file = new File("src/ImagePicker/" + profilePicPath);
-                            if (file.exists()) {
-                                img = ImageIO.read(file);
+                try {
+                    Image image = null;
+                    
+                    // Try to get current user's profile picture
+                    UserProfile currentProfile = DatabaseManagerProfile.getInstance().getUserProfile(currentUserId);
+                    if (currentProfile != null && currentProfile.getProfilePicPath() != null) {
+                        String picPath = currentProfile.getProfilePicPath();
+                        if (picPath.startsWith("data:image")) {
+                            // Handle Base64 image data
+                            String base64Image = picPath.substring(picPath.indexOf(",") + 1);
+                            byte[] imageBytes = Base64.getDecoder().decode(base64Image);
+                            try (ByteArrayInputStream bis = new ByteArrayInputStream(imageBytes)) {
+                                image = ImageIO.read(bis);
                             }
+                        } else if (picPath.startsWith("http")) {
+                            image = ImageIO.read(new URL(picPath));
+                        } else {
+                            URL resourceUrl = getClass().getResource("/ImagePicker/" + picPath);
+                            if (resourceUrl != null) image = ImageIO.read(resourceUrl);
                         }
+                    }
+                    
+                    if (image == null) {
+                        setIcon(null);
+                        setText("👤");
+                        setFont(new Font("Segoe UI", Font.PLAIN, 48));
+                        setForeground(new Color(108, 117, 125));
+                        setHorizontalAlignment(SwingConstants.CENTER);
+                    } else {
+                        // Create circular mask
+                        Graphics2D g2 = (Graphics2D) g.create();
+                        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                         
-                        // Finally try as resource
-                        if (img == null) {
-                            URL resourceUrl = getClass().getResource("/ImagePicker/" + profilePicPath);
-                            if (resourceUrl != null) {
-                                img = ImageIO.read(resourceUrl);
-                            }
-                        }
-                    } catch (IOException e) {
-                        e.printStackTrace();
+                        int diameter = Math.min(getWidth(), getHeight());
+                        int x = (getWidth() - diameter) / 2;
+                        int y = (getHeight() - diameter) / 2;
+                        
+                        Ellipse2D.Double circle = new Ellipse2D.Double(x, y, diameter, diameter);
+                        g2.setClip(circle);
+                        
+                        // Draw image
+                        g2.drawImage(image, x, y, diameter, diameter, null);
+                        
+                        // Draw border
+                        g2.setClip(null);
+                        g2.setColor(new Color(220, 53, 69));
+                        g2.setStroke(new BasicStroke(2));
+                        g2.draw(circle);
+                        
+                        g2.dispose();
                     }
-                }
-                
-                // If no profile picture was loaded, try to load the default one
-                if (img == null) {
-                    try {
-                        File defaultImg = new File("src/ImagePicker/RajeshHamalPhoto.png");
-                        if (defaultImg.exists()) {
-                            img = ImageIO.read(defaultImg);
-                        }
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-                
-                // Draw the image or a colored circle if no image is available
-                if (img != null) {
-                    g2.drawImage(img, 0, 0, getWidth(), getHeight(), null);
-                } else {
-                    g2.setColor(new Color(219, 112, 147));
-                    g2.fill(circle);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    setIcon(null);
+                    setText("👤");
+                    setFont(new Font("Segoe UI", Font.PLAIN, 48));
+                    setForeground(new Color(108, 117, 125));
+                    setHorizontalAlignment(SwingConstants.CENTER);
                 }
             }
         };
-
-        profilePicture.setPreferredSize(new Dimension(150, 150));
-        profilePicture.setMinimumSize(new Dimension(150, 150));
-        profilePicture.setMaximumSize(new Dimension(150, 150));
-        profilePicture.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        return profilePicture;
+        profilePicLabel.setPreferredSize(new Dimension(150, 150));
+        return profilePicLabel;
     }
 
     private JPanel createProfilePanel() {
@@ -1284,18 +1263,34 @@ public class Swipe extends JFrame {
         new SwingWorker<ImageIcon, Void>() {
             @Override
             protected ImageIcon doInBackground() throws Exception {
-                // ... same image loading logic as before ...
-                 Image image = null;
+                Image image = null;
                 String picPath = userProfile.getProfilePicPath();
                 if (picPath != null && !picPath.isEmpty()) {
-                    if (picPath.startsWith("http")) {
+                    if (picPath.startsWith("data:image")) {
+                        // Handle Base64 image data
+                        String base64Image = picPath.substring(picPath.indexOf(",") + 1);
+                        byte[] imageBytes = Base64.getDecoder().decode(base64Image);
+                        try (ByteArrayInputStream bis = new ByteArrayInputStream(imageBytes)) {
+                            image = ImageIO.read(bis);
+                        }
+                    } else if (picPath.startsWith("http")) {
                         image = ImageIO.read(new URL(picPath));
                     } else {
                         URL resourceUrl = getClass().getResource("/ImagePicker/" + picPath);
                         if (resourceUrl != null) image = ImageIO.read(resourceUrl);
                     }
                 }
-                if (image == null) image = ImageIO.read(getClass().getResource("/ImagePicker/RajeshHamalPhoto.png"));
+                
+                if (image == null) {
+                    SwingUtilities.invokeLater(() -> {
+                        profilePicLabel.setIcon(null);
+                        profilePicLabel.setText("👤");
+                        profilePicLabel.setFont(new Font("Segoe UI", Font.PLAIN, 48));
+                        profilePicLabel.setForeground(new Color(108, 117, 125));
+                        profilePicLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                    });
+                    return null;
+                }
                 
                 Image scaledImage = image.getScaledInstance(150, 150, Image.SCALE_SMOOTH);
                 BufferedImage circularImage = new BufferedImage(150, 150, BufferedImage.TYPE_INT_ARGB);
@@ -1309,9 +1304,18 @@ public class Swipe extends JFrame {
             @Override
             protected void done() {
                 try {
-                    profilePicLabel.setIcon(get());
+                    ImageIcon icon = get();
+                    if (icon != null) {
+                        profilePicLabel.setIcon(icon);
+                        profilePicLabel.setText("");
+                    }
                 } catch (Exception e) {
                     e.printStackTrace();
+                    profilePicLabel.setIcon(null);
+                    profilePicLabel.setText("👤");
+                    profilePicLabel.setFont(new Font("Segoe UI", Font.PLAIN, 48));
+                    profilePicLabel.setForeground(new Color(108, 117, 125));
+                    profilePicLabel.setHorizontalAlignment(SwingConstants.CENTER);
                 }
             }
         }.execute();
@@ -1494,26 +1498,13 @@ public class Swipe extends JFrame {
                     String bio = userProfile.getAboutMe() != null ? userProfile.getAboutMe() : "";
                     List<String> photos = new ArrayList<>();
                     
-                    // Try to get Firebase Storage URL first
-                    if (userProfile.getUsername() != null) {
-                        try {
-                            String firebaseUrl = heartsync.database.FirebaseStorageManager.getProfileImageUrl(userProfile.getUsername());
-                            if (firebaseUrl != null && !firebaseUrl.isEmpty()) {
-                                photos.add(firebaseUrl);
-                            }
-                        } catch (Exception e) {
-                            System.out.println("Failed to get Firebase URL for user: " + userProfile.getUsername());
-                        }
-                    }
-                    
-                    // Fallback to local profile picture path
-                    if (photos.isEmpty() && userProfile.getProfilePicPath() != null && !userProfile.getProfilePicPath().isEmpty()) {
-                        photos.add(userProfile.getProfilePicPath());
-                    }
-                    
-                    // Final fallback to default image
-                    if (photos.isEmpty()) {
-                        photos.add("RajeshHamalPhoto.png");
+                    // Get profile picture from user profile
+                    String profilePicPath = userProfile.getProfilePicPath();
+                    if (profilePicPath != null && !profilePicPath.isEmpty()) {
+                        photos.add(profilePicPath);
+                    } else {
+                        // Use person emoji if no profile picture
+                        photos.add("👤");
                     }
                     
                     profiles.add(new ProfileData(name, age, bio, photos, userProfile.getUsername()));
@@ -1523,7 +1514,7 @@ public class Swipe extends JFrame {
             e.printStackTrace();
             // Add some sample profiles for testing if database fails
             profiles.add(new ProfileData("Sample User", 25, "This is a sample profile for testing.", 
-                List.of("RajeshHamalPhoto.png"), "sample_user"));
+                List.of("👤"), "sample_user"));
         }
         allProfiles = new ArrayList<>(profiles);
         currentIndex = 0;
@@ -1714,30 +1705,55 @@ public class Swipe extends JFrame {
     }
 
     private void displayUserProfile(heartsync.model.UserProfile profile) {
-        // Create profile panel
-        JPanel profilePanel = new JPanel(new GridBagLayout());
-        profilePanel.setBackground(BACKGROUND_COLOR);
-        profilePanel.setBorder(new EmptyBorder(40, 0, 40, 0));
+        try {
+            Image image = null;
+            String picPath = profile.getProfilePicPath();
+            
+            // Try to load profile picture
+            if (picPath != null && !picPath.isEmpty()) {
+                if (picPath.startsWith("data:image")) {
+                    // Handle Base64 image data
+                    String base64Image = picPath.substring(picPath.indexOf(",") + 1);
+                    byte[] imageBytes = Base64.getDecoder().decode(base64Image);
+                    try (ByteArrayInputStream bis = new ByteArrayInputStream(imageBytes)) {
+                        image = ImageIO.read(bis);
+                    }
+                } else if (picPath.startsWith("http")) {
+                    // Handle URL-based images
+                    image = ImageIO.read(new URL(picPath));
+                }
+            }
+            
+            // Use placeholder if no image is available
+            if (image == null) {
+                URL defaultImageUrl = getClass().getResource("/ImagePicker/placeholder.png");
+                if (defaultImageUrl != null) {
+                    image = ImageIO.read(defaultImageUrl);
+                }
+            }
 
-        // Add profile information
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.anchor = GridBagConstraints.CENTER;
-        gbc.insets = new Insets(10, 10, 20, 10);
-
-        // Profile picture
-        JLabel profilePicture = createProfilePicture();
-        profilePicture.setPreferredSize(new Dimension(150, 150));
-        profilePanel.add(profilePicture, gbc);
-
-        // Add profile details
-        addProfileDetails(profilePanel, profile, gbc);
-
-        // Add profile panel to main panel
-        mainPanel.add(profilePanel, BorderLayout.CENTER);
-        mainPanel.revalidate();
-        mainPanel.repaint();
+            if (image != null) {
+                Image scaledImage = image.getScaledInstance(150, 150, Image.SCALE_SMOOTH);
+                BufferedImage circularImage = new BufferedImage(150, 150, BufferedImage.TYPE_INT_ARGB);
+                Graphics2D g2 = circularImage.createGraphics();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setClip(new Ellipse2D.Float(0, 0, 150, 150));
+                g2.drawImage(scaledImage, 0, 0, null);
+                g2.dispose();
+                imageLabel.setIcon(new ImageIcon(circularImage));
+            } else {
+                imageLabel.setIcon(null);
+                imageLabel.setText("👤");
+                imageLabel.setFont(new Font("Segoe UI", Font.PLAIN, 48));
+                imageLabel.setForeground(SEARCH_ICON_COLOR);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            imageLabel.setIcon(null);
+            imageLabel.setText("👤");
+            imageLabel.setFont(new Font("Segoe UI", Font.PLAIN, 48));
+            imageLabel.setForeground(SEARCH_ICON_COLOR);
+        }
     }
 
     private void addProfileDetails(JPanel panel, heartsync.model.UserProfile profile, GridBagConstraints gbc) {

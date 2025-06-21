@@ -12,19 +12,39 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.Properties;
 
 public class FirebaseConfig {
     private static final String DATABASE_URL = "https://heartsync-96435-default-rtdb.asia-southeast1.firebasedatabase.app/";
-    private static final String JSON_EXT = ".json?auth=null"; // Allow unauthenticated access during development
+    private static String AUTH_TOKEN;
     private static final Gson gson = new Gson();
     private static final HttpClient client = HttpClient.newHttpClient();
+
+    static {
+        try {
+            // Load Firebase auth token from config.properties
+            Properties props = new Properties();
+            InputStream input = FirebaseConfig.class.getClassLoader().getResourceAsStream("config.properties");
+            if (input != null) {
+                props.load(input);
+                AUTH_TOKEN = props.getProperty("firebase.auth.token");
+                input.close();
+            }
+        } catch (IOException e) {
+            System.err.println("Warning: Failed to load Firebase auth token: " + e.getMessage());
+        }
+    }
+
+    private static String getAuthParam() {
+        return ".json" + (AUTH_TOKEN != null ? "?auth=" + AUTH_TOKEN : "");
+    }
 
     public static String getUserPath(String userId) {
         return "users/" + userId;
     }
 
     public static <T> T get(String path, Type type) throws IOException {
-        URL url = new URL(DATABASE_URL + path + JSON_EXT);
+        URL url = new URL(DATABASE_URL + path + getAuthParam());
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("GET");
         
@@ -44,7 +64,7 @@ public class FirebaseConfig {
     }
 
     public static void put(String path, Object data) throws IOException {
-        URL url = new URL(DATABASE_URL + path + JSON_EXT);
+        URL url = new URL(DATABASE_URL + path + getAuthParam());
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("PUT");
         conn.setRequestProperty("Content-Type", "application/json");
@@ -73,7 +93,7 @@ public class FirebaseConfig {
     }
 
     public static void delete(String path) throws IOException {
-        URL url = new URL(DATABASE_URL + path + JSON_EXT);
+        URL url = new URL(DATABASE_URL + path + getAuthParam());
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("DELETE");
         
@@ -85,7 +105,7 @@ public class FirebaseConfig {
 
     // POST (push new child, returns key)
     public static String post(String path, Object data) throws IOException {
-        String url = DATABASE_URL + path + JSON_EXT;
+        String url = DATABASE_URL + path + getAuthParam();
         HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
         conn.setRequestMethod("POST");
         conn.setDoOutput(true);
@@ -103,7 +123,7 @@ public class FirebaseConfig {
 
     // PATCH (update fields at path)
     public static void patch(String path, Object data) throws IOException {
-        String url = DATABASE_URL + path + JSON_EXT;
+        String url = DATABASE_URL + path + getAuthParam();
         HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
         conn.setRequestMethod("PUT");
         conn.setDoOutput(true);
@@ -129,7 +149,7 @@ public class FirebaseConfig {
     public static <T> void set(String path, T data) {
         try {
             String json = gson.toJson(data);
-            String fullUrl = DATABASE_URL + path + JSON_EXT;
+            String fullUrl = DATABASE_URL + path + getAuthParam();
             System.out.println("Saving data to Firebase URL: " + fullUrl);
             System.out.println("Data being saved: " + json);
             

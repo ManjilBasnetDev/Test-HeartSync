@@ -127,7 +127,7 @@ public class ReviewAndApprove extends JPanel {
         // First fallback: Try loading local default image
         if (profileImage == null) {
             try {
-                URL defaultImageUrl = getClass().getResource("/ImagePicker/RajeshHamalPhoto.png");
+                URL defaultImageUrl = getClass().getResource("/ImagePicker/placeholder.png");
                 if (defaultImageUrl != null) {
                     profileImage = ImageIO.read(defaultImageUrl);
                 }

@@ -133,9 +133,16 @@ public class UserCardListView extends JPanel {
                     }
                 }
                 
-                // 3. Fallback to default image if all else fails
+                // 3. Fallback to person emoji if no profile image is available
                 if (image == null) {
-                    image = ImageIO.read(getClass().getResource("/ImagePicker/RajeshHamalPhoto.png"));
+                    SwingUtilities.invokeLater(() -> {
+                        imageLabel.setIcon(null);
+                        imageLabel.setText("👤");
+                        imageLabel.setFont(new Font("Segoe UI", Font.PLAIN, 24));
+                        imageLabel.setForeground(new Color(108, 117, 125));
+                        imageLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                    });
+                    return null;
                 }
                 
                 Image scaledImage = image.getScaledInstance(100, 100, Image.SCALE_SMOOTH);

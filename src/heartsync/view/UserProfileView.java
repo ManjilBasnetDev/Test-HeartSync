@@ -7,6 +7,8 @@ import java.awt.geom.Ellipse2D;
 import java.awt.image.BufferedImage;
 import java.net.URL;
 import javax.imageio.ImageIO;
+import java.util.Base64;
+import java.io.ByteArrayInputStream;
 
 public class UserProfileView extends JFrame {
 
@@ -137,39 +139,67 @@ public class UserProfileView extends JFrame {
             @Override
             protected ImageIcon doInBackground() throws Exception {
                 Image image = null;
-                String firebaseUrl = heartsync.database.FirebaseStorageManager.getProfileImageUrl(username);
                 
-                if (firebaseUrl != null && !firebaseUrl.isEmpty()) {
-                    image = ImageIO.read(new URL(firebaseUrl));
-                } else if (picPath != null && !picPath.isEmpty()) {
-                    if (picPath.startsWith("http")) {
+                // First try to get the profile picture from the user profile
+                if (picPath != null && !picPath.isEmpty()) {
+                    if (picPath.startsWith("data:image")) {
+                        // Handle Base64 image data
+                        String base64Image = picPath.substring(picPath.indexOf(",") + 1);
+                        byte[] imageBytes = Base64.getDecoder().decode(base64Image);
+                        try (ByteArrayInputStream bis = new ByteArrayInputStream(imageBytes)) {
+                            image = ImageIO.read(bis);
+                        }
+                    } else if (picPath.startsWith("http")) {
+                        // Handle URL-based images
                         image = ImageIO.read(new URL(picPath));
                     } else {
+                        // Handle local resource images
                         URL resourceUrl = getClass().getResource("/ImagePicker/" + picPath);
-                        if (resourceUrl != null) image = ImageIO.read(resourceUrl);
+                        if (resourceUrl != null) {
+                            image = ImageIO.read(resourceUrl);
+                        }
                     }
                 }
                 
+                // If no image was loaded, use person emoji
                 if (image == null) {
-                    image = ImageIO.read(getClass().getResource("/ImagePicker/RajeshHamalPhoto.png"));
+                    SwingUtilities.invokeLater(() -> {
+                        imageLabel.setIcon(null);
+                        imageLabel.setText("👤");
+                        imageLabel.setFont(new Font("Segoe UI", Font.PLAIN, 48));
+                        imageLabel.setForeground(new Color(108, 117, 125));
+                        imageLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                    });
+                    return null;
                 }
                 
-                Image scaledImage = image.getScaledInstance(150, 150, Image.SCALE_SMOOTH);
-                BufferedImage circularImage = new BufferedImage(150, 150, BufferedImage.TYPE_INT_ARGB);
-                Graphics2D g2 = circularImage.createGraphics();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setClip(new Ellipse2D.Float(0, 0, 150, 150));
-                g2.drawImage(scaledImage, 0, 0, null);
-                g2.dispose();
-                return new ImageIcon(circularImage);
+                // If we have an image, create circular version
+                if (image != null) {
+                    Image scaledImage = image.getScaledInstance(150, 150, Image.SCALE_SMOOTH);
+                    BufferedImage circularImage = new BufferedImage(150, 150, BufferedImage.TYPE_INT_ARGB);
+                    Graphics2D g2 = circularImage.createGraphics();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2.setClip(new Ellipse2D.Float(0, 0, 150, 150));
+                    g2.drawImage(scaledImage, 0, 0, null);
+                    g2.dispose();
+                    return new ImageIcon(circularImage);
+                }
+                
+                return null;
             }
 
             @Override
             protected void done() {
                 try {
-                    imageLabel.setIcon(get());
+                    ImageIcon icon = get();
+                    if (icon != null) {
+                        imageLabel.setIcon(icon);
+                    } else {
+                        imageLabel.setText("No Image");
+                    }
                 } catch (Exception e) {
                     e.printStackTrace();
+                    imageLabel.setText("Error Loading Image");
                 }
             }
         }.execute();

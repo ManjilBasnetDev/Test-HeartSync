@@ -20,14 +20,15 @@ public class LikeDAO {
     
     public boolean addLike(String userId, String likedUserId) {
         try {
-            // Add the like
+            // Add the like first
             FirebaseConfig.put(LIKES_PATH + "/" + userId + "/" + likedUserId, true);
             
-            // Check for mutual like
-            if (checkMutualLike(userId, likedUserId)) {
-                // Create match entries for both users
+            // Check if the other user has liked us
+            Boolean otherUserLike = FirebaseConfig.get(LIKES_PATH + "/" + likedUserId + "/" + userId, Boolean.class);
+            
+            // If there's a mutual like, create the match
+            if (otherUserLike != null && otherUserLike) {
                 createMatch(userId, likedUserId);
-                return true;
             }
             return true;
         } catch (IOException e) {
@@ -177,12 +178,21 @@ public class LikeDAO {
     public List<String> getLikersOfUser(String userId) {
         List<String> likers = new ArrayList<>();
         try {
-            // Get all likes where the target user is the liked user
-            Map<String, Boolean> likersMap = FirebaseConfig.get(LIKES_PATH + "/" + userId,
-                new TypeToken<Map<String, Boolean>>(){}.getType());
+            // Get all users' likes
+            Map<String, Map<String, Boolean>> allLikes = FirebaseConfig.get(LIKES_PATH,
+                new TypeToken<Map<String, Map<String, Boolean>>>(){}.getType());
 
-            if (likersMap != null) {
-                likers.addAll(likersMap.keySet());
+            if (allLikes != null) {
+                // For each user's likes
+                for (Map.Entry<String, Map<String, Boolean>> entry : allLikes.entrySet()) {
+                    String potentialLiker = entry.getKey();
+                    Map<String, Boolean> theirLikes = entry.getValue();
+                    
+                    // If they liked our target user
+                    if (theirLikes != null && theirLikes.containsKey(userId) && theirLikes.get(userId)) {
+                        likers.add(potentialLiker);
+                    }
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();

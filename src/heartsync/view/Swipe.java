@@ -1059,21 +1059,78 @@ public class Swipe extends JFrame {
         if (profiles.isEmpty()) return;
         ProfileData profile = profiles.get(currentIndex);
         
-        // Add to likes in Firebase
+        // Add to likes in Firebase and check for match
         if (likeDAO.addLike(currentUserId, profile.userId)) {
-            // Show a confirmation popup
-            JOptionPane.showMessageDialog(this,
-                "You liked " + profile.name + "!",
-                "Liked!",
-                JOptionPane.INFORMATION_MESSAGE);
-            
-            // Check if it's a match
+            // Check if it's a match immediately after adding the like
             if (likeDAO.isMatched(currentUserId, profile.userId)) {
-                // Show match notification
-                JOptionPane.showMessageDialog(this,
-                    "It's a Match with " + profile.name + "! 🎉\nYou can now chat with each other!",
-                    "New Match!",
-                    JOptionPane.INFORMATION_MESSAGE);
+                // Create a custom match notification dialog
+                JDialog matchDialog = new JDialog(this, "New Match! 🎉", true);
+                matchDialog.setLayout(new BorderLayout());
+                matchDialog.setSize(400, 300);
+                matchDialog.setLocationRelativeTo(this);
+                matchDialog.setResizable(false);
+
+                // Create a panel with pink gradient background
+                JPanel panel = new JPanel(new BorderLayout()) {
+                    @Override
+                    protected void paintComponent(Graphics g) {
+                        Graphics2D g2 = (Graphics2D) g;
+                        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                        
+                        // Create gradient background
+                        GradientPaint gradient = new GradientPaint(
+                            0, 0, new Color(255, 192, 203),
+                            0, getHeight(), new Color(219, 112, 147)
+                        );
+                        g2.setPaint(gradient);
+                        g2.fillRect(0, 0, getWidth(), getHeight());
+                    }
+                };
+                panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+                // Add match message
+                JLabel matchLabel = new JLabel("<html><center>It's a Match! 🎉<br><br>" +
+                    "You and " + profile.name + " liked each other!<br><br>" +
+                    "Start chatting now!</center></html>");
+                matchLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
+                matchLabel.setForeground(Color.WHITE);
+                matchLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                panel.add(matchLabel, BorderLayout.CENTER);
+
+                // Add buttons panel
+                JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
+                buttonPanel.setOpaque(false);
+
+                // Chat button
+                JButton chatButton = new JButton("Start Chat");
+                chatButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
+                chatButton.setForeground(Color.WHITE);
+                chatButton.setBackground(new Color(40, 167, 69));
+                chatButton.setBorderPainted(false);
+                chatButton.setFocusPainted(false);
+                chatButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                chatButton.addActionListener(e -> {
+                    matchDialog.dispose();
+                    new ChatSystem(heartsync.model.User.getCurrentUser()).setVisible(true);
+                    dispose();
+                });
+
+                // Continue button
+                JButton continueButton = new JButton("Continue Exploring");
+                continueButton.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+                continueButton.setForeground(new Color(40, 167, 69));
+                continueButton.setBackground(Color.WHITE);
+                continueButton.setBorderPainted(false);
+                continueButton.setFocusPainted(false);
+                continueButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                continueButton.addActionListener(e -> matchDialog.dispose());
+
+                buttonPanel.add(chatButton);
+                buttonPanel.add(continueButton);
+                panel.add(buttonPanel, BorderLayout.SOUTH);
+
+                matchDialog.add(panel);
+                matchDialog.setVisible(true);
             }
             
             // Remove from current list
@@ -1087,8 +1144,7 @@ public class Swipe extends JFrame {
                 currentIndex = 0;
             }
             
-                showCurrentProfile();
-
+            showCurrentProfile();
         } else {
             JOptionPane.showMessageDialog(this,
                 "Error saving like. Please try again.",

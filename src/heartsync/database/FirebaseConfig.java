@@ -151,4 +151,18 @@ public class FirebaseConfig {
             throw new RuntimeException("Failed to set data: " + e.getMessage());
         }
     }
+
+    // Delete all data from Firebase
+    public static void deleteAllData() throws IOException {
+        // Delete all user data nodes
+        delete("user_details");
+        delete("user_likes");
+        delete("user_passes");
+        delete("matches");
+        delete("messages");
+        delete("user_notifications");
+        delete("user_reports");
+        delete("user_contacts");
+        System.out.println("All user data has been deleted from Firebase.");
+    }
 }

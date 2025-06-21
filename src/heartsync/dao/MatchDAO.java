@@ -1,10 +1,8 @@
 package heartsync.dao;
 
-import java.time.Instant;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-
-import javax.swing.JOptionPane;
 
 import com.google.gson.reflect.TypeToken;
 
@@ -13,111 +11,75 @@ import heartsync.database.FirebaseConfig;
 public class MatchDAO {
     private static final String LIKES_PATH = "likes";
     private static final String MATCHES_PATH = "matches";
-    private static final String MESSAGES_PATH = "messages";
-    private static final String NOTIFICATIONS_PATH = "notifications";
 
-    public void checkAndCreateMatch(String currentUserId, String likedUserId) {
+    public void createMatch(String user1Id, String user2Id) {
         try {
-            System.out.println("Checking for match between " + currentUserId + " and " + likedUserId);
+            System.out.println("Creating match between " + user1Id + " and " + user2Id);
             
-            // Check if the other user has already liked the current user
-            String otherUserLikePath = LIKES_PATH + "/" + likedUserId + "/" + currentUserId;
-            Boolean hasLiked = FirebaseConfig.get(otherUserLikePath, Boolean.class);
-            System.out.println("Has " + likedUserId + " liked " + currentUserId + "? " + hasLiked);
-
-            // Check if current user has liked the other user (should be true at this point)
-            String currentUserLikePath = LIKES_PATH + "/" + currentUserId + "/" + likedUserId;
-            Boolean currentUserLiked = FirebaseConfig.get(currentUserLikePath, Boolean.class);
-            System.out.println("Has " + currentUserId + " liked " + likedUserId + "? " + currentUserLiked);
-
-            // Check if match already exists
-            String matchPath = MATCHES_PATH + "/" + currentUserId + "/" + likedUserId;
-            Boolean matchExists = FirebaseConfig.get(matchPath, Boolean.class);
-            System.out.println("Does match already exist? " + matchExists);
-
-            // Both users must have liked each other and match shouldn't already exist
-            if (Boolean.TRUE.equals(hasLiked) && Boolean.TRUE.equals(currentUserLiked) && !Boolean.TRUE.equals(matchExists)) {
-                System.out.println("Creating new match!");
-                // It's a match! Create match records for both users
-                createMatchRecord(currentUserId, likedUserId);
-                
-                // Initialize chat
-                initializeChat(currentUserId, likedUserId);
-                
-                // Create notification for both users
-                createMatchNotification(currentUserId, likedUserId);
-                createMatchNotification(likedUserId, currentUserId);
-                
-                // Show match notification to current user
-                JOptionPane.showMessageDialog(null, 
-                    "🎉 It's a Match! 🎉\nYou and the other person liked each other!", 
-                    "New Match!", 
-                    JOptionPane.INFORMATION_MESSAGE);
-            } else {
-                System.out.println("No match created. Either one user hasn't liked the other, or match already exists.");
-            }
-        } catch (Exception e) {
-            System.err.println("Error checking for match: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    private void createMatchRecord(String user1Id, String user2Id) {
-        try {
-            System.out.println("Creating match record between " + user1Id + " and " + user2Id);
-            
-            // Create match records for both users
+            // Create match entries for both users directly in Firebase
             FirebaseConfig.set(MATCHES_PATH + "/" + user1Id + "/" + user2Id, true);
             FirebaseConfig.set(MATCHES_PATH + "/" + user2Id + "/" + user1Id, true);
             
-            System.out.println("Match records created successfully");
+            System.out.println("Match created successfully in Firebase between " + user1Id + " and " + user2Id);
         } catch (Exception e) {
-            System.err.println("Error creating match record: " + e.getMessage());
+            System.err.println("Error creating match: " + e.getMessage());
             e.printStackTrace();
+            throw new RuntimeException("Failed to create match: " + e.getMessage());
         }
     }
 
-    private void initializeChat(String user1Id, String user2Id) {
+    public boolean checkForMutualLike(String user1Id, String user2Id) {
         try {
-            // Create chat ID by sorting user IDs alphabetically
-            String chatId = user1Id.compareTo(user2Id) < 0 
-                ? user1Id + "_" + user2Id 
-                : user2Id + "_" + user1Id;
-
-            // Check if chat metadata already exists
-            String metaPath = MESSAGES_PATH + "/" + chatId + "/meta";
-            Map<String, Object> existingMeta = FirebaseConfig.get(metaPath, new TypeToken<Map<String, Object>>(){}.getType());
-
-            if (existingMeta == null) {
-                // Create chat metadata
-                Map<String, Object> metadata = new HashMap<>();
-                metadata.put("user1", user1Id.compareTo(user2Id) < 0 ? user1Id : user2Id);
-                metadata.put("user2", user1Id.compareTo(user2Id) < 0 ? user2Id : user1Id);
-                metadata.put("lastMessage", "");
-                metadata.put("timestamp", Instant.now().getEpochSecond());
-
-                FirebaseConfig.set(metaPath, metadata);
+            // Check if user1 has liked user2
+            Boolean user1LikedUser2 = FirebaseConfig.get(LIKES_PATH + "/" + user1Id + "/" + user2Id, Boolean.class);
+            if (!Boolean.TRUE.equals(user1LikedUser2)) {
+                // Try array format for user1's likes
+                List<Boolean> user1Likes = FirebaseConfig.get(LIKES_PATH + "/" + user1Id, new TypeToken<List<Boolean>>(){}.getType());
+                if (user1Likes != null && user2Id.matches("\\d+")) {
+                    int idx = Integer.parseInt(user2Id);
+                    user1LikedUser2 = idx < user1Likes.size() && Boolean.TRUE.equals(user1Likes.get(idx));
+                }
             }
+            
+            // Check if user2 has liked user1
+            Boolean user2LikedUser1 = FirebaseConfig.get(LIKES_PATH + "/" + user2Id + "/" + user1Id, Boolean.class);
+            if (!Boolean.TRUE.equals(user2LikedUser1)) {
+                // Try array format for user2's likes
+                List<Boolean> user2Likes = FirebaseConfig.get(LIKES_PATH + "/" + user2Id, new TypeToken<List<Boolean>>(){}.getType());
+                if (user2Likes != null && user1Id.matches("\\d+")) {
+                    int idx = Integer.parseInt(user1Id);
+                    user2LikedUser1 = idx < user2Likes.size() && Boolean.TRUE.equals(user2Likes.get(idx));
+                }
+            }
+
+            boolean mutualLike = Boolean.TRUE.equals(user1LikedUser2) && Boolean.TRUE.equals(user2LikedUser1);
+            System.out.println("Mutual like check result: " + mutualLike + 
+                             " (User1 liked User2: " + user1LikedUser2 + 
+                             ", User2 liked User1: " + user2LikedUser1 + ")");
+            return mutualLike;
         } catch (Exception e) {
-            System.err.println("Error initializing chat: " + e.getMessage());
+            System.err.println("Error checking for mutual like: " + e.getMessage());
             e.printStackTrace();
+            return false;
         }
     }
 
-    private void createMatchNotification(String currentUserId, String likedUserId) {
+    public boolean isMatched(String user1Id, String user2Id) {
         try {
-            // Create notification for the other user
-            FirebaseConfig.set(NOTIFICATIONS_PATH + "/" + likedUserId + "/" + currentUserId, "match");
+            Boolean matchExists = FirebaseConfig.get(MATCHES_PATH + "/" + user1Id + "/" + user2Id, Boolean.class);
+            return Boolean.TRUE.equals(matchExists);
         } catch (Exception e) {
-            System.err.println("Error creating match notification: " + e.getMessage());
+            System.err.println("Error checking if matched: " + e.getMessage());
             e.printStackTrace();
+            return false;
         }
     }
 
     public Map<String, Boolean> getMatches(String userId) {
         try {
             String matchPath = MATCHES_PATH + "/" + userId;
-            return FirebaseConfig.get(matchPath, new TypeToken<Map<String, Boolean>>(){}.getType());
+            Map<String, Boolean> matches = FirebaseConfig.get(matchPath, new TypeToken<Map<String, Boolean>>(){}.getType());
+            return matches != null ? matches : new HashMap<>();
         } catch (Exception e) {
             System.err.println("Error getting matches: " + e.getMessage());
             e.printStackTrace();

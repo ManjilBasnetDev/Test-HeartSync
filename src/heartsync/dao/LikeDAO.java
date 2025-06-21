@@ -31,73 +31,68 @@ public class LikeDAO {
         try {
             System.out.println("Attempting to save like from " + currentUserId + " to " + likedUserId);
             
-            // Save the like using username
-            String likePath = LIKES_PATH + "/" + currentUserId + "/" + likedUserId;
-            FirebaseConfig.set(likePath, true);
-            System.out.println("Like saved successfully at path: " + likePath);
-
-            // Check for mutual like directly
-            String mutualLikePath = LIKES_PATH + "/" + likedUserId + "/" + currentUserId;
-            Boolean mutualLike = FirebaseConfig.get(mutualLikePath, Boolean.class);
-            System.out.println("Checking mutual like at path: " + mutualLikePath + ", result: " + mutualLike);
-
-            if (Boolean.TRUE.equals(mutualLike)) {
-                System.out.println("Mutual like detected! Creating match...");
+            // Save the like based on whether the ID is numeric
+            if (likedUserId.matches("\\d+")) {
+                // For numeric IDs, create an array of the required size
+                List<Object> likesList = new ArrayList<>();
+                int targetIndex = Integer.parseInt(likedUserId);
                 
-                // Create match entries for both users
-                FirebaseConfig.set(MATCHES_PATH + "/" + currentUserId + "/" + likedUserId, true);
-                FirebaseConfig.set(MATCHES_PATH + "/" + likedUserId + "/" + currentUserId, true);
-                System.out.println("Match entries created in database");
-
-                // Initialize chat
-                String chatId = currentUserId.compareTo(likedUserId) < 0 
-                    ? currentUserId + "_" + likedUserId 
-                    : likedUserId + "_" + currentUserId;
+                // Fill the list with nulls up to the target index
+                while (likesList.size() <= targetIndex) {
+                    likesList.add(null);
+                }
+                likesList.set(targetIndex, true);
                 
-                // Create chat metadata
-                Map<String, Object> metadata = new HashMap<>();
-                metadata.put("user1", currentUserId);
-                metadata.put("user2", likedUserId);
-                metadata.put("lastMessage", "");
-                metadata.put("timestamp", System.currentTimeMillis());
-                
-                Map<String, Object> messageData = new HashMap<>();
-                messageData.put("meta", metadata);
-                messageData.put("messages", new HashMap<>());
-                
-                FirebaseConfig.set(MESSAGES_PATH + "/" + chatId, messageData);
-                System.out.println("Chat initialized with ID: " + chatId);
-
-                // Create welcome message
-                Chat welcomeChat = new Chat();
-                welcomeChat.setMessageId(UUID.randomUUID().toString());
-                welcomeChat.setChatId(chatId);
-                welcomeChat.setSenderId("system");
-                welcomeChat.setMessage("You are now matched! Say hello! 👋");
-                welcomeChat.setTimestamp(System.currentTimeMillis());
-                
-                FirebaseConfig.set(MESSAGES_PATH + "/" + chatId + "/messages/" + welcomeChat.getMessageId(), welcomeChat);
-                System.out.println("Welcome message created");
-
-                // Update metadata with welcome message
-                Map<String, Object> updatedMeta = new HashMap<>();
-                updatedMeta.put("lastMessage", welcomeChat.getMessage());
-                updatedMeta.put("timestamp", welcomeChat.getTimestamp());
-                FirebaseConfig.patch(MESSAGES_PATH + "/" + chatId + "/meta", updatedMeta);
-
-                // Show match notification
-                SwingUtilities.invokeLater(() -> {
-                    JOptionPane.showMessageDialog(null,
-                        "🎉 It's a Match! 🎉\nYou and the other person liked each other!",
-                        "New Match!",
-                        JOptionPane.INFORMATION_MESSAGE);
-                });
+                FirebaseConfig.set(LIKES_PATH + "/" + currentUserId, likesList);
+                System.out.println("Like saved in array format at index " + targetIndex);
+            } else {
+                // For non-numeric IDs, use the standard object format
+                FirebaseConfig.set(LIKES_PATH + "/" + currentUserId + "/" + likedUserId, true);
+                System.out.println("Like saved in object format");
             }
+
+            // Immediately check for mutual like and create match if needed
+            checkAndCreateMatch(currentUserId, likedUserId);
+            
         } catch (Exception e) {
             System.err.println("Error saving like: " + e.getMessage());
             e.printStackTrace();
             throw new RuntimeException("Failed to save like: " + e.getMessage());
         }
+    }
+
+    private void checkAndCreateMatch(String currentUserId, String likedUserId) {
+        try {
+            // First check if they're already matched to avoid duplicates
+            if (matchDAO.isMatched(currentUserId, likedUserId)) {
+                System.out.println("Match already exists between " + currentUserId + " and " + likedUserId);
+                return;
+            }
+
+            // Check for mutual like
+            if (matchDAO.checkForMutualLike(currentUserId, likedUserId)) {
+                System.out.println("Mutual like found! Creating match between " + currentUserId + " and " + likedUserId);
+                matchDAO.createMatch(currentUserId, likedUserId);
+                System.out.println("Match created successfully in Firebase");
+            } else {
+                System.out.println("No mutual like found yet between " + currentUserId + " and " + likedUserId);
+            }
+        } catch (Exception e) {
+            System.err.println("Error checking and creating match: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    // Helper method to extract numeric ID from either a numeric string or UUID
+    private String extractNumericId(String userId) {
+        if (userId.matches("\\d+")) {
+            return userId;
+        }
+        // If the user has liked with a numeric ID (e.g., "1" or "2"), extract it
+        if (userId.matches(".*\\d+.*")) {
+            return userId.replaceAll("\\D+", "");
+        }
+        return null;
     }
 
     public boolean hasLiked(String userId, String otherUserId) {
@@ -198,63 +193,60 @@ public class LikeDAO {
     }
 
     // Create match entries for both users
-    private void createMatch(String userId1, String userId2) throws IOException {
-        System.out.println("Starting match creation between " + userId1 + " and " + userId2);
-        
-        // Create match entries for both users
-        FirebaseConfig.put(MATCHES_PATH + "/" + userId1 + "/" + userId2, true);
-        System.out.println("Added match entry for " + userId1);
-        
-        FirebaseConfig.put(MATCHES_PATH + "/" + userId2 + "/" + userId1, true);
-        System.out.println("Added match entry for " + userId2);
-        
-        // Initialize chat
-        // Sort user IDs alphabetically to create a consistent chat ID
-        String chatId = userId1.compareTo(userId2) < 0 ? userId1 + "_" + userId2 : userId2 + "_" + userId1;
-        System.out.println("Created chat ID: " + chatId);
-        
-        // Create the messages node structure
-        Map<String, Object> messageData = new HashMap<>();
-        
-        // Create metadata
-        Map<String, Object> metadata = new HashMap<>();
-        metadata.put("user1", userId1);
-        metadata.put("user2", userId2);
-        metadata.put("lastMessage", "");
-        metadata.put("timestamp", System.currentTimeMillis());
-        messageData.put("meta", metadata);
-        
-        // Create empty messages map
-        Map<String, Object> messages = new HashMap<>();
-        messageData.put("messages", messages);
-        
-        // Save the entire message structure
-        FirebaseConfig.put(MESSAGES_PATH + "/" + chatId, messageData);
-        System.out.println("Created chat room structure");
-        
-        // Create a welcome message
-        Chat welcomeChat = new Chat();
-        welcomeChat.setMessageId(UUID.randomUUID().toString());
-        welcomeChat.setChatId(chatId);
-        welcomeChat.setSenderId("system");
-        welcomeChat.setMessage("You are now matched! Say hello! 👋");
-        welcomeChat.setTimestamp(System.currentTimeMillis());
-        
-        // Save welcome message
-        FirebaseConfig.put(MESSAGES_PATH + "/" + chatId + "/messages/" + welcomeChat.getMessageId(), welcomeChat);
-        System.out.println("Added welcome message to chat");
-        
-        // Update metadata with welcome message
-        Map<String, Object> updatedMeta = new HashMap<>();
-        updatedMeta.put("lastMessage", welcomeChat.getMessage());
-        updatedMeta.put("timestamp", welcomeChat.getTimestamp());
-        FirebaseConfig.patch(MESSAGES_PATH + "/" + chatId + "/meta", updatedMeta);
-        
-        // Add notification for both users
-        String matchNotification = "💘 Match: You have a new match!";
-        FirebaseConfig.put("notifications/" + userId1 + "/" + System.currentTimeMillis(), matchNotification);
-        FirebaseConfig.put("notifications/" + userId2 + "/" + System.currentTimeMillis(), matchNotification);
-        System.out.println("Added match notifications for both users");
+    private void createMatch(String currentUserId, String likedUserId) {
+        try {
+            // Create match entries for both users
+            FirebaseConfig.set(MATCHES_PATH + "/" + currentUserId + "/" + likedUserId, true);
+            FirebaseConfig.set(MATCHES_PATH + "/" + likedUserId + "/" + currentUserId, true);
+            System.out.println("Match entries created in database");
+
+            // Initialize chat
+            String chatId = currentUserId.compareTo(likedUserId) < 0 
+                ? currentUserId + "_" + likedUserId 
+                : likedUserId + "_" + currentUserId;
+            
+            // Create chat metadata
+            Map<String, Object> metadata = new HashMap<>();
+            metadata.put("user1", currentUserId);
+            metadata.put("user2", likedUserId);
+            metadata.put("lastMessage", "");
+            metadata.put("timestamp", System.currentTimeMillis());
+            
+            Map<String, Object> messageData = new HashMap<>();
+            messageData.put("meta", metadata);
+            messageData.put("messages", new HashMap<>());
+            
+            FirebaseConfig.set(MESSAGES_PATH + "/" + chatId, messageData);
+            System.out.println("Chat initialized with ID: " + chatId);
+
+            // Create welcome message
+            Chat welcomeChat = new Chat();
+            welcomeChat.setMessageId(UUID.randomUUID().toString());
+            welcomeChat.setChatId(chatId);
+            welcomeChat.setSenderId("system");
+            welcomeChat.setMessage("You are now matched! Say hello! 👋");
+            welcomeChat.setTimestamp(System.currentTimeMillis());
+            
+            FirebaseConfig.set(MESSAGES_PATH + "/" + chatId + "/messages/" + welcomeChat.getMessageId(), welcomeChat);
+            System.out.println("Welcome message created");
+
+            // Update metadata with welcome message
+            Map<String, Object> updatedMeta = new HashMap<>();
+            updatedMeta.put("lastMessage", welcomeChat.getMessage());
+            updatedMeta.put("timestamp", welcomeChat.getTimestamp());
+            FirebaseConfig.patch(MESSAGES_PATH + "/" + chatId + "/meta", updatedMeta);
+
+            // Show match notification
+            SwingUtilities.invokeLater(() -> {
+                JOptionPane.showMessageDialog(null,
+                    "🎉 It's a Match! 🎉\nYou and the other person liked each other!",
+                    "New Match!",
+                    JOptionPane.INFORMATION_MESSAGE);
+            });
+        } catch (Exception e) {
+            System.err.println("Error creating match: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     // Check if users are matched

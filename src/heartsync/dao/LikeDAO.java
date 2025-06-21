@@ -177,20 +177,12 @@ public class LikeDAO {
     public List<String> getLikersOfUser(String userId) {
         List<String> likers = new ArrayList<>();
         try {
-            // This is inefficient and not scalable.
-            // A better approach would be to have a dedicated `likers` node in Firebase.
-            // For now, we iterate through all likes.
-            Map<String, Map<String, Boolean>> allLikes = FirebaseConfig.get(LIKES_PATH,
-                new TypeToken<Map<String, Map<String, Boolean>>>(){}.getType());
+            // Get all likes where the target user is the liked user
+            Map<String, Boolean> likersMap = FirebaseConfig.get(LIKES_PATH + "/" + userId,
+                new TypeToken<Map<String, Boolean>>(){}.getType());
 
-            if (allLikes != null) {
-                for (Map.Entry<String, Map<String, Boolean>> entry : allLikes.entrySet()) {
-                    String otherUserId = entry.getKey();
-                    Map<String, Boolean> likedMap = entry.getValue();
-                    if (likedMap != null && likedMap.containsKey(userId)) {
-                        likers.add(otherUserId);
-                    }
-                }
+            if (likersMap != null) {
+                likers.addAll(likersMap.keySet());
             }
         } catch (IOException e) {
             e.printStackTrace();

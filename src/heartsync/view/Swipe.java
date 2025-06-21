@@ -22,12 +22,15 @@ import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Image;
 import java.awt.Insets;
+import java.awt.MediaTracker;
+import java.awt.Point;
 import java.awt.RenderingHints;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Ellipse2D;
+import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -232,6 +235,17 @@ public class Swipe extends JFrame {
         setLocationRelativeTo(null);
         setResizable(false);
         setUndecorated(false);
+        
+        // Set application icon if available
+        try {
+            ImageIcon icon = new ImageIcon(getClass().getResource("/ImagePicker/HomePageCoupleImg.png"));
+            if (icon.getImageLoadStatus() == MediaTracker.COMPLETE) {
+                setIconImage(icon.getImage());
+            }
+        } catch (Exception e) {
+            // Silently handle icon loading failure
+            System.out.println("Application icon not found, using default.");
+        }
         
         // Initialize components
         mainPanel = new JPanel(new BorderLayout());
@@ -1395,36 +1409,59 @@ public class Swipe extends JFrame {
         profiles = new ArrayList<>();
         try {
             String currentUsername = heartsync.model.User.getCurrentUser().getUsername();
+            
+            // Get current user's profile to check their gender
+            UserProfile currentUserProfile = heartsync.database.DatabaseManagerProfile.getInstance().getUserProfile(currentUsername);
+            if (currentUserProfile == null || currentUserProfile.getGender() == null) {
+                throw new Exception("Current user's profile or gender not found");
+            }
+            
+            String currentUserGender = currentUserProfile.getGender().toLowerCase();
+            
+            // Get all other user profiles
             List<UserProfile> otherProfiles = heartsync.database.DatabaseManagerProfile.getInstance().getAllUserProfilesExcept(currentUsername);
+            
+            // Filter profiles based on opposite gender
             for (UserProfile userProfile : otherProfiles) {
-                String name = userProfile.getFullName() != null ? userProfile.getFullName() : "Unknown";
-                int age = userProfile.getAge() > 0 ? userProfile.getAge() : calculateAge(userProfile.getDateOfBirth());
-                String bio = userProfile.getAboutMe() != null ? userProfile.getAboutMe() : "";
-                List<String> photos = new ArrayList<>();
+                // Skip profiles with no gender specified
+                if (userProfile.getGender() == null) continue;
                 
-                // Try to get Firebase Storage URL first
-                if (userProfile.getUsername() != null) {
-                    try {
-                        String firebaseUrl = heartsync.database.FirebaseStorageManager.getProfileImageUrl(userProfile.getUsername());
-                        if (firebaseUrl != null && !firebaseUrl.isEmpty()) {
-                            photos.add(firebaseUrl);
+                String profileGender = userProfile.getGender().toLowerCase();
+                
+                // Match "male" with "female" and vice versa
+                boolean isMatch = (currentUserGender.equals("male") && profileGender.equals("female")) ||
+                                (currentUserGender.equals("female") && profileGender.equals("male"));
+                
+                if (isMatch) {
+                    String name = userProfile.getFullName() != null ? userProfile.getFullName() : "Unknown";
+                    int age = userProfile.getAge() > 0 ? userProfile.getAge() : calculateAge(userProfile.getDateOfBirth());
+                    String bio = userProfile.getAboutMe() != null ? userProfile.getAboutMe() : "";
+                    List<String> photos = new ArrayList<>();
+                    
+                    // Try to get Firebase Storage URL first
+                    if (userProfile.getUsername() != null) {
+                        try {
+                            String firebaseUrl = heartsync.database.FirebaseStorageManager.getProfileImageUrl(userProfile.getUsername());
+                            if (firebaseUrl != null && !firebaseUrl.isEmpty()) {
+                                photos.add(firebaseUrl);
+                            }
+                        } catch (Exception e) {
+                            System.out.println("Failed to get Firebase URL for user: " + userProfile.getUsername());
                         }
-                    } catch (Exception e) {
-                        System.out.println("Failed to get Firebase URL for user: " + userProfile.getUsername());
                     }
+                    
+                    // Fallback to local profile picture path
+                    if (photos.isEmpty() && userProfile.getProfilePicPath() != null && !userProfile.getProfilePicPath().isEmpty()) {
+                        photos.add(userProfile.getProfilePicPath());
+                    }
+                    
+                    // Final fallback to default image
+                    if (photos.isEmpty()) {
+                        photos.add("RajeshHamalPhoto.png");
+                    }
+                    
+                    profiles.add(new ProfileData(name, age, bio, photos, userProfile.getUsername()));
                 }
-                
-                // Fallback to local profile picture path
-                if (photos.isEmpty() && userProfile.getProfilePicPath() != null && !userProfile.getProfilePicPath().isEmpty()) {
-                    photos.add(userProfile.getProfilePicPath());
-                }
-                
-                // Final fallback to default image
-                if (photos.isEmpty()) {
-                    photos.add("RajeshHamalPhoto.png");
-                }
-                
-                profiles.add(new ProfileData(name, age, bio, photos, userProfile.getUsername()));
             }
         } catch (Exception e) {
             e.printStackTrace();

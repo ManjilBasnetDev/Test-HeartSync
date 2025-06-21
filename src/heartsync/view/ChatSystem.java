@@ -10,11 +10,13 @@ import heartsync.dao.UserDAO;
 import heartsync.model.Chat;
 import heartsync.model.User;
 import heartsync.model.UserProfile;
+import heartsync.database.DatabaseManagerProfile;
 
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.awt.MediaTracker;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.sql.SQLException;
@@ -59,6 +61,17 @@ public class ChatSystem extends JFrame {
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
+
+        // Set application icon if available
+        try {
+            ImageIcon icon = new ImageIcon(getClass().getResource("/ImagePicker/HomePageCoupleImg.png"));
+            if (icon.getImageLoadStatus() == MediaTracker.COMPLETE) {
+                setIconImage(icon.getImage());
+            }
+        } catch (Exception e) {
+            // Silently handle icon loading failure
+            System.out.println("Application icon not found, using default.");
+        }
 
         initComponents();
         loadMatchedUsers();
@@ -108,7 +121,7 @@ public class ChatSystem extends JFrame {
 
         List<String> matchedUserIds = likeDAO.getMatches(currentUser.getUsername());
         List<UserProfile> matchedProfiles = matchedUserIds.stream()
-                                                          .map(userDAO::findByUsername)
+                                                          .map(userId -> DatabaseManagerProfile.getInstance().getUserProfile(userId))
                                                           .filter(java.util.Objects::nonNull)
                                                           .collect(Collectors.toList());
 

@@ -263,12 +263,7 @@ public class ExplorePanel extends JPanel {
         nameLabel.setFont(HEADING_FONT);
         nameLabel.setForeground(Color.WHITE);
 
-        JLabel distanceLabel = new JLabel("5 miles away"); // Placeholder
-        distanceLabel.setFont(BODY_FONT);
-        distanceLabel.setForeground(Color.WHITE);
-
         textPanel.add(nameLabel);
-        textPanel.add(distanceLabel);
         imageLabel.add(textPanel, BorderLayout.SOUTH);
 
         return imageLabel;

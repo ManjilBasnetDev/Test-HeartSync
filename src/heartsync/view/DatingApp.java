@@ -716,14 +716,8 @@ public class DatingApp extends JFrame {
         JLabel nameLabel = new JLabel(profile.getFullName());
         nameLabel.setFont(HEADING_FONT);
         nameLabel.setForeground(Color.WHITE);
-        
-        // Distance
-        JLabel distanceLabel = new JLabel("5 miles away"); // Placeholder
-        distanceLabel.setFont(BODY_FONT);
-        distanceLabel.setForeground(Color.WHITE);
 
         textPanel.add(nameLabel);
-        textPanel.add(distanceLabel);
         imageLabel.add(textPanel, BorderLayout.SOUTH);
         
         return imageLabel;
@@ -1230,23 +1224,18 @@ public class DatingApp extends JFrame {
         
         try {
             if (profile.getProfilePicPath() != null && !profile.getProfilePicPath().isEmpty()) {
-                ImageIcon icon = new ImageIcon(profile.getProfilePicPath());
-                Image img = icon.getImage().getScaledInstance(150, 150, Image.SCALE_SMOOTH);
-                
-                // Create rounded image
-                BufferedImage roundedImage = new BufferedImage(150, 150, BufferedImage.TYPE_INT_ARGB);
-                Graphics2D g2d = roundedImage.createGraphics();
-                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2d.setClip(new java.awt.geom.Ellipse2D.Float(0, 0, 150, 150));
-                g2d.drawImage(img, 0, 0, null);
-                g2d.dispose();
-                
-                picLabel.setIcon(new ImageIcon(roundedImage));
+                // Use Base64ImageManager for circular profile image
+                ImageIcon profileIcon = Base64ImageManager.createCircularProfileImageIcon(profile.getProfilePicPath(), 150);
+                if (profileIcon != null) {
+                    picLabel.setIcon(profileIcon);
+                } else {
+                    picLabel.setIcon(Base64ImageManager.createPlaceholderIcon(150, 150));
+                }
             } else {
-                picLabel.setIcon(createPlaceholderIcon());
+                picLabel.setIcon(Base64ImageManager.createPlaceholderIcon(150, 150));
             }
         } catch (Exception e) {
-            picLabel.setIcon(createPlaceholderIcon());
+            picLabel.setIcon(Base64ImageManager.createPlaceholderIcon(150, 150));
         }
         
         picSection.add(picLabel);
@@ -1734,11 +1723,14 @@ public class DatingApp extends JFrame {
     }
     
     private void logout() {
-        // Here you would handle the logout logic, like showing the login screen
-        // For now, we'll just close the application
+        // Handle the logout logic, redirecting to home page
         JOptionPane.showMessageDialog(this, "Logged out successfully!", "Logout", JOptionPane.INFORMATION_MESSAGE);
         this.dispose();
-        new LoginView().setVisible(true); // Assuming LoginView is your login screen
+        
+        // Create and show HomePage instead of LoginView
+        HomePage homePage = new HomePage();
+        homePage.setLocationRelativeTo(null);
+        homePage.setVisible(true);
     }
     
     // ========== DATA LOADING METHODS ==========

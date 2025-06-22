@@ -5,6 +5,8 @@ import java.awt.*;
 import java.awt.event.*;
 import heartsync.controller.LoginController;
 import heartsync.navigation.WindowManager;
+import heartsync.database.TestUserCleanup;
+import javax.swing.JOptionPane;
 
 public class AdminDashboard extends JFrame {
     private ReviewAndApprove reviewPanel;
@@ -62,6 +64,83 @@ public class AdminDashboard extends JFrame {
         navigationPanel.add(reviewLabel);
         navigationPanel.add(deleteLabel);
         navigationPanel.add(reportedLabel);
+        
+        // Add cleanup button
+        JButton cleanupButton = new JButton("🧹 Clean Test Users");
+        cleanupButton.setOpaque(true);
+        cleanupButton.setFont(new Font("SansSerif", Font.BOLD, 14));
+        cleanupButton.setForeground(Color.WHITE);
+        cleanupButton.setBackground(new Color(255, 140, 0)); // Orange background
+        cleanupButton.setBorderPainted(false);
+        cleanupButton.setFocusPainted(false);
+        cleanupButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        cleanupButton.setPreferredSize(new Dimension(150, 35));
+        
+        // Add hover effect
+        cleanupButton.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                cleanupButton.setBackground(new Color(255, 140, 0).darker());
+            }
+            
+            @Override
+            public void mouseExited(MouseEvent e) {
+                cleanupButton.setBackground(new Color(255, 140, 0));
+            }
+        });
+        
+        // Add cleanup functionality
+        cleanupButton.addActionListener(e -> {
+            int result = JOptionPane.showConfirmDialog(
+                this,
+                "This will permanently remove ALL test/demo users from the system.\n" +
+                "This includes:\n" +
+                "• All test user profiles and data\n" +
+                "• All likes, matches, and notifications\n" +
+                "• All authentication records\n\n" +
+                "Are you sure you want to continue?",
+                "Confirm Test User Cleanup",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE
+            );
+            
+            if (result == JOptionPane.YES_OPTION) {
+                // Show progress dialog
+                JOptionPane.showMessageDialog(
+                    this,
+                    "Cleanup started. Check console for progress.\nThis may take a few moments...",
+                    "Cleanup In Progress",
+                    JOptionPane.INFORMATION_MESSAGE
+                );
+                
+                // Run cleanup in background thread
+                new Thread(() -> {
+                    try {
+                        TestUserCleanup.runCleanup();
+                        SwingUtilities.invokeLater(() -> {
+                            JOptionPane.showMessageDialog(
+                                this,
+                                "Test user cleanup completed successfully!\n" +
+                                "All test/demo users have been removed from the system.",
+                                "Cleanup Complete",
+                                JOptionPane.INFORMATION_MESSAGE
+                            );
+                        });
+                    } catch (Exception ex) {
+                        SwingUtilities.invokeLater(() -> {
+                            JOptionPane.showMessageDialog(
+                                this,
+                                "Error during cleanup: " + ex.getMessage(),
+                                "Cleanup Error",
+                                JOptionPane.ERROR_MESSAGE
+                            );
+                        });
+                    }
+                }).start();
+            }
+        });
+        
+        navigationPanel.add(cleanupButton);
         
         // Add spacing before logout button
         navigationPanel.add(Box.createHorizontalStrut(50));

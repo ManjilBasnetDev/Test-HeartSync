@@ -38,7 +38,7 @@ public class DatingApp extends JFrame {
     private static final Color SUCCESS_COLOR = new Color(52, 211, 153); // Mint green
     private static final Color DANGER_COLOR = new Color(248, 113, 113); // Soft red
 
-
+    
     // Modern typography
     private static final Font HEADING_FONT = new Font("Segoe UI", Font.BOLD, 24);
     private static final Font SUBHEADING_FONT = new Font("Segoe UI", Font.BOLD, 18);
@@ -196,25 +196,83 @@ public class DatingApp extends JFrame {
         // Search on Enter key
         searchField.addActionListener(e -> performSearch());
         
-        // Search button
-        searchButton = new JButton("🔍 Search");
+        // Search button with hover effects
+        searchButton = new JButton("🔍 Search") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                Color bgColor;
+                if (getModel().isPressed()) {
+                    bgColor = ACCENT_COLOR.darker();
+                } else if (getModel().isRollover()) {
+                    bgColor = ACCENT_COLOR.brighter();
+                } else {
+                    bgColor = ACCENT_COLOR;
+                }
+                
+                g2.setColor(bgColor);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
+                
+                // Draw text
+                    g2.setColor(Color.WHITE);
+                g2.setFont(getFont());
+                FontMetrics fm = g2.getFontMetrics();
+                int textX = (getWidth() - fm.stringWidth(getText())) / 2;
+                int textY = (getHeight() - fm.getHeight()) / 2 + fm.getAscent();
+                g2.drawString(getText(), textX, textY);
+                
+                g2.dispose();
+            }
+        };
         searchButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
         searchButton.setPreferredSize(new Dimension(100, 40));
-        searchButton.setBackground(TEXT_PRIMARY);
-        searchButton.setForeground(Color.WHITE);
         searchButton.setBorder(BorderFactory.createEmptyBorder());
         searchButton.setFocusPainted(false);
+        searchButton.setContentAreaFilled(false);
         searchButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         searchButton.addActionListener(e -> performSearch());
         
-        // Clear button
-        clearSearchButton = new JButton("✕ Clear");
-        clearSearchButton.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        // Clear button with hover effects
+        clearSearchButton = new JButton("✕ Clear") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                Color bgColor;
+                Color textColor;
+                if (getModel().isPressed()) {
+                    bgColor = new Color(220, 220, 220);
+                    textColor = new Color(60, 60, 60);
+                } else if (getModel().isRollover()) {
+                    bgColor = new Color(250, 250, 250);
+                    textColor = new Color(40, 40, 40);
+                } else {
+                    bgColor = new Color(240, 240, 240);
+                    textColor = new Color(80, 80, 80);
+                }
+                
+                g2.setColor(bgColor);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
+                
+                // Draw text
+                g2.setColor(textColor);
+                g2.setFont(getFont());
+                FontMetrics fm = g2.getFontMetrics();
+                int textX = (getWidth() - fm.stringWidth(getText())) / 2;
+                int textY = (getHeight() - fm.getHeight()) / 2 + fm.getAscent();
+                g2.drawString(getText(), textX, textY);
+                
+                g2.dispose();
+            }
+        };
+        clearSearchButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
         clearSearchButton.setPreferredSize(new Dimension(80, 40));
-        clearSearchButton.setBackground(new Color(240, 240, 240));
-        clearSearchButton.setForeground(Color.DARK_GRAY);
         clearSearchButton.setBorder(BorderFactory.createEmptyBorder());
         clearSearchButton.setFocusPainted(false);
+        clearSearchButton.setContentAreaFilled(false);
         clearSearchButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         clearSearchButton.addActionListener(e -> clearSearch());
         
@@ -385,7 +443,7 @@ public class DatingApp extends JFrame {
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
         return button;
     }
-
+    
     private void createContentArea() {
         cardLayout = new CardLayout();
         contentPanel = new JPanel(cardLayout);
@@ -524,16 +582,16 @@ public class DatingApp extends JFrame {
         bottomPanel.setOpaque(false);
         
         JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 40, 10));
-        actionPanel.setOpaque(false);
+            actionPanel.setOpaque(false);
 
         JButton passButton = new CircleButton("×", PASS_BUTTON_COLOR, Color.DARK_GRAY);
-        passButton.addActionListener(e -> passCurrentProfile());
-        
+            passButton.addActionListener(e -> passCurrentProfile());
+
         JButton likeButton = new CircleButton("♥", LIKE_BUTTON_COLOR, Color.WHITE);
-        likeButton.addActionListener(e -> likeCurrentProfile());
-        
-        actionPanel.add(passButton);
-        actionPanel.add(likeButton);
+            likeButton.addActionListener(e -> likeCurrentProfile());
+
+            actionPanel.add(passButton);
+            actionPanel.add(likeButton);
 
         // Profile Counter
         JLabel profileCounter = new JLabel();
@@ -608,7 +666,7 @@ public class DatingApp extends JFrame {
 
             imageLabel.setIcon(new ImageIcon(roundedImage));
 
-        } catch (Exception e) {
+                } catch (Exception e) {
             imageLabel.setIcon(createPlaceholderIcon());
             System.err.println("Could not load profile image: " + e.getMessage());
         }
@@ -647,7 +705,7 @@ public class DatingApp extends JFrame {
         textPanel.add(nameLabel);
         textPanel.add(distanceLabel);
         imageLabel.add(textPanel, BorderLayout.SOUTH);
-
+        
         return imageLabel;
     }
     
@@ -893,11 +951,11 @@ public class DatingApp extends JFrame {
     private JPanel createMatchesPanel() {
         return createUserListPanel("People You Matched", "No matches yet. Keep exploring!");
     }
-
+    
     private JPanel createMyLikesPanel() {
         return createUserListPanel("People You Liked", "You haven't liked anyone yet.");
     }
-
+    
     private JPanel createMyLikersPanel() {
         return createUserListPanel("People Who Liked You", "No one has liked you yet. Check back soon!");
     }
@@ -906,13 +964,13 @@ public class DatingApp extends JFrame {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Color.WHITE);
         panel.setBorder(new EmptyBorder(20, 20, 20, 20));
-
+        
         JLabel titleLabel = new JLabel("🔔 Notifications");
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
         titleLabel.setForeground(TEXT_PRIMARY);
         titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
         panel.add(titleLabel, BorderLayout.NORTH);
-
+        
         // List for notifications
         DefaultListModel<String> model = new DefaultListModel<>();
         JList<String> notificationList = new JList<>(model);
@@ -923,7 +981,7 @@ public class DatingApp extends JFrame {
         
         return panel;
     }
-
+    
     private JPanel createMyProfilePanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(BACKGROUND_COLOR);
@@ -954,7 +1012,7 @@ public class DatingApp extends JFrame {
 
         mainContent.add(scrollPane, BorderLayout.CENTER);
         panel.add(mainContent, BorderLayout.CENTER);
-
+        
         return panel;
     }
     
@@ -1734,7 +1792,7 @@ public class DatingApp extends JFrame {
 
     private void passCurrentProfile() {
         if (explorableProfiles != null && !explorableProfiles.isEmpty()) {
-            nextProfile();
+        nextProfile();
         }
     }
     
@@ -1769,7 +1827,7 @@ public class DatingApp extends JFrame {
             return 25; // Default age if parsing fails
         }
     }
-
+    
     private void showLikePopup(String fullName) {
         JOptionPane.showMessageDialog(this,
             "❤️ You liked " + fullName + "!\nThey will be notified of your interest.",

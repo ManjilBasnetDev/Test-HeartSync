@@ -4,6 +4,8 @@ import heartsync.model.UserProfile;
 import heartsync.model.User;
 import com.google.gson.reflect.TypeToken;
 import java.util.*;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 public class DatingDatabase {
     private static DatingDatabase instance;
@@ -457,43 +459,109 @@ public class DatingDatabase {
     // Method to clean up test users from the database
     public void removeTestUsers() {
         try {
+            // Comprehensive list of all test/demo usernames to remove
             String[] testUsernames = {
+                // Numeric test users
                 "1", "2", "3", "4", "5", "6", "7", "8", "9", "10",
-                "Sarah", "David", "Emily", "John", "Maria", "Bob", 
+                "11", "12", "13", "14", "15", "16", "17", "18", "19", "20",
+                
+                // Named test users
+                "Sarah", "David", "Emily", "John", "Maria", "Bob", "Alice", "Carol", "Emma",
                 "Alice Johnson", "Bob Smith", "Carol Williams", "David Brown", "Emma Davis",
-                "User2", "testuser", "demo", "sample"
+                "Sarah Johnson", "David Smith", "Emily Brown", "John Davis", "Maria Wilson",
+                
+                // Generic test users
+                "User1", "User2", "User3", "User4", "User5",
+                "testuser", "test", "demo", "sample", "admin", "guest",
+                "TestUser", "DemoUser", "SampleUser", "TestAccount", "DemoAccount",
+                
+                // Common demo names
+                "Jane", "Mike", "Lisa", "Tom", "Anna", "Chris", "Kate", "Mark", "Lucy", "Paul",
+                "Jane Doe", "John Doe", "Test User", "Demo User", "Sample User"
             };
             
-            System.out.println("Cleaning up test users...");
+            System.out.println("=== CLEANING UP ALL TEST/DEMO USERS ===");
+            int removedCount = 0;
             
             for (String username : testUsernames) {
                 try {
-                    // Remove from users path
-                    String userPath = USERS_PATH + "/" + username;
-                    FirebaseConfig.set(userPath, null);
+                    // Check if user exists first
+                    String encodedUsername = URLEncoder.encode(username, StandardCharsets.UTF_8);
+                    String userPath = USERS_PATH + "/" + encodedUsername;
+                    Map<String, Object> userData = FirebaseConfig.get(userPath, 
+                        new TypeToken<Map<String, Object>>(){}.getType());
                     
-                    // Remove from likes path
-                    String likesPath = LIKES_PATH + "/" + username;
-                    FirebaseConfig.set(likesPath, null);
-                    
-                    // Remove from matches path
-                    String matchesPath = MATCHES_PATH + "/" + username;
-                    FirebaseConfig.set(matchesPath, null);
-                    
-                    // Remove from notifications path
-                    String notificationsPath = NOTIFICATIONS_PATH + "/" + username;
-                    FirebaseConfig.set(notificationsPath, null);
-                    
-                    System.out.println("Removed test user: " + username);
+                    if (userData != null) {
+                        // Remove from users path
+                        FirebaseConfig.set(userPath, null);
+                        
+                        // Remove from likes path (their likes)
+                        String likesPath = LIKES_PATH + "/" + encodedUsername;
+                        FirebaseConfig.set(likesPath, null);
+                        
+                        // Remove from matches path (their matches)
+                        String matchesPath = MATCHES_PATH + "/" + encodedUsername;
+                        FirebaseConfig.set(matchesPath, null);
+                        
+                        // Remove from notifications path
+                        String notificationsPath = NOTIFICATIONS_PATH + "/" + encodedUsername;
+                        FirebaseConfig.set(notificationsPath, null);
+                        
+                        // Also remove any likes TO this user from other users
+                        removeAllLikesToUser(username);
+                        
+                        // Also remove any matches TO this user from other users
+                        removeAllMatchesToUser(username);
+                        
+                        System.out.println("✓ Removed test user: " + username);
+                        removedCount++;
+                    }
                 } catch (Exception e) {
                     // Ignore errors for non-existent users
+                    System.out.println("⚠ Could not remove " + username + ": " + e.getMessage());
                 }
             }
             
-            System.out.println("Test user cleanup completed!");
+            System.out.println("=== TEST USER CLEANUP COMPLETED ===");
+            System.out.println("Total test users removed: " + removedCount);
             
         } catch (Exception e) {
             System.err.println("Error during test user cleanup: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    // Helper method to remove all likes TO a specific user from other users
+    private void removeAllLikesToUser(String targetUsername) {
+        try {
+            Map<String, Map<String, Boolean>> allLikes = FirebaseConfig.get(LIKES_PATH,
+                new TypeToken<Map<String, Map<String, Boolean>>>(){}.getType());
+            if (allLikes != null) {
+                for (String likerUsername : allLikes.keySet()) {
+                    String encodedTarget = URLEncoder.encode(targetUsername, StandardCharsets.UTF_8);
+                    String likePath = LIKES_PATH + "/" + likerUsername + "/" + encodedTarget;
+                    FirebaseConfig.set(likePath, null);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error removing likes to user " + targetUsername + ": " + e.getMessage());
+        }
+    }
+    
+    // Helper method to remove all matches TO a specific user from other users
+    private void removeAllMatchesToUser(String targetUsername) {
+        try {
+            Map<String, Map<String, Boolean>> allMatches = FirebaseConfig.get(MATCHES_PATH,
+                new TypeToken<Map<String, Map<String, Boolean>>>(){}.getType());
+            if (allMatches != null) {
+                for (String matcherUsername : allMatches.keySet()) {
+                    String encodedTarget = URLEncoder.encode(targetUsername, StandardCharsets.UTF_8);
+                    String matchPath = MATCHES_PATH + "/" + matcherUsername + "/" + encodedTarget;
+                    FirebaseConfig.set(matchPath, null);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error removing matches to user " + targetUsername + ": " + e.getMessage());
         }
     }
 
@@ -501,11 +569,12 @@ public class DatingDatabase {
     public boolean deleteUser(String username) {
         try {
             // Remove from users path
-            String userPath = USERS_PATH + "/" + username;
+            String encodedUsernameDel = URLEncoder.encode(username, StandardCharsets.UTF_8);
+            String userPath = USERS_PATH + "/" + encodedUsernameDel;
             FirebaseConfig.set(userPath, null);
             
             // Remove from likes path (their likes)
-            String likesPath = LIKES_PATH + "/" + username;
+            String likesPath = LIKES_PATH + "/" + encodedUsernameDel;
             FirebaseConfig.set(likesPath, null);
             
             // Remove likes TO this user from others
@@ -513,13 +582,13 @@ public class DatingDatabase {
                 new TypeToken<Map<String, Map<String, Boolean>>>(){}.getType());
             if (allLikes != null) {
                 for (String likerUsername : allLikes.keySet()) {
-                    String likePath = LIKES_PATH + "/" + likerUsername + "/" + username;
+                    String likePath = LIKES_PATH + "/" + likerUsername + "/" + encodedUsernameDel;
                     FirebaseConfig.set(likePath, null);
                 }
             }
             
             // Remove from matches path (their matches)
-            String matchesPath = MATCHES_PATH + "/" + username;
+            String matchesPath = MATCHES_PATH + "/" + encodedUsernameDel;
             FirebaseConfig.set(matchesPath, null);
             
             // Remove matches TO this user from others
@@ -527,13 +596,14 @@ public class DatingDatabase {
                 new TypeToken<Map<String, Map<String, Boolean>>>(){}.getType());
             if (allMatches != null) {
                 for (String matcherUsername : allMatches.keySet()) {
-                    String matchPath = MATCHES_PATH + "/" + matcherUsername + "/" + username;
+                    String encodedTarget = URLEncoder.encode(username, StandardCharsets.UTF_8);
+                    String matchPath = MATCHES_PATH + "/" + matcherUsername + "/" + encodedTarget;
                     FirebaseConfig.set(matchPath, null);
                 }
             }
             
             // Remove from notifications path
-            String notificationsPath = NOTIFICATIONS_PATH + "/" + username;
+            String notificationsPath = NOTIFICATIONS_PATH + "/" + encodedUsernameDel;
             FirebaseConfig.set(notificationsPath, null);
             
             System.out.println("Successfully deleted user: " + username);
@@ -542,6 +612,158 @@ public class DatingDatabase {
         } catch (Exception e) {
             System.err.println("Error deleting user: " + e.getMessage());
             return false;
+        }
+    }
+    
+    // Comprehensive method to remove ALL test users from the entire system
+    public void removeAllTestUsersFromSystem() {
+        System.out.println("========================================");
+        System.out.println("STARTING COMPREHENSIVE TEST USER CLEANUP");
+        System.out.println("========================================");
+        
+        try {
+            // 1. Remove test users from dating database (profiles, likes, matches, notifications)
+            System.out.println("\n1. Cleaning up dating database...");
+            removeTestUsers();
+            
+            // 2. Remove test users from authentication system
+            System.out.println("\n2. Cleaning up authentication system...");
+            String[] testUsernames = {
+                "1", "2", "3", "4", "5", "6", "7", "8", "9", "10",
+                "11", "12", "13", "14", "15", "16", "17", "18", "19", "20",
+                "Sarah", "David", "Emily", "John", "Maria", "Bob", "Alice", "Carol", "Emma",
+                "Alice Johnson", "Bob Smith", "Carol Williams", "David Brown", "Emma Davis",
+                "Sarah Johnson", "David Smith", "Emily Brown", "John Davis", "Maria Wilson",
+                "User1", "User2", "User3", "User4", "User5",
+                "testuser", "test", "demo", "sample", "admin", "guest",
+                "TestUser", "DemoUser", "SampleUser", "TestAccount", "DemoAccount",
+                "Jane", "Mike", "Lisa", "Tom", "Anna", "Chris", "Kate", "Mark", "Lucy", "Paul",
+                "Jane Doe", "John Doe", "Test User", "Demo User", "Sample User"
+            };
+            cleanupAuthSystem(testUsernames);
+            
+            // 3. Remove test user profiles from user_details collection
+            System.out.println("\n3. Cleaning up user profile details...");
+            removeTestUserProfiles();
+            
+            // 4. Clean up any reports related to test users
+            System.out.println("\n4. Cleaning up reports...");
+            cleanupTestUserReports();
+            
+            System.out.println("\n========================================");
+            System.out.println("COMPREHENSIVE TEST USER CLEANUP COMPLETED");
+            System.out.println("All test/demo users have been removed from:");
+            System.out.println("✓ Dating profiles and interactions");
+            System.out.println("✓ Authentication system");
+            System.out.println("✓ User profile details");
+            System.out.println("✓ Reports and admin data");
+            System.out.println("========================================");
+            
+        } catch (Exception e) {
+            System.err.println("Error during comprehensive test user cleanup: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    // Helper method to remove test user profiles from user_details collection
+    private void removeTestUserProfiles() {
+        try {
+            String[] testUsernames = {
+                "1", "2", "3", "4", "5", "6", "7", "8", "9", "10",
+                "11", "12", "13", "14", "15", "16", "17", "18", "19", "20",
+                "Sarah", "David", "Emily", "John", "Maria", "Bob", "Alice", "Carol", "Emma",
+                "Alice Johnson", "Bob Smith", "Carol Williams", "David Brown", "Emma Davis",
+                "Sarah Johnson", "David Smith", "Emily Brown", "John Davis", "Maria Wilson",
+                "User1", "User2", "User3", "User4", "User5",
+                "testuser", "test", "demo", "sample", "admin", "guest",
+                "TestUser", "DemoUser", "SampleUser", "TestAccount", "DemoAccount",
+                "Jane", "Mike", "Lisa", "Tom", "Anna", "Chris", "Kate", "Mark", "Lucy", "Paul",
+                "Jane Doe", "John Doe", "Test User", "Demo User", "Sample User"
+            };
+            
+            int removedCount = 0;
+            for (String username : testUsernames) {
+                try {
+                    String encodedUser = URLEncoder.encode(username, StandardCharsets.UTF_8);
+                    String profilePath = "user_details/" + encodedUser;
+                    FirebaseConfig.set(profilePath, null);
+                    System.out.println("✓ Removed profile for: " + username);
+                    removedCount++;
+                } catch (Exception e) {
+                    // Ignore errors for non-existent profiles
+                }
+            }
+            
+            System.out.println("Total user profiles removed: " + removedCount);
+            
+        } catch (Exception e) {
+            System.err.println("Error removing test user profiles: " + e.getMessage());
+        }
+    }
+    
+    // Helper method to clean up reports related to test users
+    private void cleanupTestUserReports() {
+        try {
+            String[] testUsernames = {
+                "1", "2", "3", "4", "5", "6", "7", "8", "9", "10",
+                "11", "12", "13", "14", "15", "16", "17", "18", "19", "20",
+                "Sarah", "David", "Emily", "John", "Maria", "Bob", "Alice", "Carol", "Emma",
+                "Alice Johnson", "Bob Smith", "Carol Williams", "David Brown", "Emma Davis",
+                "Sarah Johnson", "David Smith", "Emily Brown", "John Davis", "Maria Wilson",
+                "User1", "User2", "User3", "User4", "User5",
+                "testuser", "test", "demo", "sample", "admin", "guest",
+                "TestUser", "DemoUser", "SampleUser", "TestAccount", "DemoAccount",
+                "Jane", "Mike", "Lisa", "Tom", "Anna", "Chris", "Kate", "Mark", "Lucy", "Paul",
+                "Jane Doe", "John Doe", "Test User", "Demo User", "Sample User"
+            };
+            
+            int removedCount = 0;
+            for (String username : testUsernames) {
+                try {
+                    String encodedUser = URLEncoder.encode(username, StandardCharsets.UTF_8);
+                    String reportPath = "reports/" + encodedUser;
+                    FirebaseConfig.set(reportPath, null);
+                    removedCount++;
+                } catch (Exception e) {
+                    // Ignore errors for non-existent reports
+                }
+            }
+            
+            System.out.println("Total reports cleaned up: " + removedCount);
+            
+        } catch (Exception e) {
+            System.err.println("Error cleaning up test user reports: " + e.getMessage());
+        }
+    }
+
+    // Method to clean up authentication system
+    private void cleanupAuthSystem(String[] testUsernames) {
+        try {
+            int removedCount = 0;
+            Map<String, heartsync.model.User> users = FirebaseConfig.get(USERS_PATH,
+                new TypeToken<Map<String, heartsync.model.User>>(){}.getType());
+            if (users != null) {
+                for (Map.Entry<String, heartsync.model.User> entry : users.entrySet()) {
+                    String userId = entry.getKey();
+                    heartsync.model.User userObj = entry.getValue();
+                    if (userObj == null || userObj.getUsername() == null) continue;
+                    for (String testName : testUsernames) {
+                        if (userObj.getUsername().equals(testName)) {
+                            try {
+                                FirebaseConfig.set(USERS_PATH + "/" + userId, null);
+                                removedCount++;
+                                System.out.println("✓ Removed auth user: " + testName + " (ID: " + userId + ")");
+                            } catch (Exception ex) {
+                                System.out.println("⚠ Could not remove auth user " + testName + ": " + ex.getMessage());
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+            System.out.println("Total auth users removed: " + removedCount);
+        } catch (Exception e) {
+            System.err.println("Error cleaning up auth system: " + e.getMessage());
         }
     }
 } 

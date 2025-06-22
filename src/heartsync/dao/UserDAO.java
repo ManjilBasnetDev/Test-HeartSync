@@ -209,4 +209,70 @@ public class UserDAO {
         }
         return false;
     }
+    
+    // Method to remove all test/demo users from the main users collection
+    public void removeAllTestUsers() {
+        try {
+            // Comprehensive list of all test/demo usernames to remove
+            String[] testUsernames = {
+                // Numeric test users
+                "1", "2", "3", "4", "5", "6", "7", "8", "9", "10",
+                "11", "12", "13", "14", "15", "16", "17", "18", "19", "20",
+                
+                // Named test users
+                "Sarah", "David", "Emily", "John", "Maria", "Bob", "Alice", "Carol", "Emma",
+                "Alice Johnson", "Bob Smith", "Carol Williams", "David Brown", "Emma Davis",
+                "Sarah Johnson", "David Smith", "Emily Brown", "John Davis", "Maria Wilson",
+                
+                // Generic test users
+                "User1", "User2", "User3", "User4", "User5",
+                "testuser", "test", "demo", "sample", "admin", "guest",
+                "TestUser", "DemoUser", "SampleUser", "TestAccount", "DemoAccount",
+                
+                // Common demo names
+                "Jane", "Mike", "Lisa", "Tom", "Anna", "Chris", "Kate", "Mark", "Lucy", "Paul",
+                "Jane Doe", "John Doe", "Test User", "Demo User", "Sample User"
+            };
+            
+            System.out.println("=== CLEANING UP TEST USERS FROM AUTH SYSTEM ===");
+            int removedCount = 0;
+            
+            Map<String, User> users = FirebaseConfig.get("users", new TypeToken<Map<String, User>>(){}.getType());
+            if (users != null) {
+                // Create a list of user IDs to remove
+                java.util.List<String> userIdsToRemove = new java.util.ArrayList<>();
+                
+                for (Map.Entry<String, User> entry : users.entrySet()) {
+                    User user = entry.getValue();
+                    if (user != null && user.getUsername() != null) {
+                        for (String testUsername : testUsernames) {
+                            if (user.getUsername().equals(testUsername)) {
+                                userIdsToRemove.add(entry.getKey());
+                                System.out.println("✓ Found test user to remove: " + testUsername + " (ID: " + entry.getKey() + ")");
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                // Remove the test users
+                for (String userId : userIdsToRemove) {
+                    try {
+                        FirebaseConfig.set(FirebaseConfig.getUserPath(userId), null);
+                        removedCount++;
+                        System.out.println("✓ Removed test user with ID: " + userId);
+                    } catch (Exception e) {
+                        System.out.println("⚠ Could not remove user ID " + userId + ": " + e.getMessage());
+                    }
+                }
+            }
+            
+            System.out.println("=== AUTH SYSTEM TEST USER CLEANUP COMPLETED ===");
+            System.out.println("Total test users removed from auth system: " + removedCount);
+            
+        } catch (Exception e) {
+            System.err.println("Error during auth system test user cleanup: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
 }

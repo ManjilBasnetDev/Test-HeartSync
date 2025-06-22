@@ -106,7 +106,8 @@ public class DatabaseManagerProfile {
             if (username == null || username.trim().isEmpty()) {
                 return false;
             }
-            String path = "user_details/" + username;
+            String encodedUsername = java.net.URLEncoder.encode(username, java.nio.charset.StandardCharsets.UTF_8);
+            String path = "user_details/" + encodedUsername;
             FirebaseConfig.set(path, null);
             return true;
         } catch (Exception e) {

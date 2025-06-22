@@ -172,25 +172,69 @@ public class DeleteUserPanel extends JPanel {
     private void handleDelete(User user, JPanel userPanel) {
         int result = JOptionPane.showConfirmDialog(this,
             "Are you sure you want to permanently delete the account for '" + user.getUsername() + "'?\n" +
+            "This will remove:\n" +
+            "• User profile and all personal data\n" +
+            "• All likes given and received\n" +
+            "• All matches and conversations\n" +
+            "• All notifications\n\n" +
             "This action cannot be undone.",
             "Confirm Account Deletion",
             JOptionPane.YES_NO_OPTION,
             JOptionPane.WARNING_MESSAGE);
             
         if (result == JOptionPane.YES_OPTION) {
-            if (userDAO.deleteUser(user.getUsername())) {
-                // Remove the panel with animation
-                fadeOutPanel(userPanel);
-                JOptionPane.showMessageDialog(this,
-                    "User account '" + user.getUsername() + "' has been deleted.",
-                    "Success",
-                    JOptionPane.INFORMATION_MESSAGE);
-            } else {
-                JOptionPane.showMessageDialog(this,
-                    "Failed to delete user account. Please try again.",
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE);
-            }
+            // Show progress dialog
+            JDialog progressDialog = new JDialog((JFrame)SwingUtilities.getWindowAncestor(this), "Deleting User", true);
+            JLabel progressLabel = new JLabel("Deleting user account and all associated data...");
+            progressLabel.setBorder(new EmptyBorder(20, 20, 20, 20));
+            progressDialog.add(progressLabel);
+            progressDialog.pack();
+            progressDialog.setLocationRelativeTo(this);
+            
+            // Perform deletion in background thread
+            SwingWorker<Boolean, Void> deleteWorker = new SwingWorker<Boolean, Void>() {
+                @Override
+                protected Boolean doInBackground() throws Exception {
+                    return userDAO.deleteUser(user.getUsername());
+                }
+                
+                @Override
+                protected void done() {
+                    progressDialog.dispose();
+                    try {
+                        boolean success = get();
+                        if (success) {
+                            // Remove the panel with animation
+                            fadeOutPanel(userPanel);
+                            JOptionPane.showMessageDialog(DeleteUserPanel.this,
+                                "User account '" + user.getUsername() + "' and all associated data have been deleted successfully.",
+                                "Success",
+                                JOptionPane.INFORMATION_MESSAGE);
+                        } else {
+                            String errorMessage = "Failed to delete user account.";
+                            if (userDAO.getLastError() != null && !userDAO.getLastError().isEmpty()) {
+                                errorMessage += "\nError: " + userDAO.getLastError();
+                            }
+                            errorMessage += "\n\nPlease try again or check the console for more details.";
+                            
+                            JOptionPane.showMessageDialog(DeleteUserPanel.this,
+                                errorMessage,
+                                "Error",
+                                JOptionPane.ERROR_MESSAGE);
+                        }
+                    } catch (Exception e) {
+                        progressDialog.dispose();
+                        JOptionPane.showMessageDialog(DeleteUserPanel.this,
+                            "An unexpected error occurred while deleting the user:\n" + e.getMessage(),
+                            "Error",
+                            JOptionPane.ERROR_MESSAGE);
+                        e.printStackTrace();
+                    }
+                }
+            };
+            
+            deleteWorker.execute();
+            progressDialog.setVisible(true);
         }
     }
     

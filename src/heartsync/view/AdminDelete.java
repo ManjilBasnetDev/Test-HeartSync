@@ -4,7 +4,7 @@
  */
 package heartsync.view;
 
-import java.awt.CardLayout
+import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Dimension;

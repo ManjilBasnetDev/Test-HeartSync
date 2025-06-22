@@ -181,4 +181,32 @@ public class UserDAO {
             e.printStackTrace();
         }
     }
+
+    // Update user
+    public boolean updateUser(User user) {
+        try {
+            if (user != null && user.getUserId() != null) {
+                FirebaseConfig.put(FirebaseConfig.getUserPath(user.getUserId()), user);
+                return true;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    // Delete user by username
+    public boolean deleteUser(String username) {
+        try {
+            User user = getUserByUsername(username);
+            if (user != null && user.getUserId() != null) {
+                // Delete from users collection
+                FirebaseConfig.set(FirebaseConfig.getUserPath(user.getUserId()), null);
+                return true;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
 }

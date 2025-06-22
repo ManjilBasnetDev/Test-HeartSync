@@ -453,4 +453,95 @@ public class DatingDatabase {
             return null;
         }
     }
+    
+    // Method to clean up test users from the database
+    public void removeTestUsers() {
+        try {
+            String[] testUsernames = {
+                "1", "2", "3", "4", "5", "6", "7", "8", "9", "10",
+                "Sarah", "David", "Emily", "John", "Maria", "Bob", 
+                "Alice Johnson", "Bob Smith", "Carol Williams", "David Brown", "Emma Davis",
+                "User2", "testuser", "demo", "sample"
+            };
+            
+            System.out.println("Cleaning up test users...");
+            
+            for (String username : testUsernames) {
+                try {
+                    // Remove from users path
+                    String userPath = USERS_PATH + "/" + username;
+                    FirebaseConfig.set(userPath, null);
+                    
+                    // Remove from likes path
+                    String likesPath = LIKES_PATH + "/" + username;
+                    FirebaseConfig.set(likesPath, null);
+                    
+                    // Remove from matches path
+                    String matchesPath = MATCHES_PATH + "/" + username;
+                    FirebaseConfig.set(matchesPath, null);
+                    
+                    // Remove from notifications path
+                    String notificationsPath = NOTIFICATIONS_PATH + "/" + username;
+                    FirebaseConfig.set(notificationsPath, null);
+                    
+                    System.out.println("Removed test user: " + username);
+                } catch (Exception e) {
+                    // Ignore errors for non-existent users
+                }
+            }
+            
+            System.out.println("Test user cleanup completed!");
+            
+        } catch (Exception e) {
+            System.err.println("Error during test user cleanup: " + e.getMessage());
+        }
+    }
+
+    // Method to delete a user completely from the dating database
+    public boolean deleteUser(String username) {
+        try {
+            // Remove from users path
+            String userPath = USERS_PATH + "/" + username;
+            FirebaseConfig.set(userPath, null);
+            
+            // Remove from likes path (their likes)
+            String likesPath = LIKES_PATH + "/" + username;
+            FirebaseConfig.set(likesPath, null);
+            
+            // Remove likes TO this user from others
+            Map<String, Map<String, Boolean>> allLikes = FirebaseConfig.get(LIKES_PATH,
+                new TypeToken<Map<String, Map<String, Boolean>>>(){}.getType());
+            if (allLikes != null) {
+                for (String likerUsername : allLikes.keySet()) {
+                    String likePath = LIKES_PATH + "/" + likerUsername + "/" + username;
+                    FirebaseConfig.set(likePath, null);
+                }
+            }
+            
+            // Remove from matches path (their matches)
+            String matchesPath = MATCHES_PATH + "/" + username;
+            FirebaseConfig.set(matchesPath, null);
+            
+            // Remove matches TO this user from others
+            Map<String, Map<String, Boolean>> allMatches = FirebaseConfig.get(MATCHES_PATH,
+                new TypeToken<Map<String, Map<String, Boolean>>>(){}.getType());
+            if (allMatches != null) {
+                for (String matcherUsername : allMatches.keySet()) {
+                    String matchPath = MATCHES_PATH + "/" + matcherUsername + "/" + username;
+                    FirebaseConfig.set(matchPath, null);
+                }
+            }
+            
+            // Remove from notifications path
+            String notificationsPath = NOTIFICATIONS_PATH + "/" + username;
+            FirebaseConfig.set(notificationsPath, null);
+            
+            System.out.println("Successfully deleted user: " + username);
+            return true;
+            
+        } catch (Exception e) {
+            System.err.println("Error deleting user: " + e.getMessage());
+            return false;
+        }
+    }
 } 

@@ -97,4 +97,21 @@ public class DatabaseManagerProfile {
             return null;
         }
     }
+
+    /**
+     * Delete a user profile from Firebase.
+     */
+    public boolean deleteUserProfile(String username) {
+        try {
+            if (username == null || username.trim().isEmpty()) {
+                return false;
+            }
+            String path = "user_details/" + username;
+            FirebaseConfig.set(path, null);
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 } 

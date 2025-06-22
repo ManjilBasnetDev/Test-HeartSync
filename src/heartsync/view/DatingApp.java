@@ -57,11 +57,11 @@ public class DatingApp extends JFrame {
     private DatingDatabase database;
     
     // Navigation buttons
-    private JButton myLikesBtn, matchesBtn, chatBtn, myLikersBtn, notificationsBtn, logoutBtn, exploreBtn;
+    private JButton myLikesBtn, matchesBtn, chatBtn, myLikersBtn, notificationsBtn, myProfileBtn, logoutBtn, exploreBtn;
     private JButton activeButton;
     
     // Content panels
-    private JPanel chatPanel, matchesPanel, myLikesPanel, myLikersPanel, notificationsPanel, profilePanel, explorePanel;
+    private JPanel chatPanel, matchesPanel, myLikesPanel, myLikersPanel, notificationsPanel, myProfilePanel, profilePanel, explorePanel;
     
     // Current profile index for explore
     private List<UserProfile> explorableProfiles;
@@ -126,6 +126,7 @@ public class DatingApp extends JFrame {
         chatBtn = createNavButton("Chat");
         myLikersBtn = createNavButton("My Likers");
         notificationsBtn = createNavButton("Notifications");
+        myProfileBtn = createNavButton("My Profile");
         logoutBtn = createNavButton("Log Out");
 
         navigationPanel.add(exploreBtn);
@@ -134,6 +135,7 @@ public class DatingApp extends JFrame {
         navigationPanel.add(chatBtn);
         navigationPanel.add(myLikersBtn);
         navigationPanel.add(notificationsBtn);
+        navigationPanel.add(myProfileBtn);
         navigationPanel.add(logoutBtn);
 
         mainPanel.add(navigationPanel, BorderLayout.NORTH);
@@ -165,6 +167,7 @@ public class DatingApp extends JFrame {
         myLikesPanel = createMyLikesPanel();
         myLikersPanel = createMyLikersPanel();
         notificationsPanel = createNotificationsPanel();
+        myProfilePanel = createMyProfilePanel();
         profilePanel = createProfilePanel();
         
         // Add panels to card layout
@@ -174,6 +177,7 @@ public class DatingApp extends JFrame {
         contentPanel.add(myLikesPanel, "MY_LIKES");
         contentPanel.add(myLikersPanel, "MY_LIKERS");
         contentPanel.add(notificationsPanel, "NOTIFICATIONS");
+        contentPanel.add(myProfilePanel, "MY_PROFILE");
         contentPanel.add(profilePanel, "PROFILE");
         
         mainPanel.add(contentPanel, BorderLayout.CENTER);
@@ -630,8 +634,17 @@ public class DatingApp extends JFrame {
             case "likers":
                 JButton likeBackButton = createModernButton("Like Back", SUCCESS_COLOR);
                 likeBackButton.addActionListener(e -> {
-                    database.likeUser(currentUsername, profile.getUsername());
-                    loadUserList(myLikersPanel, database.getMyLikers(currentUsername), "likers");
+                    boolean success = database.likeUser(currentUsername, profile.getUsername());
+                    if (success) {
+                        // Check if it's a match
+                        if (database.isMatched(currentUsername, profile.getUsername())) {
+                            showMatchPopup(profile.getFullName());
+                        } else {
+                            showLikePopup(profile.getFullName());
+                        }
+                        // Refresh the My Likers panel
+                        loadUserList(myLikersPanel, database.getMyLikers(currentUsername), "likers");
+                    }
                 });
                 buttonPanel.add(likeBackButton);
                 break;
@@ -677,6 +690,40 @@ public class DatingApp extends JFrame {
         scrollPane.setBorder(null);
         panel.add(scrollPane, BorderLayout.CENTER);
         
+        return panel;
+    }
+
+    private JPanel createMyProfilePanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(BACKGROUND_COLOR);
+        panel.setBorder(new EmptyBorder(30, 40, 30, 40));
+
+        // Header - will be updated with user's name when panel is shown
+        JLabel headerLabel = new JLabel("👤 My Profile", SwingConstants.CENTER);
+        headerLabel.setFont(new Font("Segoe UI", Font.BOLD, 32));
+        headerLabel.setForeground(TEXT_PRIMARY);
+        headerLabel.setBorder(new EmptyBorder(0, 0, 30, 0));
+        panel.add(headerLabel, BorderLayout.NORTH);
+
+        // Main content with scroll
+        JPanel mainContent = new JPanel(new BorderLayout());
+        mainContent.setOpaque(false);
+
+        // Profile content panel
+        JPanel profileContent = new JPanel();
+        profileContent.setLayout(new BoxLayout(profileContent, BoxLayout.Y_AXIS));
+        profileContent.setOpaque(false);
+
+        // This will be populated when the panel is shown
+        JScrollPane scrollPane = new JScrollPane(profileContent);
+        scrollPane.setOpaque(false);
+        scrollPane.getViewport().setOpaque(false);
+        scrollPane.setBorder(null);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+
+        mainContent.add(scrollPane, BorderLayout.CENTER);
+        panel.add(mainContent, BorderLayout.CENTER);
+
         return panel;
     }
     
@@ -753,7 +800,41 @@ public class DatingApp extends JFrame {
     
     private void showChat() {
         setActiveButton(chatBtn);
-        cardLayout.show(contentPanel, "CHAT");
+        // Get user's matches and show them directly
+        List<UserProfile> matches = database.getMatches(currentUsername);
+        if (matches.isEmpty()) {
+            JOptionPane.showMessageDialog(this, 
+                "You have no matches yet!\nGo to Explore to find people to like.", 
+                "No Matches", 
+                JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            // Show a dialog to select who to chat with
+            String[] matchNames = matches.stream()
+                .map(UserProfile::getFullName)
+                .toArray(String[]::new);
+            
+            String selectedMatch = (String) JOptionPane.showInputDialog(
+                this,
+                "Select someone to chat with:",
+                "Start Chat",
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                matchNames,
+                matchNames[0]
+            );
+            
+            if (selectedMatch != null) {
+                // Find the selected user and open chat
+                UserProfile selectedUser = matches.stream()
+                    .filter(user -> user.getFullName().equals(selectedMatch))
+                    .findFirst()
+                    .orElse(null);
+                
+                if (selectedUser != null) {
+                    new ChatSystem(currentUsername, selectedUser.getUsername()).setVisible(true);
+                }
+            }
+        }
     }
     
     private void showMatches() {
@@ -779,6 +860,12 @@ public class DatingApp extends JFrame {
         loadNotifications();
         cardLayout.show(contentPanel, "NOTIFICATIONS");
     }
+
+    private void showMyProfile() {
+        setActiveButton(myProfileBtn);
+        refreshMyProfilePanel();
+        cardLayout.show(contentPanel, "MY_PROFILE");
+    }
     
     private void showProfile() {
         setActiveButton(null); // No button is active for the profile page itself
@@ -786,6 +873,538 @@ public class DatingApp extends JFrame {
         cardLayout.show(contentPanel, "PROFILE");
     }
     
+    private void refreshMyProfilePanel() {
+        // Get current user profile and populate the panel
+        UserProfile userProfile = database.getUserProfile(currentUsername);
+        if (userProfile != null) {
+            // Update header with user's full name
+            JLabel headerLabel = (JLabel) myProfilePanel.getComponent(0);
+            String displayName = (userProfile.getFullName() != null && !userProfile.getFullName().isEmpty()) 
+                ? userProfile.getFullName() : currentUsername;
+            headerLabel.setText("👤 " + displayName);
+            
+            // Navigate through the panel structure correctly
+            JPanel mainContent = (JPanel) myProfilePanel.getComponent(1); // mainContent panel
+            JScrollPane scrollPane = (JScrollPane) mainContent.getComponent(0); // scroll pane inside mainContent
+            JPanel profileContent = (JPanel) scrollPane.getViewport().getView();
+            
+            profileContent.removeAll();
+            
+            // Create beautiful profile display with only filled information
+            createDetailedProfileView(profileContent, userProfile);
+            
+            profileContent.revalidate();
+            profileContent.repaint();
+        }
+    }
+
+    private void createDetailedProfileView(JPanel container, UserProfile profile) {
+        container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
+        
+        // Profile picture section
+        JPanel picSection = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        picSection.setOpaque(false);
+        picSection.setBorder(new EmptyBorder(0, 0, 30, 0));
+        
+        JLabel picLabel = new JLabel();
+        picLabel.setPreferredSize(new Dimension(150, 150));
+        picLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        
+        try {
+            if (profile.getProfilePicPath() != null && !profile.getProfilePicPath().isEmpty()) {
+                ImageIcon icon = new ImageIcon(profile.getProfilePicPath());
+                Image img = icon.getImage().getScaledInstance(150, 150, Image.SCALE_SMOOTH);
+                
+                // Create rounded image
+                BufferedImage roundedImage = new BufferedImage(150, 150, BufferedImage.TYPE_INT_ARGB);
+                Graphics2D g2d = roundedImage.createGraphics();
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2d.setClip(new java.awt.geom.Ellipse2D.Float(0, 0, 150, 150));
+                g2d.drawImage(img, 0, 0, null);
+                g2d.dispose();
+                
+                picLabel.setIcon(new ImageIcon(roundedImage));
+            } else {
+                picLabel.setIcon(createPlaceholderIcon());
+            }
+        } catch (Exception e) {
+            picLabel.setIcon(createPlaceholderIcon());
+        }
+        
+        picSection.add(picLabel);
+        container.add(picSection);
+        
+        // Basic info card - only show filled information
+        java.util.List<String[]> basicInfo = new java.util.ArrayList<>();
+        if (profile.getFullName() != null && !profile.getFullName().isEmpty()) {
+            basicInfo.add(new String[]{"Full Name", profile.getFullName()});
+        }
+        if (profile.getUsername() != null && !profile.getUsername().isEmpty()) {
+            basicInfo.add(new String[]{"Username", profile.getUsername()});
+        }
+        if (profile.getDateOfBirth() != null && !profile.getDateOfBirth().isEmpty()) {
+            basicInfo.add(new String[]{"Age", String.valueOf(calculateAge(profile.getDateOfBirth()))});
+            basicInfo.add(new String[]{"Date of Birth", profile.getDateOfBirth()});
+        }
+        if (profile.getGender() != null && !profile.getGender().isEmpty()) {
+            basicInfo.add(new String[]{"Gender", profile.getGender()});
+        }
+        if (!basicInfo.isEmpty()) {
+            container.add(createInfoCard("Basic Information", basicInfo.toArray(new String[0][])));
+        }
+        
+        // Contact info card - only show filled information
+        java.util.List<String[]> contactInfo = new java.util.ArrayList<>();
+        if (profile.getEmail() != null && !profile.getEmail().isEmpty()) {
+            contactInfo.add(new String[]{"Email", profile.getEmail()});
+        }
+        if (profile.getPhoneNumber() != null && !profile.getPhoneNumber().isEmpty()) {
+            contactInfo.add(new String[]{"Phone", profile.getPhoneNumber()});
+        }
+        if (profile.getCountry() != null && !profile.getCountry().isEmpty()) {
+            contactInfo.add(new String[]{"Country", profile.getCountry()});
+        }
+        if (profile.getAddress() != null && !profile.getAddress().isEmpty()) {
+            contactInfo.add(new String[]{"Address", profile.getAddress()});
+        }
+        if (!contactInfo.isEmpty()) {
+            container.add(createInfoCard("Contact Information", contactInfo.toArray(new String[0][])));
+        }
+        
+        // Personal details card - only show filled information
+        java.util.List<String[]> personalInfo = new java.util.ArrayList<>();
+        if (profile.getHeight() > 0) {
+            personalInfo.add(new String[]{"Height", profile.getHeight() + " cm"});
+        }
+        if (profile.getWeight() > 0) {
+            personalInfo.add(new String[]{"Weight", profile.getWeight() + " kg"});
+        }
+        if (profile.getEducation() != null && !profile.getEducation().isEmpty()) {
+            personalInfo.add(new String[]{"Education", profile.getEducation()});
+        }
+        if (profile.getOccupation() != null && !profile.getOccupation().isEmpty()) {
+            personalInfo.add(new String[]{"Occupation", profile.getOccupation()});
+        }
+        if (!personalInfo.isEmpty()) {
+            container.add(createInfoCard("Personal Details", personalInfo.toArray(new String[0][])));
+        }
+        
+        // About me section
+        if (profile.getAboutMe() != null && !profile.getAboutMe().isEmpty()) {
+            container.add(createTextCard("About Me", profile.getAboutMe()));
+        }
+        
+        // Hobbies section
+        if (profile.getHobbies() != null && !profile.getHobbies().isEmpty()) {
+            container.add(createHobbiesCard("Hobbies & Interests", profile.getHobbies()));
+        }
+        
+        // Relationship preferences - only show filled information
+        java.util.List<String[]> relationshipInfo = new java.util.ArrayList<>();
+        if (profile.getRelationshipGoal() != null && !profile.getRelationshipGoal().isEmpty()) {
+            relationshipInfo.add(new String[]{"Looking for", profile.getRelationshipGoal()});
+        }
+        if (profile.getReligion() != null && !profile.getReligion().isEmpty()) {
+            relationshipInfo.add(new String[]{"Religion", profile.getReligion()});
+        }
+        if (profile.getEthnicity() != null && !profile.getEthnicity().isEmpty()) {
+            relationshipInfo.add(new String[]{"Ethnicity", profile.getEthnicity()});
+        }
+        if (profile.getPreferences() != null && !profile.getPreferences().isEmpty()) {
+            relationshipInfo.add(new String[]{"Interested in", profile.getPreferences()});
+        }
+        if (!relationshipInfo.isEmpty()) {
+            container.add(createInfoCard("Relationship Preferences", relationshipInfo.toArray(new String[0][])));
+        }
+        
+        // Action buttons - create as a card for better visibility
+        JPanel buttonCard = new JPanel(new BorderLayout());
+        buttonCard.setBackground(Color.WHITE);
+        buttonCard.setBorder(BorderFactory.createCompoundBorder(
+            new RoundedBorder(new Color(230, 230, 230)),
+            new EmptyBorder(20, 25, 20, 25)
+        ));
+        
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 0));
+        buttonPanel.setOpaque(false);
+        
+        // Edit Profile Button - using custom painted button
+        JButton editBtn = new JButton("✏️ Edit Profile") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                // Choose color based on state
+                Color bgColor = TEXT_PRIMARY; // Pink theme color
+                if (getModel().isPressed()) {
+                    bgColor = TEXT_PRIMARY.darker().darker();
+                } else if (getModel().isRollover()) {
+                    bgColor = TEXT_PRIMARY.darker();
+                }
+                
+                // Paint background with rounded corners
+                g2.setColor(bgColor);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+                
+                // Paint border
+                g2.setColor(bgColor.darker());
+                g2.drawRoundRect(0, 0, getWidth()-1, getHeight()-1, 10, 10);
+                
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        editBtn.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        editBtn.setForeground(Color.WHITE);
+        editBtn.setContentAreaFilled(false);
+        editBtn.setBorderPainted(false);
+        editBtn.setFocusPainted(false);
+        editBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        editBtn.setPreferredSize(new Dimension(180, 45));
+        
+        editBtn.addActionListener(e -> {
+            UserProfileController controller = new UserProfileController(profile, currentUsername);
+            new ProfileSetupView(controller).setVisible(true);
+        });
+        
+        // Delete Account Button - using custom painted button
+        JButton deleteBtn = new JButton("🗑️ Delete Account") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                // Choose color based on state
+                Color bgColor = new Color(220, 53, 69); // Red color
+                if (getModel().isPressed()) {
+                    bgColor = bgColor.darker().darker();
+                } else if (getModel().isRollover()) {
+                    bgColor = bgColor.darker();
+                }
+                
+                // Paint background with rounded corners
+                g2.setColor(bgColor);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+                
+                // Paint border
+                g2.setColor(bgColor.darker());
+                g2.drawRoundRect(0, 0, getWidth()-1, getHeight()-1, 10, 10);
+                
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        deleteBtn.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        deleteBtn.setForeground(Color.WHITE);
+        deleteBtn.setContentAreaFilled(false);
+        deleteBtn.setBorderPainted(false);
+        deleteBtn.setFocusPainted(false);
+        deleteBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        deleteBtn.setPreferredSize(new Dimension(180, 45));
+        
+        deleteBtn.addActionListener(e -> showDeleteAccountDialog());
+        
+        buttonPanel.add(editBtn);
+        buttonPanel.add(deleteBtn);
+        buttonCard.add(buttonPanel, BorderLayout.CENTER);
+        
+        // Add margin wrapper
+        JPanel buttonWrapper = new JPanel(new BorderLayout());
+        buttonWrapper.setOpaque(false);
+        buttonWrapper.setBorder(new EmptyBorder(0, 0, 30, 0)); // Add bottom margin
+        buttonWrapper.add(buttonCard, BorderLayout.CENTER);
+        
+        container.add(buttonWrapper);
+    }
+    
+    private JPanel createInfoCard(String title, String[][] data) {
+        JPanel card = new JPanel(new BorderLayout());
+        card.setBackground(Color.WHITE);
+        card.setBorder(BorderFactory.createCompoundBorder(
+            new RoundedBorder(new Color(230, 230, 230)),
+            new EmptyBorder(20, 25, 20, 25)
+        ));
+        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, card.getPreferredSize().height));
+        
+        // Title
+        JLabel titleLabel = new JLabel(title);
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        titleLabel.setForeground(TEXT_PRIMARY);
+        titleLabel.setBorder(new EmptyBorder(0, 0, 15, 0));
+        card.add(titleLabel, BorderLayout.NORTH);
+        
+        // Content
+        JPanel content = new JPanel(new GridBagLayout());
+        content.setOpaque(false);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.insets = new Insets(5, 0, 5, 20);
+        
+        for (int i = 0; i < data.length; i++) {
+            gbc.gridx = 0;
+            gbc.gridy = i;
+            gbc.weightx = 0;
+            
+            JLabel keyLabel = new JLabel(data[i][0] + ":");
+            keyLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+            keyLabel.setForeground(TEXT_SECONDARY);
+            content.add(keyLabel, gbc);
+            
+            gbc.gridx = 1;
+            gbc.weightx = 1;
+            
+            JLabel valueLabel = new JLabel(data[i][1] != null ? data[i][1] : "Not specified");
+            valueLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+            valueLabel.setForeground(Color.BLACK);
+            content.add(valueLabel, gbc);
+        }
+        
+        card.add(content, BorderLayout.CENTER);
+        
+        // Add margin
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setOpaque(false);
+        wrapper.setBorder(new EmptyBorder(0, 0, 20, 0));
+        wrapper.add(card, BorderLayout.CENTER);
+        
+        return wrapper;
+    }
+    
+    private JPanel createTextCard(String title, String text) {
+        JPanel card = new JPanel(new BorderLayout());
+        card.setBackground(Color.WHITE);
+        card.setBorder(BorderFactory.createCompoundBorder(
+            new RoundedBorder(new Color(230, 230, 230)),
+            new EmptyBorder(20, 25, 20, 25)
+        ));
+        
+        // Title
+        JLabel titleLabel = new JLabel(title);
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        titleLabel.setForeground(TEXT_PRIMARY);
+        titleLabel.setBorder(new EmptyBorder(0, 0, 15, 0));
+        card.add(titleLabel, BorderLayout.NORTH);
+        
+        // Content
+        JTextArea textArea = new JTextArea(text);
+        textArea.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        textArea.setForeground(Color.BLACK);
+        textArea.setOpaque(false);
+        textArea.setEditable(false);
+        textArea.setLineWrap(true);
+        textArea.setWrapStyleWord(true);
+        card.add(textArea, BorderLayout.CENTER);
+        
+        // Add margin
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setOpaque(false);
+        wrapper.setBorder(new EmptyBorder(0, 0, 20, 0));
+        wrapper.add(card, BorderLayout.CENTER);
+        
+        return wrapper;
+    }
+    
+    private JPanel createHobbiesCard(String title, java.util.List<String> hobbies) {
+        JPanel card = new JPanel(new BorderLayout());
+        card.setBackground(Color.WHITE);
+        card.setBorder(BorderFactory.createCompoundBorder(
+            new RoundedBorder(new Color(230, 230, 230)),
+            new EmptyBorder(20, 25, 20, 25)
+        ));
+        
+        // Title
+        JLabel titleLabel = new JLabel(title);
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        titleLabel.setForeground(TEXT_PRIMARY);
+        titleLabel.setBorder(new EmptyBorder(0, 0, 15, 0));
+        card.add(titleLabel, BorderLayout.NORTH);
+        
+        // Hobbies panel
+        JPanel hobbiesPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
+        hobbiesPanel.setOpaque(false);
+        
+        for (String hobby : hobbies) {
+            JLabel hobbyTag = new JLabel(hobby);
+            hobbyTag.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+            hobbyTag.setForeground(ACCENT_COLOR);
+            hobbyTag.setBackground(new Color(255, 240, 245));
+            hobbyTag.setOpaque(true);
+            hobbyTag.setBorder(new EmptyBorder(8, 12, 8, 12));
+            hobbiesPanel.add(hobbyTag);
+        }
+        
+        card.add(hobbiesPanel, BorderLayout.CENTER);
+        
+        // Add margin
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setOpaque(false);
+        wrapper.setBorder(new EmptyBorder(0, 0, 20, 0));
+        wrapper.add(card, BorderLayout.CENTER);
+        
+                return wrapper;
+    }
+
+    private void showDeleteAccountDialog() {
+        // Create custom dialog for password confirmation
+        JDialog dialog = new JDialog(this, "Delete Account", true);
+        dialog.setSize(400, 250);
+        dialog.setLocationRelativeTo(this);
+        dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        
+        JPanel mainPanel = new JPanel(new BorderLayout(20, 20));
+        mainPanel.setBorder(new EmptyBorder(30, 30, 30, 30));
+        mainPanel.setBackground(Color.WHITE);
+        
+        // Warning message
+        JPanel messagePanel = new JPanel(new BorderLayout());
+        messagePanel.setOpaque(false);
+        
+        JLabel warningIcon = new JLabel("⚠️", SwingConstants.CENTER);
+        warningIcon.setFont(new Font("Segoe UI", Font.PLAIN, 32));
+        warningIcon.setBorder(new EmptyBorder(0, 0, 15, 0));
+        
+        JLabel warningText = new JLabel("<html><center><b style='color: #DC3545;'>Warning: This action cannot be undone!</b><br><br>Your account and all data will be permanently deleted.<br>Please enter your password to confirm.</center></html>");
+        warningText.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        warningText.setHorizontalAlignment(SwingConstants.CENTER);
+        
+        messagePanel.add(warningIcon, BorderLayout.NORTH);
+        messagePanel.add(warningText, BorderLayout.CENTER);
+        
+        // Password field
+        JPanel passwordPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        passwordPanel.setOpaque(false);
+        
+        JLabel passwordLabel = new JLabel("Password:");
+        passwordLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        
+        JPasswordField passwordField = new JPasswordField(15);
+        passwordField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        passwordField.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(220, 220, 220), 1),
+            new EmptyBorder(8, 10, 8, 10)
+        ));
+        
+        passwordPanel.add(passwordLabel);
+        passwordPanel.add(passwordField);
+        
+        // Buttons
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 0));
+        buttonPanel.setOpaque(false);
+        
+        JButton cancelBtn = new JButton("Cancel");
+        cancelBtn.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        cancelBtn.setForeground(Color.BLACK);
+        cancelBtn.setBackground(new Color(240, 240, 240));
+        cancelBtn.setBorderPainted(false);
+        cancelBtn.setFocusPainted(false);
+        cancelBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        cancelBtn.setPreferredSize(new Dimension(100, 35));
+        cancelBtn.addActionListener(e -> dialog.dispose());
+        
+        JButton deleteBtn = new JButton("Delete");
+        deleteBtn.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        deleteBtn.setForeground(Color.WHITE);
+        deleteBtn.setBackground(DANGER_COLOR);
+        deleteBtn.setBorderPainted(false);
+        deleteBtn.setFocusPainted(false);
+        deleteBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        deleteBtn.setPreferredSize(new Dimension(100, 35));
+        
+        deleteBtn.addActionListener(e -> {
+            String enteredPassword = new String(passwordField.getPassword());
+            if (validatePasswordAndDeleteAccount(enteredPassword)) {
+                dialog.dispose();
+            }
+        });
+        
+        // Enter key support
+        passwordField.addActionListener(e -> deleteBtn.doClick());
+        
+        buttonPanel.add(cancelBtn);
+        buttonPanel.add(deleteBtn);
+        
+        mainPanel.add(messagePanel, BorderLayout.CENTER);
+        mainPanel.add(passwordPanel, BorderLayout.SOUTH);
+        
+        JPanel bottomPanel = new JPanel(new BorderLayout());
+        bottomPanel.setOpaque(false);
+        bottomPanel.add(buttonPanel, BorderLayout.SOUTH);
+        
+        dialog.add(mainPanel, BorderLayout.CENTER);
+        dialog.add(bottomPanel, BorderLayout.SOUTH);
+        
+        dialog.setVisible(true);
+    }
+    
+    private boolean validatePasswordAndDeleteAccount(String enteredPassword) {
+        try {
+            // Get current user's password from database
+            heartsync.dao.UserDAO userDAO = new heartsync.dao.UserDAO();
+            heartsync.model.User user = userDAO.getUserByUsername(currentUsername);
+            
+            if (user == null) {
+                JOptionPane.showMessageDialog(this, "User not found!", "Error", JOptionPane.ERROR_MESSAGE);
+                return false;
+            }
+            
+            // Validate password
+            if (!user.getPassword().equals(enteredPassword)) {
+                JOptionPane.showMessageDialog(this, "Incorrect password!", "Authentication Failed", JOptionPane.ERROR_MESSAGE);
+                return false;
+            }
+            
+            // Confirm deletion one more time
+            int confirm = JOptionPane.showConfirmDialog(
+                this,
+                "Are you absolutely sure you want to delete your account?\nThis action cannot be undone!",
+                "Final Confirmation",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE
+            );
+            
+            if (confirm == JOptionPane.YES_OPTION) {
+                deleteUserAccount();
+                return true;
+            }
+            
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error validating password: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+        
+        return false;
+    }
+    
+    private void deleteUserAccount() {
+        try {
+            // Delete from dating database
+            database.deleteUser(currentUsername);
+            
+            // Delete from User table
+            heartsync.dao.UserDAO userDAO = new heartsync.dao.UserDAO();
+            userDAO.deleteUser(currentUsername);
+            
+            // Delete from profile setup data
+            heartsync.database.DatabaseManagerProfile.getInstance().deleteUserProfile(currentUsername);
+            
+            // Show success message
+            JOptionPane.showMessageDialog(this, 
+                "Account deleted successfully!\nYou will be redirected to the login page.", 
+                "Account Deleted", 
+                JOptionPane.INFORMATION_MESSAGE);
+            
+            // Close app and redirect to login
+            this.dispose();
+            new LoginView().setVisible(true);
+            
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, 
+                "Error deleting account: " + e.getMessage(), 
+                "Error", 
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }
+ 
     private void refreshProfilePanel() {
         // Re-create and set the profile panel to reflect any updates
         if (profilePanel != null) {
@@ -871,10 +1490,9 @@ public class DatingApp extends JFrame {
         if (success) {
             // Now check for a match
             if (database.isMatched(currentUsername, likedUsername)) {
-                JOptionPane.showMessageDialog(this,
-                    "It's a match with " + likedProfile.getFullName() + "!",
-                    "Congratulations!",
-                    JOptionPane.INFORMATION_MESSAGE);
+                showMatchPopup(likedProfile.getFullName());
+            } else {
+                showLikePopup(likedProfile.getFullName());
             }
         } else {
             JOptionPane.showMessageDialog(this, "Something went wrong while liking the profile.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -920,6 +1538,22 @@ public class DatingApp extends JFrame {
             return 25; // Default age if parsing fails
         }
     }
+
+    private void showLikePopup(String fullName) {
+        JOptionPane.showMessageDialog(this,
+            "❤️ You liked " + fullName + "!\nThey will be notified of your interest.",
+            "Like Sent",
+            JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    private void showMatchPopup(String fullName) {
+        JOptionPane.showMessageDialog(this,
+            "🎉 It's a match with " + fullName + "!\nYou can now start chatting!",
+            "Congratulations!",
+            JOptionPane.INFORMATION_MESSAGE);
+    }
+
+
     
 
     
@@ -1006,6 +1640,7 @@ public class DatingApp extends JFrame {
         chatBtn.addActionListener(e -> showChat());
         myLikersBtn.addActionListener(e -> showMyLikers());
         notificationsBtn.addActionListener(e -> showNotifications());
+        myProfileBtn.addActionListener(e -> showMyProfile());
         logoutBtn.addActionListener(e -> logout());
     }
     
@@ -1053,23 +1688,24 @@ class CircleButton extends JButton {
         super(text);
         this.backgroundColor = bgColor;
         this.foregroundColor = fgColor;
-        this.hoverColor = bgColor.brighter();
-
-        setContentAreaFilled(false);
+        this.hoverColor = bgColor.darker();
+        
+        setFont(new Font("Segoe UI", Font.BOLD, 20));
+        setForeground(foregroundColor);
+        setBackground(backgroundColor);
+        setPreferredSize(new Dimension(60, 60));
         setFocusPainted(false);
         setBorderPainted(false);
-        setPreferredSize(new Dimension(60, 60));
-        setFont(new Font("Arial", Font.BOLD, 30));
+        setContentAreaFilled(false);
         setCursor(new Cursor(Cursor.HAND_CURSOR));
-
+        
         addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
-                backgroundColor = hoverColor;
+                setBackground(hoverColor);
                 repaint();
             }
-
             public void mouseExited(java.awt.event.MouseEvent evt) {
-                backgroundColor = bgColor; // Revert to original color
+                setBackground(backgroundColor);
                 repaint();
             }
         });
@@ -1077,356 +1713,17 @@ class CircleButton extends JButton {
 
     @Override
     protected void paintComponent(Graphics g) {
-        Graphics2D g2 = (Graphics2D) g.create();
+        Graphics2D g2 = (Graphics2D) g;
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         
-        // Draw the circle
-        g2.setColor(backgroundColor);
+        g2.setColor(getBackground());
         g2.fillOval(0, 0, getWidth(), getHeight());
         
-        // Draw the text (icon)
-        g2.setColor(foregroundColor);
+        g2.setColor(getForeground());
+        g2.setFont(getFont());
         FontMetrics fm = g2.getFontMetrics();
         int x = (getWidth() - fm.stringWidth(getText())) / 2;
         int y = ((getHeight() - fm.getHeight()) / 2) + fm.getAscent();
         g2.drawString(getText(), x, y);
-        
-        g2.dispose();
     }
 }
-
-class ExplorePanel extends JPanel {
-
-    private static final Color BACKGROUND_COLOR = new Color(255, 240, 245); // Light Pink
-    private static final Color TEXT_PRIMARY = new Color(219, 112, 147); // Pale Violet Red for titles
-    private static final Color TEXT_SECONDARY = new Color(107, 114, 128); // Medium gray
-    private static final Color CARD_BACKGROUND = Color.WHITE;
-    private static final Color ACCENT_COLOR = new Color(255, 105, 180); // Hot Pink
-    private static final Color LIKE_BUTTON_COLOR = new Color(239, 71, 111);
-    private static final Color PASS_BUTTON_COLOR = new Color(236, 239, 241);
-    private static final Font HEADING_FONT = new Font("Segoe UI", Font.BOLD, 24);
-    private static final Font SUBHEADING_FONT = new Font("Segoe UI", Font.BOLD, 18);
-    private static final Font BODY_FONT = new Font("Segoe UI", Font.PLAIN, 16);
-    private static final Font CAPTION_FONT = new Font("Segoe UI", Font.PLAIN, 14);
-
-    private String currentUsername;
-    private DatingDatabase database;
-    private List<UserProfile> explorableProfiles;
-    private int currentProfileIndex = 0;
-
-    public ExplorePanel(String username) {
-        this.currentUsername = username;
-        this.database = DatingDatabase.getInstance();
-        
-        setLayout(new BorderLayout());
-        setOpaque(false);
-        
-        loadExplorableProfiles();
-    }
-
-    private void loadExplorableProfiles() {
-        // Show a loading message
-        removeAll();
-        JLabel loadingLabel = new JLabel("Finding people near you...", SwingConstants.CENTER);
-        loadingLabel.setFont(HEADING_FONT);
-        loadingLabel.setForeground(TEXT_SECONDARY);
-        add(loadingLabel, BorderLayout.CENTER);
-        revalidate();
-        repaint();
-
-        new SwingWorker<List<UserProfile>, Void>() {
-            @Override
-            protected List<UserProfile> doInBackground() throws Exception {
-                return database.getExplorableProfiles(currentUsername);
-            }
-
-            @Override
-            protected void done() {
-                try {
-                    explorableProfiles = get();
-                    if (explorableProfiles == null) {
-                        explorableProfiles = new ArrayList<>();
-                    }
-                    currentProfileIndex = 0;
-                    updateExplorePanel();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    // Handle error case
-                    explorableProfiles = new ArrayList<>();
-                    updateExplorePanel();
-                }
-            }
-        }.execute();
-    }
-
-    private void updateExplorePanel() {
-        this.removeAll();
-
-        if (explorableProfiles != null && !explorableProfiles.isEmpty() && currentProfileIndex < explorableProfiles.size()) {
-            UserProfile currentProfile = explorableProfiles.get(currentProfileIndex);
-            add(createProfileCard(currentProfile), BorderLayout.CENTER);
-        } else {
-            JLabel noMoreProfilesLabel = new JLabel("No more profiles to show.", SwingConstants.CENTER);
-            noMoreProfilesLabel.setFont(HEADING_FONT);
-            noMoreProfilesLabel.setForeground(TEXT_SECONDARY);
-            add(noMoreProfilesLabel, BorderLayout.CENTER);
-        }
-
-        revalidate();
-        repaint();
-    }
-
-    private JPanel createProfileCard(UserProfile profile) {
-        if (profile == null) {
-            JPanel emptyPanel = new JPanel(new BorderLayout());
-            JLabel messageLabel = new JLabel("Profile not available.", SwingConstants.CENTER);
-            emptyPanel.add(messageLabel, BorderLayout.CENTER);
-            return emptyPanel;
-        }
-
-        JPanel cardPanel = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                Graphics2D g2 = (Graphics2D) g;
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(new Color(0, 0, 0, 15));
-                g2.fillRoundRect(8, 8, getWidth() - 20, getHeight() - 20, 25, 25);
-                g2.setColor(CARD_BACKGROUND);
-                g2.fillRoundRect(4, 4, getWidth() - 20, getHeight() - 20, 25, 25);
-            }
-        };
-        cardPanel.setLayout(new BorderLayout());
-        cardPanel.setOpaque(false);
-        cardPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
-
-        JPanel container = new JPanel();
-        container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
-        container.setOpaque(false);
-
-        JPanel contentPanel = new JPanel();
-        contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
-        contentPanel.setOpaque(false);
-        contentPanel.setBackground(Color.WHITE);
-
-        JLabel imageLabel = createProfileImage(profile);
-        imageLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        imageLabel.setPreferredSize(new Dimension(320, 400));
-        imageLabel.setMaximumSize(new Dimension(320, 400));
-
-        JPanel infoPanel = new JPanel();
-        infoPanel.setOpaque(false);
-        infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
-        infoPanel.setBorder(new EmptyBorder(15, 15, 15, 15));
-        infoPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        JTextArea aboutMe = new JTextArea(profile.getAboutMe());
-        aboutMe.setFont(BODY_FONT);
-        aboutMe.setForeground(TEXT_SECONDARY);
-        aboutMe.setWrapStyleWord(true);
-        aboutMe.setLineWrap(true);
-        aboutMe.setOpaque(false);
-        aboutMe.setEditable(false);
-        aboutMe.setFocusable(false);
-        aboutMe.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        JPanel interestsContainer = new JPanel();
-        interestsContainer.setOpaque(false);
-        interestsContainer.setLayout(new BoxLayout(interestsContainer, BoxLayout.Y_AXIS));
-        interestsContainer.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        JLabel interestsTitle = new JLabel("Interests");
-        interestsTitle.setFont(SUBHEADING_FONT.deriveFont(Font.BOLD, 16f));
-        interestsTitle.setForeground(TEXT_PRIMARY);
-
-        JPanel interestsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 8));
-        interestsPanel.setOpaque(false);
-
-        List<String> interests = profile.getHobbies();
-        if (interests != null) {
-            for (String interest : interests) {
-                interestsPanel.add(createInterestTag(interest));
-            }
-        }
-
-        interestsContainer.add(interestsTitle);
-        interestsContainer.add(interestsPanel);
-        infoPanel.add(aboutMe);
-        infoPanel.add(Box.createVerticalStrut(15));
-        infoPanel.add(interestsContainer);
-        contentPanel.add(imageLabel);
-        contentPanel.add(infoPanel);
-
-        JPanel bottomPanel = new JPanel();
-        bottomPanel.setLayout(new BoxLayout(bottomPanel, BoxLayout.Y_AXIS));
-        bottomPanel.setOpaque(false);
-
-        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 40, 10));
-        actionPanel.setOpaque(false);
-
-        JButton passButton = new CircleButton("×", PASS_BUTTON_COLOR, Color.DARK_GRAY);
-        passButton.addActionListener(e -> passCurrentProfile());
-        JButton likeButton = new CircleButton("♥", LIKE_BUTTON_COLOR, Color.WHITE);
-        likeButton.addActionListener(e -> likeCurrentProfile());
-
-        actionPanel.add(passButton);
-        actionPanel.add(likeButton);
-
-        JLabel profileCounter = new JLabel("Profile " + (currentProfileIndex + 1) + " of " + (explorableProfiles != null ? explorableProfiles.size() : 0));
-        profileCounter.setFont(CAPTION_FONT);
-        profileCounter.setForeground(TEXT_SECONDARY);
-        profileCounter.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        bottomPanel.add(actionPanel);
-        bottomPanel.add(Box.createVerticalStrut(10));
-        bottomPanel.add(profileCounter);
-
-        container.add(contentPanel);
-        container.add(Box.createVerticalStrut(10));
-        container.add(bottomPanel);
-
-        cardPanel.add(container, BorderLayout.CENTER);
-
-        JPanel wrapper = new JPanel(new GridBagLayout());
-        wrapper.setOpaque(false);
-        wrapper.add(cardPanel);
-
-        return wrapper;
-    }
-
-    private JLabel createProfileImage(UserProfile profile) {
-        JLabel imageLabel = new JLabel();
-        imageLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        imageLabel.setVerticalAlignment(SwingConstants.CENTER);
-        imageLabel.setPreferredSize(new Dimension(320, 400));
-        imageLabel.setMaximumSize(new Dimension(320, 400));
-
-        try {
-            String picPath = profile.getProfilePicPath();
-            if (picPath == null || !picPath.startsWith("http")) {
-                throw new MalformedURLException("Invalid or missing image URL");
-            }
-            URL url = new URL(picPath);
-            BufferedImage originalImage = ImageIO.read(url);
-            Image scaledImage = originalImage.getScaledInstance(320, 400, Image.SCALE_SMOOTH);
-            
-            BufferedImage roundedImage = new BufferedImage(320, 400, BufferedImage.TYPE_INT_ARGB);
-            Graphics2D g2d = roundedImage.createGraphics();
-            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2d.setClip(new RoundRectangle2D.Float(0, 0, 320, 400, 20, 20));
-            g2d.drawImage(scaledImage, 0, 0, null);
-            g2d.dispose();
-
-            imageLabel.setIcon(new ImageIcon(roundedImage));
-
-        } catch (Exception e) {
-            imageLabel.setIcon(createPlaceholderIcon());
-            System.err.println("Could not load profile image: " + e.getMessage());
-        }
-
-        imageLabel.setLayout(new BorderLayout());
-
-        // Info panel on top of the image
-        JPanel textPanel = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2d = (Graphics2D) g.create();
-                // Gradient from transparent to black
-                GradientPaint gp = new GradientPaint(0, 0, new Color(0,0,0,0), 0, getHeight(), new Color(0,0,0,180));
-                g2d.setPaint(gp);
-                g2d.fillRect(0, 0, getWidth(), getHeight());
-                g2d.dispose();
-                super.paintComponent(g);
-            }
-        };
-        textPanel.setOpaque(false);
-        textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
-        textPanel.setBorder(new EmptyBorder(10, 15, 10, 15));
-
-        textPanel.add(Box.createVerticalGlue()); // Push content to the bottom
-
-        // Name and Age
-        JLabel nameLabel = new JLabel(profile.getFullName());
-        nameLabel.setFont(HEADING_FONT);
-        nameLabel.setForeground(Color.WHITE);
-        
-        // Distance
-        JLabel distanceLabel = new JLabel("5 miles away"); // Placeholder
-        distanceLabel.setFont(BODY_FONT);
-        distanceLabel.setForeground(Color.WHITE);
-
-        textPanel.add(nameLabel);
-        textPanel.add(distanceLabel);
-        imageLabel.add(textPanel, BorderLayout.SOUTH);
-
-        return imageLabel;
-    }
-
-    private ImageIcon createPlaceholderIcon() {
-        BufferedImage image = new BufferedImage(100, 100, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g2 = image.createGraphics();
-        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2.setColor(Color.LIGHT_GRAY);
-        g2.fillOval(0, 0, 100, 100);
-        g2.setColor(Color.WHITE);
-        g2.setFont(new Font("Segoe UI", Font.BOLD, 40));
-        FontMetrics fm = g2.getFontMetrics();
-        g2.drawString("?", (100 - fm.stringWidth("?")) / 2, ((100 - fm.getHeight()) / 2) + fm.getAscent());
-        g2.dispose();
-        return new ImageIcon(image);
-    }
-
-    private JComponent createInterestTag(String text) {
-        JLabel label = new JLabel(text);
-        label.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        label.setForeground(ACCENT_COLOR);
-        label.setBorder(new EmptyBorder(5, 15, 5, 15));
-
-        JPanel tagPanel = new JPanel(new BorderLayout()) {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(getBackground());
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 20, 20);
-                g2.dispose();
-                super.paintComponent(g);
-            }
-        };
-        tagPanel.setBackground(new Color(255, 228, 225));
-        tagPanel.setOpaque(false);
-        tagPanel.add(label, BorderLayout.CENTER);
-
-        return tagPanel;
-    }
-    
-    private void likeCurrentProfile() {
-        if (explorableProfiles != null && !explorableProfiles.isEmpty()) {
-            UserProfile likedProfile = explorableProfiles.get(currentProfileIndex);
-            database.likeUser(currentUsername, likedProfile.getUsername());
-            nextProfile();
-        }
-    }
-
-    private void passCurrentProfile() {
-        if (explorableProfiles != null && !explorableProfiles.isEmpty()) {
-            nextProfile();
-        }
-    }
-
-    private void nextProfile() {
-        if (explorableProfiles == null || explorableProfiles.isEmpty()) {
-            return; // Nothing to do if there are no profiles
-        }
-
-        currentProfileIndex++;
-        
-        // If we've reached the end of the list, loop back to the beginning
-        if (currentProfileIndex >= explorableProfiles.size()) {
-            currentProfileIndex = 0;
-            JOptionPane.showMessageDialog(this, "You've seen everyone! Looping back to the start.", "End of Profiles", JOptionPane.INFORMATION_MESSAGE);
-        }
-        
-        updateExplorePanel();
-    }
-} 

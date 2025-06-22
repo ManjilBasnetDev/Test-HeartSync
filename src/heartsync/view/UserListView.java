@@ -104,6 +104,9 @@ public class UserListView extends JPanel {
         } else {
             imageLabel.setText("No Image");
         }
+        
+
+        
         card.add(imageLabel, BorderLayout.CENTER);
 
         JPanel infoPanel = new JPanel();
@@ -130,4 +133,6 @@ public class UserListView extends JPanel {
         card.add(infoPanel, BorderLayout.SOUTH);
         return card;
     }
+
+
 } 

@@ -281,4 +281,6 @@ public class ExplorePanel extends JPanel {
         currentProfileIndex++;
         updateExplorePanel();
     }
+
+
 } 

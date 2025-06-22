@@ -117,11 +117,12 @@ public class UserListView extends JPanel {
         if ("Matched Users".equals(title)) {
             JButton chatButton = new JButton("Chat");
             chatButton.addActionListener(e -> {
-                // This is a placeholder action. The actual implementation
-                // may require passing more specific user info.
-                // The current ChatSystem opens a list of all chats.
-                // This needs to be refactored to support direct chats.
-                new ChatSystem(User.getCurrentUser()).setVisible(true);
+                User currentUser = User.getCurrentUser();
+                if (currentUser != null) {
+                    new ChatSystem(currentUser.getUsername(), user.getUsername()).setVisible(true);
+                } else {
+                    JOptionPane.showMessageDialog(this, "Please login first.", "Login Required", JOptionPane.WARNING_MESSAGE);
+                }
             });
             infoPanel.add(chatButton);
         }

@@ -750,8 +750,9 @@ public class Register extends JFrame {
     private boolean isUsernameAvailable(String username) {
         try {
             UserDAO userDAO = new UserDAO();
-            return userDAO.getUser(username) == null;
+            return userDAO.getUserByUsername(username) == null;
         } catch (Exception e) {
+            e.printStackTrace();
             return false;
         }
     }

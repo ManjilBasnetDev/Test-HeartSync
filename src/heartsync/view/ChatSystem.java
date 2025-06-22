@@ -29,10 +29,10 @@ import java.util.stream.Collectors;
  */
 public class ChatSystem extends JFrame {
 
-    private final User currentUser;
-    private final LikeDAO likeDAO;
-    private final UserDAO userDAO;
-    private final ChatDAO chatDAO;
+    private User currentUser;
+    private LikeDAO likeDAO;
+    private UserDAO userDAO;
+    private ChatDAO chatDAO;
 
     private JSplitPane splitPane;
     private JPanel contactListPanel;
@@ -48,10 +48,20 @@ public class ChatSystem extends JFrame {
     private static final Color BORDER_COLOR = new Color(220, 220, 220);
     private static final Color CONTACT_LIST_BACKGROUND_COLOR = new Color(255, 240, 245); // Light pink
 
-    public ChatSystem(User currentUser) {
-        this.currentUser = currentUser;
-        this.likeDAO = new LikeDAO();
+    public ChatSystem(String currentUsername, String participantUsername) {
         this.userDAO = new UserDAO();
+        
+        // Get current user from UserDAO
+        User currentUserFromDB = userDAO.getUserByUsername(currentUsername);
+        if (currentUserFromDB == null) {
+            // Handle error: current user not found
+            JOptionPane.showMessageDialog(this, "Error: Current user not found.", "Error", JOptionPane.ERROR_MESSAGE);
+            dispose();
+            return;
+        }
+        
+        this.currentUser = currentUserFromDB;
+        this.likeDAO = new LikeDAO();
         this.chatDAO = new ChatDAO();
 
         setTitle("HeartSync Messenger");
@@ -60,11 +70,11 @@ public class ChatSystem extends JFrame {
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
 
-        initComponents();
+        initComponents(participantUsername);
         loadMatchedUsers();
     }
 
-    private void initComponents() {
+    private void initComponents(String participantUsername) {
         // Left side: Panel to hold the list of contacts
         contactListPanel = new JPanel();
         contactListPanel.setLayout(new BoxLayout(contactListPanel, BoxLayout.Y_AXIS));
@@ -78,7 +88,10 @@ public class ChatSystem extends JFrame {
         contactListScrollPane.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, BORDER_COLOR));
 
         // Right side: Panel to show the conversation
-        conversationView = new ConversationView(currentUser, null); // Initially no user selected
+        // We need to get UserProfile for ConversationView, not User
+        heartsync.database.DatingDatabase datingDB = heartsync.database.DatingDatabase.getInstance();
+        UserProfile participantProfile = datingDB.getUserProfile(participantUsername);
+        conversationView = new ConversationView(currentUser, participantProfile); 
 
         // Split pane to divide contacts and conversation
         splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, contactListScrollPane, conversationView);
@@ -96,7 +109,7 @@ public class ChatSystem extends JFrame {
         backButton.setFont(new Font("Arial", Font.BOLD, 12));
         backButton.setFocusPainted(false);
         backButton.addActionListener(e -> {
-            new Swipe().setVisible(true);
+            // Simply close the chat window; the main DatingApp window remains open
             dispose();
         });
         headerPanel.add(backButton);
@@ -107,8 +120,9 @@ public class ChatSystem extends JFrame {
         contactListPanel.removeAll();
 
         List<String> matchedUserIds = likeDAO.getMatches(currentUser.getUsername());
+        heartsync.database.DatingDatabase datingDB = heartsync.database.DatingDatabase.getInstance();
         List<UserProfile> matchedProfiles = matchedUserIds.stream()
-                                                          .map(userDAO::findByUsername)
+                                                          .map(datingDB::getUserProfile)
                                                           .filter(java.util.Objects::nonNull)
                                                           .collect(Collectors.toList());
 

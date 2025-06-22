@@ -353,7 +353,7 @@ public class ConversationView extends JPanel {
             // This is a bit tricky without a direct reference to the parent.
             // A better approach would be to fire an event that ChatSystem listens to.
             SwingUtilities.getWindowAncestor(this).dispose();
-             new ChatSystem(currentUser).setVisible(true);
+            // Don't create a new ChatSystem here - just close the current one
 
         }
     }

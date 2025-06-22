@@ -72,7 +72,9 @@ public class UserRegisterDAO {
         Map<String, User> users = FirebaseConfig.get("users", new TypeToken<Map<String, User>>(){}.getType());
         if (users != null) {
             for (User user : users.values()) {
-                if (user.getUsername().equals(username)) return true;
+                if (user != null && user.getUsername() != null && user.getUsername().equals(username)) {
+                    return true;
+                }
             }
         }
         return false;
@@ -84,7 +86,7 @@ public class UserRegisterDAO {
             if (users != null) {
                 for (Map.Entry<String, User> entry : users.entrySet()) {
                     User user = entry.getValue();
-                    if (user.getUsername().equals(username)) {
+                    if (user != null && user.getUsername() != null && user.getUsername().equals(username)) {
                         user.setUserId(entry.getKey());
                         return user;
                     }
@@ -101,7 +103,8 @@ public class UserRegisterDAO {
             Map<String, User> users = FirebaseConfig.get("users", new TypeToken<Map<String, User>>(){}.getType());
             if (users != null) {
                 for (User user : users.values()) {
-                    if (user.getUsername().equals(username) && user.getPassword().equals(password)) {
+                    if (user != null && user.getUsername() != null && user.getPassword() != null &&
+                        user.getUsername().equals(username) && user.getPassword().equals(password)) {
                         return true;
                     }
                 }
@@ -146,7 +149,7 @@ public class UserRegisterDAO {
             if (users != null) {
                 for (Map.Entry<String, User> entry : users.entrySet()) {
                     User user = entry.getValue();
-                    if (user.getUsername().equals(username)) {
+                    if (user != null && user.getUsername() != null && user.getUsername().equals(username)) {
                         FirebaseConfig.delete(FirebaseConfig.getUserPath(entry.getKey()));
                         return true;
                     }

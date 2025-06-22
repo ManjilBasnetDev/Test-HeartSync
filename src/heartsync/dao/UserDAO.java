@@ -3,7 +3,6 @@ package heartsync.dao;
 import heartsync.model.User;
 import heartsync.model.UserProfile;
 import heartsync.database.FirebaseConfig;
-import heartsync.database.DatabaseManagerProfile;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.Gson;
 import java.util.Map;
@@ -42,7 +41,9 @@ public class UserDAO {
             if (users != null) {
                 for (Map.Entry<String, User> entry : users.entrySet()) {
                     User user = entry.getValue();
-                    if (user.getUsername().equals(username) && user.getPassword().equals(password)) {
+                    if (user != null && user.getUsername() != null &&
+                        user.getUsername().equals(username) &&
+                        password != null && password.equals(user.getPassword())) {
                         user.setUserId(entry.getKey());
                         return user;
                     }
@@ -74,7 +75,9 @@ public class UserDAO {
             Map<String, User> users = FirebaseConfig.get("users", new TypeToken<Map<String, User>>(){}.getType());
             if (users != null) {
                 for (User user : users.values()) {
-                    if (user.getUsername().equals(username)) return true;
+                    if (user != null && user.getUsername() != null && user.getUsername().equals(username)) {
+                        return true;
+                    }
                 }
             }
         } catch (IOException e) {
@@ -90,7 +93,7 @@ public class UserDAO {
             if (users != null) {
                 for (Map.Entry<String, User> entry : users.entrySet()) {
                     User user = entry.getValue();
-                    if (user.getUsername().equals(username)) {
+                    if (user != null && user.getUsername() != null && user.getUsername().equals(username)) {
                         user.setUserId(entry.getKey());
                         return user;
                     }

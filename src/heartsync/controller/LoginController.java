@@ -9,7 +9,7 @@ import heartsync.view.LoginView;
 import heartsync.view.HomePage;
 import heartsync.view.AdminDashboard;
 import heartsync.view.ForgotPassword;
-import heartsync.view.Swipe;
+import heartsync.view.DatingApp;
 import heartsync.navigation.WindowManager;
 import java.awt.Cursor;
 import javax.swing.*;
@@ -20,7 +20,7 @@ import java.awt.Color;
 
 public class LoginController {
     private static LoginView currentLoginView = null;
-    private static Swipe currentSwipeView = null;
+    private static DatingApp currentDatingApp = null;
     private static HomePage homePageInstance = null;
     private final LoginView view;
     private static final Logger logger = Logger.getLogger(LoginController.class.getName());
@@ -204,11 +204,13 @@ public class LoginController {
                     homePage.dispose();
                 }
                 
-                // If admin, open AdminDashboard, else open Swipe
+                // If admin, open AdminDashboard, else open DatingApp
                 if (user.getUserType() != null && user.getUserType().equalsIgnoreCase("admin")) {
                     WindowManager.show(AdminDashboard.class, AdminDashboard::new, null);
                 } else {
-                    WindowManager.show(Swipe.class, Swipe::new, null);
+                    // Create and show DatingApp with the authenticated user's username
+                    DatingApp datingApp = new DatingApp(user.getUsername());
+                    datingApp.setVisible(true);
                 }
                 
             } catch (Exception e) {

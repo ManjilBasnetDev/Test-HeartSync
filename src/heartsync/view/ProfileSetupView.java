@@ -41,6 +41,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import heartsync.controller.UserProfileController;
 import heartsync.model.UserProfile;
 import heartsync.database.FirebaseStorageManager;
+import heartsync.database.Base64ImageManager;
 
 public class ProfileSetupView extends JFrame {
     private static final long serialVersionUID = 1L;
@@ -383,15 +384,25 @@ public class ProfileSetupView extends JFrame {
             profilePicPath = selectedFile.getAbsolutePath();
             
             try {
+                // Display the image in the UI
                 ImageIcon imageIcon = new ImageIcon(profilePicPath);
                 Image image = imageIcon.getImage().getScaledInstance(150, 150, Image.SCALE_SMOOTH);
                 profilePicLabel.setIcon(new ImageIcon(image));
-                controller.setProfilePicture(profilePicPath);
+                
+                // Encode to Base64 and store
+                String base64Image = Base64ImageManager.encodeImageToBase64(profilePicPath);
+                if (base64Image != null) {
+                    controller.setProfilePicture(base64Image); // Now storing Base64 instead of file path
+                    System.out.println("Profile picture encoded and stored as Base64");
+                } else {
+                    throw new Exception("Failed to encode image to Base64");
+                }
             } catch (Exception e) {
                 JOptionPane.showMessageDialog(this,
-                    "Error loading image: " + e.getMessage(),
+                    "Error processing image: " + e.getMessage(),
                     "Error",
                     JOptionPane.ERROR_MESSAGE);
+                e.printStackTrace();
             }
         }
     }

@@ -1,24 +1,27 @@
 package heartsync.database;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.UUID;
 import heartsync.dao.UserDAO;
 import heartsync.model.User;
 
+/**
+ * FirebaseStorageManager now uses Base64 encoding for image storage
+ * This replaces the actual Firebase Storage with database-based image storage
+ */
 public class FirebaseStorageManager {
-    private static final String STORAGE_URL = "https://firebasestorage.googleapis.com/v0/b/heartsync-96435.appspot.com/o/";
-    private static final String STORAGE_TOKEN = "?alt=media";
     private static final UserDAO userDAO = new UserDAO();
 
+    /**
+     * Get profile image as Base64 string for a user
+     * @param userId User ID
+     * @return Base64 encoded image string or null if not found
+     */
     public static String getProfileImageUrl(String userId) {
         try {
-            // Get user from database to check if they have a profile picture URL
+            // Get user from database to check if they have a profile picture
             User user = userDAO.getUserById(userId);
             if (user != null && user.getProfilePictureUrl() != null && !user.getProfilePictureUrl().isEmpty()) {
+                // Return the Base64 string (stored in profilePictureUrl field)
                 return user.getProfilePictureUrl();
             }
             // Return null to trigger fallback mechanism
@@ -30,59 +33,42 @@ public class FirebaseStorageManager {
         }
     }
 
+    /**
+     * "Upload" profile picture by encoding it to Base64 and storing in database
+     * @param filePath Path to the image file
+     * @return Base64 encoded string (acts as the "URL")
+     * @throws IOException if encoding fails
+     */
     public static String uploadProfilePicture(String filePath) throws IOException {
-        File file = new File(filePath);
-        if (!file.exists()) {
-            throw new IOException("File not found: " + filePath);
+        // Encode the image file to Base64
+        String base64Image = Base64ImageManager.encodeImageToBase64(filePath);
+        
+        if (base64Image == null) {
+            throw new IOException("Failed to encode image to Base64");
         }
-
-        // Generate a unique filename
-        String fileName = "profile_pictures/" + UUID.randomUUID().toString() + "_" + file.getName();
-        String encodedFileName = java.net.URLEncoder.encode(fileName, "UTF-8");
-
-        // Create upload URL
-        URL url = new URL(STORAGE_URL + encodedFileName);
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setDoOutput(true);
-        conn.setRequestMethod("POST");
-        conn.setRequestProperty("Content-Type", "application/octet-stream");
-
-        // Read and upload file
-        try (FileInputStream fis = new FileInputStream(file)) {
-            byte[] buffer = new byte[4096];
-            int bytesRead;
-            while ((bytesRead = fis.read(buffer)) != -1) {
-                conn.getOutputStream().write(buffer, 0, bytesRead);
-            }
-        }
-
-        // Get response
-        int responseCode = conn.getResponseCode();
-        if (responseCode != HttpURLConnection.HTTP_OK) {
-            throw new IOException("Failed to upload file. Response code: " + responseCode);
-        }
-
-        // Return the download URL
-        return STORAGE_URL + encodedFileName + STORAGE_TOKEN;
+        
+        // Return the Base64 string (this acts as the "download URL")
+        return base64Image;
     }
 
+    /**
+     * "Delete" profile picture by returning null (since it's stored in database)
+     * The actual deletion happens when the user record is updated
+     * @param downloadUrl The Base64 string (ignored for compatibility)
+     * @throws IOException (never thrown, kept for interface compatibility)
+     */
     public static void deleteProfilePicture(String downloadUrl) throws IOException {
-        if (downloadUrl == null || !downloadUrl.startsWith(STORAGE_URL)) {
-            return;
-        }
-
-        // Extract file path from download URL
-        String filePath = downloadUrl.substring(STORAGE_URL.length());
-        filePath = filePath.substring(0, filePath.indexOf(STORAGE_TOKEN));
-        
-        // Create delete URL
-        URL url = new URL(STORAGE_URL + filePath);
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestMethod("DELETE");
-
-        int responseCode = conn.getResponseCode();
-        if (responseCode != HttpURLConnection.HTTP_OK) {
-            throw new IOException("Failed to delete file. Response code: " + responseCode);
-        }
+        // Since images are stored as Base64 in the database,
+        // deletion happens when the user profile is updated with null/empty value
+        // This method is kept for interface compatibility
+    }
+    
+    /**
+     * Check if a "URL" is actually a Base64 encoded image
+     * @param url The URL/Base64 string to check
+     * @return true if it's a valid Base64 image
+     */
+    public static boolean isBase64Image(String url) {
+        return Base64ImageManager.isValidBase64Image(url);
     }
 } 

@@ -1,6 +1,7 @@
 package heartsync.view;
 
 import heartsync.database.DatingDatabase;
+import heartsync.database.Base64ImageManager;
 import heartsync.model.UserProfile;
 import heartsync.model.User;
 import heartsync.controller.UserProfileController;
@@ -650,23 +651,42 @@ public class DatingApp extends JFrame {
 
         try {
             String picPath = profile.getProfilePicPath();
-            if (picPath == null || !picPath.startsWith("http")) {
-                throw new MalformedURLException("Invalid or missing image URL");
-            }
-            URL url = new URL(picPath);
-            BufferedImage originalImage = ImageIO.read(url);
-            Image scaledImage = originalImage.getScaledInstance(320, 400, Image.SCALE_SMOOTH);
+            ImageIcon imageIcon = null;
             
-            BufferedImage roundedImage = new BufferedImage(320, 400, BufferedImage.TYPE_INT_ARGB);
-            Graphics2D g2d = roundedImage.createGraphics();
-            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2d.setClip(new RoundRectangle2D.Float(0, 0, 320, 400, 20, 20));
-            g2d.drawImage(scaledImage, 0, 0, null);
-            g2d.dispose();
+            // Try Base64 first
+            if (picPath != null && !picPath.isEmpty()) {
+                if (Base64ImageManager.isValidBase64Image(picPath)) {
+                    // It's a Base64 encoded image
+                    imageIcon = Base64ImageManager.createRoundedProfileImageIcon(picPath, 320, 400, 20);
+                } else if (picPath.startsWith("http")) {
+                    // It's an old URL, try to load it
+                    try {
+                        URL url = new URL(picPath);
+                        BufferedImage originalImage = ImageIO.read(url);
+                        Image scaledImage = originalImage.getScaledInstance(320, 400, Image.SCALE_SMOOTH);
+                        
+                        BufferedImage roundedImage = new BufferedImage(320, 400, BufferedImage.TYPE_INT_ARGB);
+                        Graphics2D g2d = roundedImage.createGraphics();
+                        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                        g2d.setClip(new RoundRectangle2D.Float(0, 0, 320, 400, 20, 20));
+                        g2d.drawImage(scaledImage, 0, 0, null);
+                        g2d.dispose();
+                        
+                        imageIcon = new ImageIcon(roundedImage);
+                    } catch (Exception urlEx) {
+                        System.err.println("Failed to load image from URL: " + urlEx.getMessage());
+                    }
+                }
+            }
+            
+            // Set the image or fallback to placeholder
+            if (imageIcon != null) {
+                imageLabel.setIcon(imageIcon);
+            } else {
+                imageLabel.setIcon(createPlaceholderIcon());
+            }
 
-            imageLabel.setIcon(new ImageIcon(roundedImage));
-
-                } catch (Exception e) {
+        } catch (Exception e) {
             imageLabel.setIcon(createPlaceholderIcon());
             System.err.println("Could not load profile image: " + e.getMessage());
         }
@@ -710,17 +730,7 @@ public class DatingApp extends JFrame {
     }
     
     private ImageIcon createPlaceholderIcon() {
-        BufferedImage image = new BufferedImage(100, 100, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g2 = image.createGraphics();
-        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2.setColor(Color.LIGHT_GRAY);
-        g2.fillOval(0, 0, 100, 100);
-        g2.setColor(Color.WHITE);
-        g2.setFont(new Font("Segoe UI", Font.BOLD, 40));
-        FontMetrics fm = g2.getFontMetrics();
-        g2.drawString("?", (100 - fm.stringWidth("?")) / 2, ((100 - fm.getHeight()) / 2) + fm.getAscent());
-        g2.dispose();
-        return new ImageIcon(image);
+        return Base64ImageManager.createPlaceholderIcon(320, 400);
     }
     
     // ========== OTHER PANELS ==========
@@ -862,23 +872,42 @@ public class DatingApp extends JFrame {
         picLabel.setPreferredSize(new Dimension(80, 80));
         try {
             String picPath = profile.getProfilePicPath();
-            BufferedImage image;
-            if (picPath != null && picPath.startsWith("http")) {
-                image = ImageIO.read(new URL(picPath));
-            } else {
-                throw new IOException("Invalid path for user card image");
+            ImageIcon imageIcon = null;
+            
+            // Try Base64 first
+            if (picPath != null && !picPath.isEmpty()) {
+                if (Base64ImageManager.isValidBase64Image(picPath)) {
+                    // It's a Base64 encoded image
+                    imageIcon = Base64ImageManager.createCircularProfileImageIcon(picPath, 80);
+                } else if (picPath.startsWith("http")) {
+                    // It's an old URL, try to load it
+                    try {
+                        BufferedImage image = ImageIO.read(new URL(picPath));
+                        // Create a circular image
+                        Image scaledImage = image.getScaledInstance(80, 80, Image.SCALE_SMOOTH);
+                        BufferedImage roundedImage = new BufferedImage(80, 80, BufferedImage.TYPE_INT_ARGB);
+                        Graphics2D g2d = roundedImage.createGraphics();
+                        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                        g2d.setClip(new Ellipse2D.Float(0, 0, 80, 80));
+                        g2d.drawImage(scaledImage, 0, 0, null);
+                        g2d.dispose();
+                        imageIcon = new ImageIcon(roundedImage);
+                    } catch (Exception urlEx) {
+                        System.err.println("Failed to load image from URL: " + urlEx.getMessage());
+                    }
+                }
             }
-            // Create a circular image
-            Image scaledImage = image.getScaledInstance(80, 80, Image.SCALE_SMOOTH);
-            BufferedImage roundedImage = new BufferedImage(80, 80, BufferedImage.TYPE_INT_ARGB);
-            Graphics2D g2d = roundedImage.createGraphics();
-            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2d.setClip(new Ellipse2D.Float(0, 0, 80, 80));
-            g2d.drawImage(scaledImage, 0, 0, null);
-            g2d.dispose();
-            picLabel.setIcon(new ImageIcon(roundedImage));
-        } catch (IOException e) {
-            String initial = profile.getFullName().substring(0, 1).toUpperCase();
+            
+            if (imageIcon != null) {
+                picLabel.setIcon(imageIcon);
+            } else {
+                throw new IOException("No valid image found");
+            }
+        } catch (Exception e) {
+            // Fallback to initial letter
+            String initial = profile.getFullName() != null && !profile.getFullName().isEmpty() 
+                ? profile.getFullName().substring(0, 1).toUpperCase() 
+                : "?";
             picLabel.setText(initial);
             picLabel.setFont(new Font("Segoe UI", Font.BOLD, 40));
             picLabel.setForeground(Color.WHITE);

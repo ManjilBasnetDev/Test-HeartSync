@@ -1,6 +1,8 @@
 package heartsync.view;
 
 import heartsync.model.UserProfile;
+import heartsync.database.Base64ImageManager;
+import heartsync.database.FirebaseStorageManager;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.geom.Ellipse2D;
@@ -137,31 +139,74 @@ public class UserProfileView extends JFrame {
             @Override
             protected ImageIcon doInBackground() throws Exception {
                 Image image = null;
-                String firebaseUrl = heartsync.database.FirebaseStorageManager.getProfileImageUrl(username);
+                String imageData = FirebaseStorageManager.getProfileImageUrl(username);
                 
-                if (firebaseUrl != null && !firebaseUrl.isEmpty()) {
-                    image = ImageIO.read(new URL(firebaseUrl));
-                } else if (picPath != null && !picPath.isEmpty()) {
-                    if (picPath.startsWith("http")) {
-                        image = ImageIO.read(new URL(picPath));
+                // Try to load from Base64 first
+                if (imageData != null && !imageData.isEmpty()) {
+                    if (FirebaseStorageManager.isBase64Image(imageData)) {
+                        // It's a Base64 encoded image
+                        ImageIcon base64Icon = Base64ImageManager.createCircularProfileImageIcon(imageData, 150);
+                        if (base64Icon != null) {
+                            return base64Icon;
+                        }
                     } else {
-                        URL resourceUrl = getClass().getResource("/ImagePicker/" + picPath);
-                        if (resourceUrl != null) image = ImageIO.read(resourceUrl);
+                        // It's an old URL, try to load it
+                        try {
+                            image = ImageIO.read(new URL(imageData));
+                        } catch (Exception e) {
+                            System.out.println("Failed to load image from URL: " + e.getMessage());
+                        }
                     }
                 }
                 
-                if (image == null) {
-                    image = ImageIO.read(getClass().getResource("/ImagePicker/RajeshHamalPhoto.png"));
+                // Fallback to picPath if available
+                if (image == null && picPath != null && !picPath.isEmpty()) {
+                    if (Base64ImageManager.isValidBase64Image(picPath)) {
+                        // picPath is actually Base64
+                        ImageIcon base64Icon = Base64ImageManager.createCircularProfileImageIcon(picPath, 150);
+                        if (base64Icon != null) {
+                            return base64Icon;
+                        }
+                    } else if (picPath.startsWith("http")) {
+                        try {
+                            image = ImageIO.read(new URL(picPath));
+                        } catch (Exception e) {
+                            System.out.println("Failed to load image from URL: " + e.getMessage());
+                        }
+                    } else {
+                        try {
+                            URL resourceUrl = getClass().getResource("/ImagePicker/" + picPath);
+                            if (resourceUrl != null) image = ImageIO.read(resourceUrl);
+                        } catch (Exception e) {
+                            System.out.println("Failed to load image from resource: " + e.getMessage());
+                        }
+                    }
                 }
                 
-                Image scaledImage = image.getScaledInstance(150, 150, Image.SCALE_SMOOTH);
-                BufferedImage circularImage = new BufferedImage(150, 150, BufferedImage.TYPE_INT_ARGB);
-                Graphics2D g2 = circularImage.createGraphics();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setClip(new Ellipse2D.Float(0, 0, 150, 150));
-                g2.drawImage(scaledImage, 0, 0, null);
-                g2.dispose();
-                return new ImageIcon(circularImage);
+                // Final fallback to default image
+                if (image == null) {
+                    try {
+                        image = ImageIO.read(getClass().getResource("/ImagePicker/RajeshHamalPhoto.png"));
+                    } catch (Exception e) {
+                        // If even default image fails, create a placeholder
+                        return Base64ImageManager.createPlaceholderIcon(150, 150);
+                    }
+                }
+                
+                // Convert regular image to circular
+                if (image != null) {
+                    Image scaledImage = image.getScaledInstance(150, 150, Image.SCALE_SMOOTH);
+                    BufferedImage circularImage = new BufferedImage(150, 150, BufferedImage.TYPE_INT_ARGB);
+                    Graphics2D g2 = circularImage.createGraphics();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2.setClip(new Ellipse2D.Float(0, 0, 150, 150));
+                    g2.drawImage(scaledImage, 0, 0, null);
+                    g2.dispose();
+                    return new ImageIcon(circularImage);
+                }
+                
+                // Ultimate fallback
+                return Base64ImageManager.createPlaceholderIcon(150, 150);
             }
 
             @Override
@@ -170,6 +215,8 @@ public class UserProfileView extends JFrame {
                     imageLabel.setIcon(get());
                 } catch (Exception e) {
                     e.printStackTrace();
+                    // Set placeholder on error
+                    imageLabel.setIcon(Base64ImageManager.createPlaceholderIcon(150, 150));
                 }
             }
         }.execute();

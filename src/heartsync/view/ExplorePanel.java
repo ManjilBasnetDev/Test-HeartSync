@@ -1,6 +1,7 @@
 package heartsync.view;
 
 import heartsync.database.DatingDatabase;
+import heartsync.database.Base64ImageManager;
 import heartsync.model.UserProfile;
 
 import javax.swing.*;
@@ -199,22 +200,45 @@ public class ExplorePanel extends JPanel {
         imageLabel.setMaximumSize(new Dimension(320, 400));
 
         try {
-            URL url = new URL(profile.getProfilePicPath());
-            BufferedImage originalImage = ImageIO.read(url);
-            Image scaledImage = originalImage.getScaledInstance(320, 400, Image.SCALE_SMOOTH);
+            String picPath = profile.getProfilePicPath();
+            ImageIcon imageIcon = null;
             
-            BufferedImage roundedImage = new BufferedImage(320, 400, BufferedImage.TYPE_INT_ARGB);
-            Graphics2D g2d = roundedImage.createGraphics();
-            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2d.setClip(new RoundRectangle2D.Float(0, 0, 320, 400, 20, 20));
-            g2d.drawImage(scaledImage, 0, 0, null);
-            g2d.dispose();
-
-            imageLabel.setIcon(new ImageIcon(roundedImage));
+            // Try Base64 first
+            if (picPath != null && !picPath.isEmpty()) {
+                if (Base64ImageManager.isValidBase64Image(picPath)) {
+                    // It's a Base64 encoded image
+                    imageIcon = Base64ImageManager.createRoundedProfileImageIcon(picPath, 320, 400, 20);
+                } else if (picPath.startsWith("http")) {
+                    // It's an old URL, try to load it
+                    try {
+                        URL url = new URL(picPath);
+                        BufferedImage originalImage = ImageIO.read(url);
+                        Image scaledImage = originalImage.getScaledInstance(320, 400, Image.SCALE_SMOOTH);
+                        
+                        BufferedImage roundedImage = new BufferedImage(320, 400, BufferedImage.TYPE_INT_ARGB);
+                        Graphics2D g2d = roundedImage.createGraphics();
+                        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                        g2d.setClip(new RoundRectangle2D.Float(0, 0, 320, 400, 20, 20));
+                        g2d.drawImage(scaledImage, 0, 0, null);
+                        g2d.dispose();
+                        
+                        imageIcon = new ImageIcon(roundedImage);
+                    } catch (Exception urlEx) {
+                        System.err.println("Failed to load image from URL: " + urlEx.getMessage());
+                    }
+                }
+            }
+            
+            // Set the image or fallback to placeholder
+            if (imageIcon != null) {
+                imageLabel.setIcon(imageIcon);
+            } else {
+                imageLabel.setIcon(Base64ImageManager.createPlaceholderIcon(320, 400));
+            }
 
         } catch (Exception e) {
-            imageLabel.setText("No Image");
-            e.printStackTrace();
+            imageLabel.setIcon(Base64ImageManager.createPlaceholderIcon(320, 400));
+            System.err.println("Error loading profile image: " + e.getMessage());
         }
 
         imageLabel.setLayout(new BorderLayout());

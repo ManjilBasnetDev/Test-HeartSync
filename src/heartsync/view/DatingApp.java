@@ -51,6 +51,10 @@ public class DatingApp extends JFrame {
     private JPanel navigationPanel;
     private JPanel contentPanel;
     private CardLayout cardLayout;
+    private JPanel searchPanel;
+    private JTextField searchField;
+    private JButton searchButton;
+    private JButton clearSearchButton;
     
     // Current user
     private String currentUsername;
@@ -101,6 +105,7 @@ public class DatingApp extends JFrame {
         // Load profiles before creating content area that depends on them
         loadExplorableProfiles();
         
+        createSearchBar();
         createNavigation();
         createContentArea();
         
@@ -138,9 +143,235 @@ public class DatingApp extends JFrame {
         navigationPanel.add(myProfileBtn);
         navigationPanel.add(logoutBtn);
 
-        mainPanel.add(navigationPanel, BorderLayout.NORTH);
+        // Add navigation to the north panel (created in createSearchBar)
+        JPanel northPanel = (JPanel) mainPanel.getComponent(0); // Get the north panel
+        northPanel.add(navigationPanel, BorderLayout.SOUTH);
         
         setupNavigationListeners();
+    }
+    
+    private void createSearchBar() {
+        searchPanel = new JPanel(new BorderLayout());
+        searchPanel.setBackground(Color.WHITE);
+        searchPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(230, 230, 230)),
+            BorderFactory.createEmptyBorder(15, 20, 15, 20)
+        ));
+        
+        // Main search container
+        JPanel searchContainer = new JPanel(new BorderLayout(10, 0));
+        searchContainer.setOpaque(false);
+        
+        // Search field with modern styling
+        searchField = new JTextField();
+        searchField.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        searchField.setPreferredSize(new Dimension(400, 40));
+        searchField.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(200, 200, 200), 1),
+            BorderFactory.createEmptyBorder(8, 15, 8, 15)
+        ));
+        searchField.setBackground(new Color(248, 249, 250));
+        
+        // Placeholder text effect
+        searchField.setText("Search by name, age, hobbies, education...");
+        searchField.setForeground(Color.GRAY);
+        searchField.addFocusListener(new java.awt.event.FocusAdapter() {
+            @Override
+            public void focusGained(java.awt.event.FocusEvent evt) {
+                if (searchField.getText().equals("Search by name, age, hobbies, education...")) {
+                    searchField.setText("");
+                    searchField.setForeground(Color.BLACK);
+                }
+            }
+            
+            @Override
+            public void focusLost(java.awt.event.FocusEvent evt) {
+                if (searchField.getText().isEmpty()) {
+                    searchField.setText("Search by name, age, hobbies, education...");
+                    searchField.setForeground(Color.GRAY);
+                }
+            }
+        });
+        
+        // Search on Enter key
+        searchField.addActionListener(e -> performSearch());
+        
+        // Search button
+        searchButton = new JButton("🔍 Search");
+        searchButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        searchButton.setPreferredSize(new Dimension(100, 40));
+        searchButton.setBackground(TEXT_PRIMARY);
+        searchButton.setForeground(Color.WHITE);
+        searchButton.setBorder(BorderFactory.createEmptyBorder());
+        searchButton.setFocusPainted(false);
+        searchButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        searchButton.addActionListener(e -> performSearch());
+        
+        // Clear button
+        clearSearchButton = new JButton("✕ Clear");
+        clearSearchButton.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        clearSearchButton.setPreferredSize(new Dimension(80, 40));
+        clearSearchButton.setBackground(new Color(240, 240, 240));
+        clearSearchButton.setForeground(Color.DARK_GRAY);
+        clearSearchButton.setBorder(BorderFactory.createEmptyBorder());
+        clearSearchButton.setFocusPainted(false);
+        clearSearchButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        clearSearchButton.addActionListener(e -> clearSearch());
+        
+        // Button panel
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        buttonPanel.setOpaque(false);
+        buttonPanel.add(searchButton);
+        buttonPanel.add(clearSearchButton);
+        
+        // Search icon and title
+        JLabel searchIcon = new JLabel("🔍 Advanced Search");
+        searchIcon.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        searchIcon.setForeground(TEXT_PRIMARY);
+        
+        searchContainer.add(searchIcon, BorderLayout.WEST);
+        searchContainer.add(searchField, BorderLayout.CENTER);
+        searchContainer.add(buttonPanel, BorderLayout.EAST);
+        
+        searchPanel.add(searchContainer, BorderLayout.CENTER);
+        
+        // Create a combined north panel for search and navigation
+        JPanel northPanel = new JPanel(new BorderLayout());
+        northPanel.add(searchPanel, BorderLayout.NORTH);
+        
+        mainPanel.add(northPanel, BorderLayout.NORTH);
+    }
+    
+    private void performSearch() {
+        String searchQuery = searchField.getText().trim();
+        if (searchQuery.isEmpty() || searchQuery.equals("Search by name, age, hobbies, education...")) {
+            clearSearch();
+            return;
+        }
+        
+        // Filter explorable profiles based on search query
+        List<UserProfile> filteredProfiles = filterProfilesBySearch(explorableProfiles, searchQuery);
+        
+        // Update the current explore panel with filtered results
+        if (explorePanel instanceof ExplorePanel) {
+            ((ExplorePanel) explorePanel).updateWithFilteredProfiles(filteredProfiles);
+        }
+        
+        // Show a status message
+        if (filteredProfiles.isEmpty()) {
+            JOptionPane.showMessageDialog(this, 
+                "No profiles found matching: \"" + searchQuery + "\"", 
+                "Search Results", 
+                JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            JOptionPane.showMessageDialog(this, 
+                "Found " + filteredProfiles.size() + " profile(s) matching: \"" + searchQuery + "\"", 
+                "Search Results", 
+                JOptionPane.INFORMATION_MESSAGE);
+        }
+    }
+    
+    private void clearSearch() {
+        searchField.setText("Search by name, age, hobbies, education...");
+        searchField.setForeground(Color.GRAY);
+        
+        // Reset to show all profiles
+        if (explorePanel instanceof ExplorePanel) {
+            ((ExplorePanel) explorePanel).updateWithFilteredProfiles(explorableProfiles);
+        }
+    }
+    
+    private List<UserProfile> filterProfilesBySearch(List<UserProfile> profiles, String query) {
+        if (profiles == null || query == null || query.trim().isEmpty()) {
+            return profiles != null ? profiles : new ArrayList<>();
+        }
+        
+        String searchQuery = query.toLowerCase().trim();
+        List<UserProfile> filtered = new ArrayList<>();
+        
+        for (UserProfile profile : profiles) {
+            if (profile == null) continue;
+            
+            boolean matches = false;
+            
+            // Search in full name (first name + last name)
+            if (profile.getFullName() != null && 
+                profile.getFullName().toLowerCase().contains(searchQuery)) {
+                matches = true;
+            }
+            
+            // Search in username
+            if (profile.getUsername() != null && 
+                profile.getUsername().toLowerCase().contains(searchQuery)) {
+                matches = true;
+            }
+            
+            // Search in age (convert age to string for search)
+            if (profile.getDateOfBirth() != null && !profile.getDateOfBirth().isEmpty()) {
+                int age = calculateAge(profile.getDateOfBirth());
+                if (String.valueOf(age).contains(searchQuery)) {
+                    matches = true;
+                }
+            }
+            
+            // Search in hobbies/interests
+            if (profile.getHobbies() != null) {
+                for (String hobby : profile.getHobbies()) {
+                    if (hobby != null && hobby.toLowerCase().contains(searchQuery)) {
+                        matches = true;
+                        break;
+                    }
+                }
+            }
+            
+            // Search in about me
+            if (profile.getAboutMe() != null && 
+                profile.getAboutMe().toLowerCase().contains(searchQuery)) {
+                matches = true;
+            }
+            
+            // Search in education
+            if (profile.getEducation() != null && 
+                profile.getEducation().toLowerCase().contains(searchQuery)) {
+                matches = true;
+            }
+            
+            // Search in occupation
+            if (profile.getOccupation() != null && 
+                profile.getOccupation().toLowerCase().contains(searchQuery)) {
+                matches = true;
+            }
+            
+            // Search in gender
+            if (profile.getGender() != null && 
+                profile.getGender().toLowerCase().contains(searchQuery)) {
+                matches = true;
+            }
+            
+            // Search in country
+            if (profile.getCountry() != null && 
+                profile.getCountry().toLowerCase().contains(searchQuery)) {
+                matches = true;
+            }
+            
+            // Search in height (convert to string)
+            if (profile.getHeight() > 0 && 
+                String.valueOf(profile.getHeight()).contains(searchQuery)) {
+                matches = true;
+            }
+            
+            // Search in weight (convert to string)
+            if (profile.getWeight() > 0 && 
+                String.valueOf(profile.getWeight()).contains(searchQuery)) {
+                matches = true;
+            }
+            
+            if (matches) {
+                filtered.add(profile);
+            }
+        }
+        
+        return filtered;
     }
 
     private JButton createNavButton(String text) {

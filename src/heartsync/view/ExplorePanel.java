@@ -277,10 +277,16 @@ public class ExplorePanel extends JPanel {
         }
     }
 
-    private void nextProfile() {
+        private void nextProfile() {
         currentProfileIndex++;
         updateExplorePanel();
     }
+    
+    public void updateWithFilteredProfiles(List<UserProfile> filteredProfiles) {
+        this.explorableProfiles = filteredProfiles != null ? filteredProfiles : new ArrayList<>();
+        this.currentProfileIndex = 0;
+        updateExplorePanel();
+    }
 
-
-} 
+ 
+}  

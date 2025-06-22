@@ -45,6 +45,14 @@ public class ForgotPassword extends javax.swing.JFrame {
     public static void showForgotPassword(boolean fromLogin) {
         javax.swing.SwingUtilities.invokeLater(() -> {
             try {
+                // Prevent multiple windows - check if one is already open
+                for (java.awt.Window window : java.awt.Window.getWindows()) {
+                    if (window instanceof ForgotPassword && window.isVisible()) {
+                        window.toFront();
+                        return; // Don't create a new window
+                    }
+                }
+                
                 heartsync.navigation.WindowManager.show(ForgotPassword.class, ForgotPassword::new, null);
             } catch (Exception e) {
                 System.err.println("Error showing ForgotPassword window: " + e.getMessage());
@@ -154,14 +162,32 @@ public class ForgotPassword extends javax.swing.JFrame {
         if (inputsFilled) {
             try {
                 UserDAOForgot dao = new UserDAOForgot();
+                
+                // First ensure security questions exist for the user
+                dao.ensureSecurityQuestionsExist(username);
+                
                 UserForgot uf = dao.findByUsername(username);
                 if (uf == null) {
                     status.append("<font color='red'>• Username not found</font><br>");
                     allValid = false;
                 } else {
                     status.append("<font color='#28a745'>• Username correct</font><br>");
+                    
+                    // Debug logging
+                    System.out.println("=== DEBUG: Password validation ===");
+                    System.out.println("Username: " + username);
+                    System.out.println("User entered favorite color: '" + favoriteColor + "'");
+                    System.out.println("Database favorite color: '" + uf.getFavoriteColor() + "'");
+                    System.out.println("User entered first school: '" + firstSchool + "'");
+                    System.out.println("Database first school: '" + uf.getFirstSchool() + "'");
+                    
                     boolean colorOk = favoriteColor.equalsIgnoreCase(uf.getFavoriteColor());
                     boolean schoolOk = firstSchool.equalsIgnoreCase(uf.getFirstSchool());
+                    
+                    System.out.println("Color match: " + colorOk);
+                    System.out.println("School match: " + schoolOk);
+                    System.out.println("===================================");
+                    
                     if (colorOk) {
                         status.append("<font color='#28a745'>• Favorite color correct</font><br>");
                     } else {
@@ -178,6 +204,7 @@ public class ForgotPassword extends javax.swing.JFrame {
             } catch (Exception ex) {
                 status.append("<font color='red'>• Error accessing database</font><br>");
                 allValid = false;
+                ex.printStackTrace();
             }
         }
 
@@ -410,26 +437,33 @@ public class ForgotPassword extends javax.swing.JFrame {
 
         try {
             UserDAOForgot userDAO = new UserDAOForgot();
+            
+            // First ensure security questions exist for the user
+            userDAO.ensureSecurityQuestionsExist(username);
+            
+            // First validate that user exists
+            UserForgot user = userDAO.findByUsername(username);
+            if (user == null) {
+                JOptionPane.showMessageDialog(this,
+                    "Username not found in the database.",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            
+            // Then validate security questions
             if (userDAO.validateSecurityQuestions(username, favoriteColor, firstSchool)) {
-                UserForgot user = userDAO.findByUsername(username);
-                if (user != null) {
-                    // Set both user ID and username for redundancy
-                    resetController.setUserId(user.getId());
-                    resetController.setUsername(username);
-                    
-                    // Create and show reset password view with username
-                    ResetPassword resetView = new ResetPassword(user.getId(), username);
-                    resetView.setVisible(true);
-                    dispose();
-                } else {
-                    JOptionPane.showMessageDialog(this,
-                        "User not found in the database.",
-                        "Error",
-                        JOptionPane.ERROR_MESSAGE);
-                }
+                // Set both user ID and username for redundancy
+                resetController.setUserId(user.getId());
+                resetController.setUsername(username);
+                
+                // Create and show reset password view with username
+                ResetPassword resetView = new ResetPassword(user.getId(), username);
+                resetView.setVisible(true);
+                dispose();
             } else {
                 JOptionPane.showMessageDialog(this,
-                    "Invalid security answers. Please try again.",
+                    "Invalid security answers. Please check your favorite color and first school name.",
                     "Validation Failed",
                     JOptionPane.ERROR_MESSAGE);
             }
@@ -438,6 +472,7 @@ public class ForgotPassword extends javax.swing.JFrame {
                 "Error: " + ex.getMessage(),
                 "Error",
                 JOptionPane.ERROR_MESSAGE);
+            ex.printStackTrace();
         }
     }
 

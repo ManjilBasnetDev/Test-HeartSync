@@ -27,15 +27,19 @@ public class ResetController {
 
     public boolean updatePassword(int userId, String newPassword) {
         try {
-            // First, get the username if not already set
+            // Validate inputs
             if (username == null || username.trim().isEmpty()) {
                 throw new SQLException("Username not set for password reset");
+            }
+            
+            if (newPassword == null || newPassword.trim().isEmpty()) {
+                throw new SQLException("New password cannot be empty");
             }
             
             // Debug output
             System.out.println("Updating password for user: " + username);
             
-            // Update the password
+            // Update the password using UserDAOForgot which handles Firebase correctly
             boolean success = userDAOForgot.updatePassword(username, newPassword);
             
             if (success) {
@@ -51,6 +55,14 @@ public class ResetController {
             JOptionPane.showMessageDialog(null, 
                 "Error updating password: " + e.getMessage(), 
                 "Database Error", 
+                JOptionPane.ERROR_MESSAGE);
+            return false;
+        } catch (Exception e) {
+            System.err.println("Unexpected error in updatePassword: " + e.getMessage());
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(null, 
+                "Unexpected error updating password: " + e.getMessage(), 
+                "Error", 
                 JOptionPane.ERROR_MESSAGE);
             return false;
         }

@@ -93,8 +93,7 @@ public class Register extends JFrame {
         // Store reference to HomePage
         for (Window window : Window.getWindows()) {
             if (window instanceof HomePage) {
-                homePage = (HomePage) window;
-                break;
+                ((HomePage) window).dispose();
             }
         }
         
@@ -637,9 +636,7 @@ public class Register extends JFrame {
                             JOptionPane.showMessageDialog(null, "Admin account created successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
                             dispose();
                             SwingUtilities.invokeLater(() -> {
-                                HomePage homePage = new HomePage();
-                                homePage.setLocationRelativeTo(null);
-                                homePage.setVisible(true);
+                                heartsync.view.HomePage.showHomePage();
                             });
                         }
                     } else {
@@ -655,9 +652,7 @@ public class Register extends JFrame {
 
         // Back button action
         backButton.addActionListener(e -> {
-            if (homePage != null) {
-                homePage.setVisible(true);
-            }
+            heartsync.view.HomePage.showHomePage();
             dispose();
         });
     }
@@ -755,8 +750,9 @@ public class Register extends JFrame {
     private boolean isUsernameAvailable(String username) {
         try {
             UserDAO userDAO = new UserDAO();
-            return userDAO.getUser(username) == null;
+            return userDAO.getUserByUsername(username) == null;
         } catch (Exception e) {
+            e.printStackTrace();
             return false;
         }
     }

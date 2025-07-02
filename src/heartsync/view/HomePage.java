@@ -834,10 +834,11 @@ public class HomePage extends JFrame {
 
     // Add a static method to show HomePage on logout
     public static void showHomePage() {
-        SwingUtilities.invokeLater(() -> {
-            HomePage homePage = new HomePage();
-            homePage.setLocationRelativeTo(null);
-            homePage.setVisible(true);
-        });
+        if (instance != null && instance.isDisplayable()) {
+            instance.dispose();
+        }
+        instance = new HomePage();
+        instance.setLocationRelativeTo(null);
+        instance.setVisible(true);
     }
 }

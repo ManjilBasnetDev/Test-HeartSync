@@ -2,6 +2,7 @@ package heartsync.view;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -40,10 +41,12 @@ import javax.swing.SwingUtilities;
 import heartsync.controller.UserProfileController;
 import heartsync.model.User;
 import heartsync.model.UserProfile;
+import heartsync.navigation.WindowManager;
 
 public class MoreInfoView extends JFrame {
-    private UserProfileController controller;
-    private Map<String, List<JCheckBox>> hobbyCategories;
+    private static final long serialVersionUID = 1L;
+    private final UserProfileController controller;
+    private final Map<String, List<JCheckBox>> hobbyCategories;
     private String selectedRelation = "";
     private JButton hobbiesButton;
     private ButtonGroup relationButtonGroup;
@@ -53,9 +56,9 @@ public class MoreInfoView extends JFrame {
     public MoreInfoView(UserProfileController controller) {
         this.controller = controller;
         this.hobbyCategories = new HashMap<>();
+        this.currentUser = User.getCurrentUser();
         initializeHobbyCategories();
         initializeUI();
-        this.currentUser = null; // Assuming currentUser is not available in the constructor
     }
 
     private void initializeHobbyCategories() {
@@ -456,7 +459,6 @@ public class MoreInfoView extends JFrame {
             return;
         }
 
-<<<<<<< HEAD
         if (selectedRelation.isEmpty()) {
             JOptionPane.showMessageDialog(this,
                 "Please select a relationship type.",
@@ -474,29 +476,9 @@ public class MoreInfoView extends JFrame {
             UserProfile profile = controller.getModel();
             boolean isEdit = profile.getFullName() != null && !profile.getFullName().isEmpty();
 
-            // Show appropriate success message
-            JOptionPane.showMessageDialog(this,
-                isEdit ? "Profile updated successfully!" : "Profile setup completed successfully!",
-                "Success",
-                JOptionPane.INFORMATION_MESSAGE);
-            
-            // Close current window
-            this.dispose();
-            
-            // Force reload profile from Firebase
-            UserProfile.setCurrentUser(null);
-            
-            // Always open HomePage
-            SwingUtilities.invokeLater(() -> {
-                HomePage homePage = new HomePage(User.getCurrentUser());
-                homePage.setLocationRelativeTo(null);
-                homePage.setVisible(true);
-            });
-            
-=======
             if (isEdit) {
                 JOptionPane.showMessageDialog(this,
-                    "Profile updated successfully, please log in",
+                    "Profile updated successfully!",
                     "Success",
                     JOptionPane.INFORMATION_MESSAGE);
                 // Dispose this window
@@ -508,9 +490,11 @@ public class MoreInfoView extends JFrame {
                         w.dispose();
                     }
                 }
+                // Force reload profile from Firebase
+                UserProfile.setCurrentUser(null);
                 // Open HomePage
                 SwingUtilities.invokeLater(() -> {
-                    heartsync.view.HomePage.showHomePage();
+                    WindowManager.show(HomePage.class, () -> new HomePage(User.getCurrentUser()), null);
                 });
             } else {
                 JOptionPane.showMessageDialog(this,
@@ -518,14 +502,13 @@ public class MoreInfoView extends JFrame {
                     "Success",
                     JOptionPane.INFORMATION_MESSAGE);
                 this.dispose();
-                // Open HomePage instead of LoginView
+                // Force reload profile from Firebase
+                UserProfile.setCurrentUser(null);
+                // Open HomePage
                 SwingUtilities.invokeLater(() -> {
-                    HomePage homePage = new HomePage(User.getCurrentUser());
-                    homePage.setLocationRelativeTo(null);
-                    homePage.setVisible(true);
+                    WindowManager.show(HomePage.class, () -> new HomePage(User.getCurrentUser()), null);
                 });
             }
->>>>>>> 1e751b03e14418f4fd6b384329009b4a6fad77f0
         } catch (Exception e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this,

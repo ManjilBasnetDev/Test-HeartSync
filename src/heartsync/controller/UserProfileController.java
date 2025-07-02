@@ -46,6 +46,20 @@ public class UserProfileController {
             // Save to Firebase under user_details/{username}
             DatabaseManagerProfile.getInstance().saveUserProfile(profile);
             
+            // Also save to the dating database format for compatibility
+            heartsync.database.DatingDatabase datingDB = heartsync.database.DatingDatabase.getInstance();
+            heartsync.dao.UserDAO userDAO = new heartsync.dao.UserDAO();
+            heartsync.model.User user = userDAO.getUserByUsername(username);
+            if (user != null) {
+                // Update User object with profile data
+                user.setFullName(fullName);
+                user.setGender(gender);
+                user.setBio(aboutMe);
+                user.setPhoneNumber(phoneNumber);
+                user.setProfilePictureUrl(profile.getProfilePicPath());
+                datingDB.createOrUpdateUserProfile(user);
+            }
+            
             // Update the current user's profile in memory
             UserProfile.setCurrentUser(profile);
         } catch (Exception e) {
@@ -106,6 +120,14 @@ public class UserProfileController {
             
             // Save to Firebase
             DatabaseManagerProfile.getInstance().saveUserProfile(profile);
+            
+            // Also sync to dating database
+            heartsync.database.DatingDatabase datingDB = heartsync.database.DatingDatabase.getInstance();
+            heartsync.dao.UserDAO userDAO = new heartsync.dao.UserDAO();
+            heartsync.model.User user = userDAO.getUserByUsername(currentUsername);
+            if (user != null) {
+                datingDB.createOrUpdateUserProfile(user);
+            }
             
             // Update the current user's profile in memory
             UserProfile.setCurrentUser(profile);

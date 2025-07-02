@@ -36,11 +36,30 @@ import javax.swing.JTextArea;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 import heartsync.controller.UserProfileController;
+import heartsync.model.UserProfile;
+import heartsync.database.FirebaseStorageManager;
+import heartsync.database.Base64ImageManager;
 
 public class ProfileSetupView extends JFrame {
-    private UserProfileController controller;
+    private static final long serialVersionUID = 1L;
+    
+    static {
+        // Set Metal Look and Feel defaults
+        UIManager.put("ComboBox.background", Color.WHITE);
+        UIManager.put("ComboBox.foreground", new Color(33, 33, 33));
+        UIManager.put("ComboBox.selectionBackground", new Color(219, 112, 147));
+        UIManager.put("ComboBox.selectionForeground", Color.WHITE);
+        UIManager.put("ComboBox.buttonBackground", Color.WHITE);
+        UIManager.put("ComboBox.buttonHighlight", Color.WHITE);
+        UIManager.put("ComboBox.buttonShadow", Color.WHITE);
+        UIManager.put("ComboBox.buttonDarkShadow", Color.WHITE);
+        UIManager.put("ComboBox.border", BorderFactory.createLineBorder(new Color(219, 112, 147), 1));
+    }
+    
+    private final UserProfileController controller;
     private JTextArea nameField;
     private JSlider heightSlider;
     private JSlider weightSlider;
@@ -62,17 +81,6 @@ public class ProfileSetupView extends JFrame {
     }
 
     private void initializeUI() {
-        // Set Metal Look and Feel defaults
-        UIManager.put("ComboBox.background", Color.WHITE);
-        UIManager.put("ComboBox.foreground", new Color(33, 33, 33));
-        UIManager.put("ComboBox.selectionBackground", new Color(219, 112, 147));
-        UIManager.put("ComboBox.selectionForeground", Color.WHITE);
-        UIManager.put("ComboBox.buttonBackground", Color.WHITE);
-        UIManager.put("ComboBox.buttonHighlight", Color.WHITE);
-        UIManager.put("ComboBox.buttonShadow", Color.WHITE);
-        UIManager.put("ComboBox.buttonDarkShadow", Color.WHITE);
-        UIManager.put("ComboBox.border", BorderFactory.createLineBorder(new Color(219, 112, 147), 1));
-
         setTitle("Profile Setup");
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setSize(800, 900);
@@ -376,15 +384,25 @@ public class ProfileSetupView extends JFrame {
             profilePicPath = selectedFile.getAbsolutePath();
             
             try {
+                // Display the image in the UI
                 ImageIcon imageIcon = new ImageIcon(profilePicPath);
                 Image image = imageIcon.getImage().getScaledInstance(150, 150, Image.SCALE_SMOOTH);
                 profilePicLabel.setIcon(new ImageIcon(image));
-                controller.setProfilePicture(profilePicPath);
+                
+                // Encode to Base64 and store
+                String base64Image = Base64ImageManager.encodeImageToBase64(profilePicPath);
+                if (base64Image != null) {
+                    controller.setProfilePicture(base64Image); // Now storing Base64 instead of file path
+                    System.out.println("Profile picture encoded and stored as Base64");
+                } else {
+                    throw new Exception("Failed to encode image to Base64");
+                }
             } catch (Exception e) {
                 JOptionPane.showMessageDialog(this,
-                    "Error loading image: " + e.getMessage(),
+                    "Error processing image: " + e.getMessage(),
                     "Error",
                     JOptionPane.ERROR_MESSAGE);
+                e.printStackTrace();
             }
         }
     }
@@ -427,29 +445,17 @@ public class ProfileSetupView extends JFrame {
 
             // Show success message
             JOptionPane.showMessageDialog(this,
-<<<<<<< HEAD
-                "Basic profile created successfully! Let's add some more details.",
-=======
                 "Profile created successfully! Please complete your hobbies and relationship preferences.",
->>>>>>> 1e751b03e14418f4fd6b384329009b4a6fad77f0
                 "Success",
                 JOptionPane.INFORMATION_MESSAGE);
-
-            // Close the profile setup window
+            
             this.dispose();
-
-<<<<<<< HEAD
-            // Show the MoreInfoView
-            SwingUtilities.invokeLater(() -> {
-                controller.showMoreInfoView();
-=======
+            
             // Open MoreInfoView for hobbies/relationship
             SwingUtilities.invokeLater(() -> {
-                heartsync.controller.UserProfileController profileController = new heartsync.controller.UserProfileController(controller.getModel(), controller.getCurrentUsername());
-                heartsync.view.MoreInfoView moreInfoView = new heartsync.view.MoreInfoView(profileController);
+                MoreInfoView moreInfoView = new MoreInfoView(controller);
                 moreInfoView.setLocationRelativeTo(null);
                 moreInfoView.setVisible(true);
->>>>>>> 1e751b03e14418f4fd6b384329009b4a6fad77f0
             });
 
         } catch (Exception ex) {

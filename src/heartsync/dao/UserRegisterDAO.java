@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.UUID;
 import java.io.IOException;
+import java.net.URLEncoder;
 
 public class UserRegisterDAO {
     private String lastError;
@@ -72,7 +73,9 @@ public class UserRegisterDAO {
         Map<String, User> users = FirebaseConfig.get("users", new TypeToken<Map<String, User>>(){}.getType());
         if (users != null) {
             for (User user : users.values()) {
-                if (user.getUsername().equals(username)) return true;
+                if (user != null && user.getUsername() != null && user.getUsername().equals(username)) {
+                    return true;
+                }
             }
         }
         return false;
@@ -84,7 +87,7 @@ public class UserRegisterDAO {
             if (users != null) {
                 for (Map.Entry<String, User> entry : users.entrySet()) {
                     User user = entry.getValue();
-                    if (user.getUsername().equals(username)) {
+                    if (user != null && user.getUsername() != null && user.getUsername().equals(username)) {
                         user.setUserId(entry.getKey());
                         return user;
                     }
@@ -101,7 +104,8 @@ public class UserRegisterDAO {
             Map<String, User> users = FirebaseConfig.get("users", new TypeToken<Map<String, User>>(){}.getType());
             if (users != null) {
                 for (User user : users.values()) {
-                    if (user.getUsername().equals(username) && user.getPassword().equals(password)) {
+                    if (user != null && user.getUsername() != null && user.getPassword() != null &&
+                        user.getUsername().equals(username) && user.getPassword().equals(password)) {
                         return true;
                     }
                 }
@@ -119,8 +123,11 @@ public class UserRegisterDAO {
             if (users != null) {
                 for (Map.Entry<String, User> entry : users.entrySet()) {
                     User user = entry.getValue();
-                    user.setUserId(entry.getKey());
-                    usersList.add(user);
+                    // Only include users that have valid usernames and are not null
+                    if (user != null && user.getUsername() != null && !user.getUsername().trim().isEmpty()) {
+                        user.setUserId(entry.getKey());
+                        usersList.add(user);
+                    }
                 }
             }
         } catch (IOException e) {
@@ -142,20 +149,107 @@ public class UserRegisterDAO {
 
     public boolean deleteUser(String username) {
         try {
+            // First, find the user to get their ID
             Map<String, User> users = FirebaseConfig.get("users", new TypeToken<Map<String, User>>(){}.getType());
+            String userId = null;
+            
             if (users != null) {
                 for (Map.Entry<String, User> entry : users.entrySet()) {
                     User user = entry.getValue();
-                    if (user.getUsername().equals(username)) {
-                        FirebaseConfig.delete(FirebaseConfig.getUserPath(entry.getKey()));
-                        return true;
+                    if (user != null && user.getUsername() != null && user.getUsername().equals(username)) {
+                        userId = entry.getKey();
+                        break;
                     }
                 }
             }
+            
+            if (userId == null) {
+                lastError = "User '" + username + "' not found in database";
+                return false;
+            }
+            
+            // URL encode the username for Firebase paths
+            String encodedUsername = java.net.URLEncoder.encode(username, "UTF-8");
+            
+            // 1. Delete user profile from user_details
+            try {
+                FirebaseConfig.set("user_details/" + encodedUsername, null);
+            } catch (Exception e) {
+                System.err.println("Warning: Could not delete user profile for " + username + ": " + e.getMessage());
+            }
+            
+            // 2. Delete user's likes
+            try {
+                FirebaseConfig.set("likes/" + encodedUsername, null);
+            } catch (Exception e) {
+                System.err.println("Warning: Could not delete likes for " + username + ": " + e.getMessage());
+            }
+            
+            // 3. Delete user's matches
+            try {
+                FirebaseConfig.set("matches/" + encodedUsername, null);
+            } catch (Exception e) {
+                System.err.println("Warning: Could not delete matches for " + username + ": " + e.getMessage());
+            }
+            
+            // 4. Delete user's notifications
+            try {
+                FirebaseConfig.set("notifications/" + encodedUsername, null);
+            } catch (Exception e) {
+                System.err.println("Warning: Could not delete notifications for " + username + ": " + e.getMessage());
+            }
+            
+            // 5. Remove likes TO this user from other users
+            try {
+                Map<String, Map<String, Boolean>> allLikes = FirebaseConfig.get("likes", 
+                    new TypeToken<Map<String, Map<String, Boolean>>>(){}.getType());
+                if (allLikes != null) {
+                    for (String likerUsername : allLikes.keySet()) {
+                        try {
+                            String likePath = "likes/" + likerUsername + "/" + encodedUsername;
+                            FirebaseConfig.set(likePath, null);
+                        } catch (Exception e) {
+                            System.err.println("Warning: Could not remove like from " + likerUsername + " to " + username);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("Warning: Could not clean up likes to user " + username + ": " + e.getMessage());
+            }
+            
+            // 6. Remove matches TO this user from other users
+            try {
+                Map<String, Map<String, Boolean>> allMatches = FirebaseConfig.get("matches", 
+                    new TypeToken<Map<String, Map<String, Boolean>>>(){}.getType());
+                if (allMatches != null) {
+                    for (String matcherUsername : allMatches.keySet()) {
+                        try {
+                            String matchPath = "matches/" + matcherUsername + "/" + encodedUsername;
+                            FirebaseConfig.set(matchPath, null);
+                        } catch (Exception e) {
+                            System.err.println("Warning: Could not remove match from " + matcherUsername + " to " + username);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("Warning: Could not clean up matches to user " + username + ": " + e.getMessage());
+            }
+            
+            // 7. Finally, delete the user from the main users collection
+            FirebaseConfig.delete(FirebaseConfig.getUserPath(userId));
+            
+            System.out.println("Successfully deleted user: " + username + " and all associated data");
+            return true;
+            
         } catch (IOException e) {
+            lastError = "Error deleting user: " + e.getMessage();
             e.printStackTrace();
+            return false;
+        } catch (Exception e) {
+            lastError = "Unexpected error deleting user: " + e.getMessage();
+            e.printStackTrace();
+            return false;
         }
-        return false;
     }
 
     public boolean verifyUser(String userId) {

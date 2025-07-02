@@ -54,8 +54,10 @@ public class LikeDAO {
             if (likes != null) {
                 likedUsers.addAll(likes.keySet());
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("User " + userId + " has liked: " + likedUsers);
+        } catch (Exception e) {
+            System.err.println("Error getting liked users for " + userId + ": " + e.getMessage());
+            // Return empty list on error
         }
         return likedUsers;
     }
@@ -68,8 +70,9 @@ public class LikeDAO {
             if (passes != null) {
                 passedUsers.addAll(passes.keySet());
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            System.err.println("Error getting passed users for " + userId + ": " + e.getMessage());
+            // Return empty list on error
         }
         return passedUsers;
     }
@@ -86,8 +89,8 @@ public class LikeDAO {
             Boolean passed = FirebaseConfig.get(PASSES_PATH + "/" + userId + "/" + otherUserId, Boolean.class);
             return passed != null && passed;
             
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            System.err.println("Error checking interaction between " + userId + " and " + otherUserId + ": " + e.getMessage());
             return false;
         }
     }
@@ -152,8 +155,8 @@ public class LikeDAO {
         try {
             Boolean match = FirebaseConfig.get(MATCHES_PATH + "/" + userId1 + "/" + userId2, Boolean.class);
             return match != null && match;
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            System.err.println("Error checking match status between " + userId1 + " and " + userId2 + ": " + e.getMessage());
             return false;
         }
     }
@@ -167,9 +170,57 @@ public class LikeDAO {
             if (userMatches != null) {
                 matches.addAll(userMatches.keySet());
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            System.err.println("Error getting matches for user " + userId + ": " + e.getMessage());
+            // Return empty list on error
         }
         return matches;
+    }
+
+    // Get all users who liked a specific user
+    public List<String> getLikersOfUser(String userId) {
+        List<String> likers = new ArrayList<>();
+        try {
+            // This is inefficient and not scalable.
+            // A better approach would be to have a dedicated `likers` node in Firebase.
+            // For now, we iterate through all likes.
+            Map<String, Map<String, Boolean>> allLikes = FirebaseConfig.get(LIKES_PATH,
+                new TypeToken<Map<String, Map<String, Boolean>>>(){}.getType());
+
+            if (allLikes != null) {
+                for (Map.Entry<String, Map<String, Boolean>> entry : allLikes.entrySet()) {
+                    String otherUserId = entry.getKey();
+                    Map<String, Boolean> likedMap = entry.getValue();
+                    if (likedMap != null && likedMap.containsKey(userId) && likedMap.get(userId)) {
+                        likers.add(otherUserId);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error getting likers for user " + userId + ": " + e.getMessage());
+            // Return empty list on error
+        }
+        return likers;
+    }
+
+    public boolean removeLike(String userId, String dislikedUserId) {
+        try {
+            // Remove the like entry
+            FirebaseConfig.delete(LIKES_PATH + "/" + userId + "/" + dislikedUserId);
+
+            // If users were matched, unmatch them
+            if (isMatched(userId, dislikedUserId)) {
+                unmatch(userId, dislikedUserId);
+            }
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    private void unmatch(String userId1, String userId2) throws IOException {
+        FirebaseConfig.delete(MATCHES_PATH + "/" + userId1 + "/" + userId2);
+        FirebaseConfig.delete(MATCHES_PATH + "/" + userId2 + "/" + userId1);
     }
 } 

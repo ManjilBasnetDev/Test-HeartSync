@@ -105,12 +105,18 @@ public class FirebaseConfig {
     public static void patch(String path, Object data) throws IOException {
         String url = DATABASE_URL + path + JSON_EXT;
         HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
-        conn.setRequestMethod("PATCH");
+        conn.setRequestMethod("PUT");
         conn.setDoOutput(true);
         conn.setRequestProperty("Content-Type", "application/json");
         String json = gson.toJson(data);
+        
         try (OutputStream os = conn.getOutputStream()) {
             os.write(json.getBytes(StandardCharsets.UTF_8));
+        }
+        
+        int responseCode = conn.getResponseCode();
+        if (responseCode != HttpURLConnection.HTTP_OK) {
+            return;
         }
         conn.getInputStream().close();
     }

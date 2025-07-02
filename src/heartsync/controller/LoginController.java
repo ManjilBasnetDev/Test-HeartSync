@@ -5,18 +5,23 @@ import heartsync.model.User;
 import heartsync.model.LoginModel;
 import heartsync.model.UserProfile;
 import heartsync.dao.UserDAO;
-import heartsync.view.*;
+import heartsync.view.LoginView;
+import heartsync.view.HomePage;
+import heartsync.view.AdminDashboard;
+import heartsync.view.ForgotPassword;
+import heartsync.view.DatingApp;
 import heartsync.navigation.WindowManager;
 import java.awt.Cursor;
 import javax.swing.*;
 import java.awt.event.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.awt.event.MouseEvent;
 import java.awt.Color;
 
 public class LoginController {
     private static LoginView currentLoginView = null;
+    private static DatingApp currentDatingApp = null;
+    private static HomePage homePageInstance = null;
     private final LoginView view;
     private static final Logger logger = Logger.getLogger(LoginController.class.getName());
     
@@ -27,19 +32,24 @@ public class LoginController {
     public static LoginView getCurrentLoginView() {
         return currentLoginView != null && currentLoginView.isDisplayable() ? currentLoginView : null;
     }
+    
+    public static void createAndShowLoginView() {
+        SwingUtilities.invokeLater(() -> {
+            LoginView loginView = new LoginView();
+            currentLoginView = loginView;
+            new LoginController(loginView);
+            loginView.setVisible(true);
+        });
+    }
+    
     private final UserDAO userDAO;
     private final LoginModel loginModel;
     
     public LoginController(LoginView view) {
         this.view = view;
         this.loginModel = new LoginModel();
-        
-        // Initialize UserDAO
         this.userDAO = new UserDAO();
-        
-        // Set this controller in the view
         view.setController(this);
-        
         initializeEventListeners();
     }
     
@@ -82,8 +92,6 @@ public class LoginController {
             }
         });
     }
-    
-    private static Swipe currentSwipeView = null;
     
     private void handleLogin() {
         String username = view.getUsername() != null ? view.getUsername().trim() : "";
@@ -190,128 +198,44 @@ public class LoginController {
                     view.dispose();
                 }
                 
-<<<<<<< HEAD
                 // Close any existing HomePage instance
                 HomePage homePage = HomePage.getInstance();
                 if (homePage != null && homePage.isDisplayable()) {
                     homePage.dispose();
-=======
-                // If admin, open AdminDashboard, else open Swipe
+                }
+                
+                // If admin, open AdminDashboard, else open DatingApp
                 if (user.getUserType() != null && user.getUserType().equalsIgnoreCase("admin")) {
                     WindowManager.show(AdminDashboard.class, AdminDashboard::new, null);
                 } else {
-                    WindowManager.show(Swipe.class, () -> new Swipe(), null);
+                    // Create and show DatingApp with the authenticated user's username
+                    DatingApp datingApp = new DatingApp(user.getUsername());
+                    datingApp.setVisible(true);
                 }
                 
             } catch (Exception e) {
                 logger.log(Level.SEVERE, "Error opening user view", e);
-                if (view != null) {
-                    view.showMessage("Error initializing application view: " + e.getMessage(),
-                                   "Initialization Error", JOptionPane.ERROR_MESSAGE);
->>>>>>> 1e751b03e14418f4fd6b384329009b4a6fad77f0
-                }
-                
-                // Check user type and open appropriate view
-                String userType = user.getUserType();
-                if (userType != null && userType.equalsIgnoreCase("admin")) {
-                    // Show admin dashboard for admin users
-                    AdminDashboard.showAdminDashboard();
-                } else {
-                    // Show the Swipe view for regular users
-                    WindowManager.show(Swipe.class, () -> new Swipe(), null);
-                }
-            } catch (Exception ex) {
-                logger.log(Level.SEVERE, "Error opening user view", ex);
+                JOptionPane.showMessageDialog(
+                    null,
+                    "Error opening application: " + e.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE
+                );
             }
         });
     }
     
-    private static HomePage homePageInstance = null;
-    
-    public void handleBack() {
-        view.dispose();
-        // Restore the HomePage if it exists
-        if (homePageInstance != null && homePageInstance.isDisplayable()) {
-            homePageInstance.setState(JFrame.NORMAL);
-            homePageInstance.toFront();
+    private void handleBack() {
+        if (view != null) {
+            view.dispose();
+            WindowManager.show(HomePage.class, HomePage::new, null);
         }
     }
     
-    public void handleForgotPassword() {
-        // Hide current login view instead of disposing it
-        view.setVisible(false);
-        
-        // Show forgot password dialog and indicate we're coming from login
-        try {
-            heartsync.view.ForgotPassword.showForgotPassword(true);
-        } catch (Exception e) {
-            System.err.println("Error showing forgot password: " + e.getMessage());
-            e.printStackTrace();
-            // If there's an error, show the login view again
-            view.setVisible(true);
+    private void handleForgotPassword() {
+        if (view != null) {
+            view.dispose();
+            WindowManager.show(ForgotPassword.class, ForgotPassword::new, null);
         }
-    }
-    
-    /**
-     * Creates and shows the login view using the controller.
-     * This is a static method that can be called from anywhere in the application
-     * to show the login screen. Ensures only one login view exists at a time.
-     */
-    public static void createAndShowLoginView() {
-        // Ensure UI updates happen on the Event Dispatch Thread
-        SwingUtilities.invokeLater(() -> {
-            // Store reference to the HomePage if it exists
-            homePageInstance = WindowManager.getWindow(HomePage.class, () -> new HomePage(null));
-
-            // If a login view already exists and is visible, bring it to front and return
-            if (currentLoginView != null) {
-                if (currentLoginView.isDisplayable()) {
-                    currentLoginView.setExtendedState(JFrame.NORMAL);
-                    currentLoginView.setVisible(true);
-                    return;
-                } else {
-                    // Clean up any disposed but not null reference
-                    currentLoginView = null;
-                }
-            }
-            
-            try {
-                // Create new login view and controller
-                currentLoginView = new LoginView();
-                new LoginController(currentLoginView);
-                
-                // Add window listener to clean up reference when closed
-                currentLoginView.addWindowListener(new java.awt.event.WindowAdapter() {
-                    @Override
-                    public void windowClosed(java.awt.event.WindowEvent e) {
-                        // Clean up the reference when window is closed
-                        currentLoginView = null;
-                        // Restore the HomePage if it exists
-                        if (homePageInstance != null && homePageInstance.isDisplayable()) {
-                            homePageInstance.setState(JFrame.NORMAL);
-                            homePageInstance.toFront();
-                        }
-                    }
-                    
-                    @Override
-                    public void windowClosing(java.awt.event.WindowEvent e) {
-                        // Ensure cleanup happens even if window is force-closed
-                        currentLoginView = null;
-                        // Restore the HomePage if it exists
-                        if (homePageInstance != null && homePageInstance.isDisplayable()) {
-                            homePageInstance.setState(JFrame.NORMAL);
-                            homePageInstance.toFront();
-                        }
-                    }
-                });
-                
-                // Center and show the view
-                currentLoginView.setLocationRelativeTo(null);
-                currentLoginView.setVisible(true);
-            } catch (Exception e) {
-                System.err.println("Error creating login view: " + e.getMessage());
-                e.printStackTrace();
-            }
-        });
     }
 }

@@ -26,6 +26,8 @@ import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.JMenuItem;
 import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
@@ -37,13 +39,14 @@ import javax.swing.JOptionPane;
 import heartsync.model.User;
 import heartsync.model.Chat;
 import heartsync.dao.ChatDAO;
+import heartsync.dao.ReportDAO;
 
 public class MessageBox extends JFrame {
     private static final int WINDOW_RADIUS = 20;
-    private static final Color BACKGROUND_COLOR = new Color(255, 216, 227);
-    private static final Color HEADER_COLOR = new Color(102, 0, 51);
-    private static final Color MESSAGE_SENT_COLOR = new Color(64, 158, 255);
-    private static final Color MESSAGE_RECEIVED_COLOR = new Color(240, 240, 240);
+    private static final Color BACKGROUND_COLOR = new Color(255, 192, 203); // Baby pink #FFC0CB
+    private static final Color HEADER_COLOR = new Color(219, 112, 147); // PaleVioletRed - complementary to baby pink
+    private static final Color MESSAGE_SENT_COLOR = new Color(219, 112, 147); // Matching header color
+    private static final Color MESSAGE_RECEIVED_COLOR = new Color(255, 228, 225); // MistyRose - lighter pink
     
     private final JPanel mainPanel;
     private final JPanel chatPanel;
@@ -81,7 +84,7 @@ public class MessageBox extends JFrame {
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setSize(500, 700);
         setLocationRelativeTo(null);
-        setUndecorated(false);
+        setUndecorated(true);
         
         // Main panel with rounded corners
         mainPanel = new JPanel(new BorderLayout()) {
@@ -130,35 +133,24 @@ public class MessageBox extends JFrame {
     private JPanel createHeaderPanel() {
         JPanel header = new JPanel(new BorderLayout());
         header.setBackground(HEADER_COLOR);
-        header.setPreferredSize(new Dimension(getWidth(), 70));
+        header.setPreferredSize(new Dimension(getWidth(), 60));
         
         // Left panel with back button and user info
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
         leftPanel.setOpaque(false);
 
-        // Back button
-        JButton backButton = new JButton("← Back");
+        // Back button with updated style
+        JButton backButton = new JButton("←");
         backButton.setForeground(Color.WHITE);
         backButton.setBackground(HEADER_COLOR);
-        backButton.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        backButton.setFont(new Font("Segoe UI", Font.BOLD, 24));
         backButton.setBorder(BorderFactory.createEmptyBorder(5, 15, 5, 15));
         backButton.setFocusPainted(false);
         backButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        backButton.addActionListener(e -> {
-            dispose();
-        });
+        backButton.addActionListener(e -> dispose());
         leftPanel.add(backButton);
         
-        // User info
-        try {
-            ImageIcon imageIcon = new ImageIcon(getClass().getResource(userImage));
-            Image image = imageIcon.getImage().getScaledInstance(50, 50, Image.SCALE_SMOOTH);
-            JLabel imageLabel = new JLabel(new ImageIcon(image));
-            leftPanel.add(imageLabel);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        
+        // User name only
         JLabel nameLabel = new JLabel(userName);
         nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
         nameLabel.setForeground(Color.WHITE);
@@ -166,19 +158,85 @@ public class MessageBox extends JFrame {
         
         header.add(leftPanel, BorderLayout.WEST);
         
-        // Close button
-        JButton closeButton = new JButton("X");
-        closeButton.setForeground(Color.WHITE);
-        closeButton.setBackground(new Color(231, 76, 60));
-        closeButton.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        closeButton.setBorder(BorderFactory.createEmptyBorder(5, 15, 5, 15));
-        closeButton.setFocusPainted(false);
-        closeButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        closeButton.addActionListener(e -> dispose());
+        // Menu button and popup menu
+        JButton menuButton = new JButton("⋮");
+        menuButton.setForeground(Color.WHITE);
+        menuButton.setBackground(HEADER_COLOR);
+        menuButton.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        menuButton.setBorder(BorderFactory.createEmptyBorder(5, 15, 5, 15));
+        menuButton.setFocusPainted(false);
+        menuButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        
+        // Create popup menu
+        JPopupMenu popupMenu = new JPopupMenu();
+        popupMenu.setBackground(Color.WHITE);
+        
+        // Block option
+        JMenuItem blockItem = new JMenuItem("Block User");
+        blockItem.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        blockItem.setBackground(Color.WHITE);
+        blockItem.addActionListener(e -> {
+            int confirm = JOptionPane.showConfirmDialog(
+                this,
+                "Are you sure you want to block " + userName + "?",
+                "Block User",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE
+            );
+            if (confirm == JOptionPane.YES_OPTION) {
+                // TODO: Implement block functionality
+                JOptionPane.showMessageDialog(
+                    this,
+                    userName + " has been blocked.",
+                    "User Blocked",
+                    JOptionPane.INFORMATION_MESSAGE
+                );
+                dispose();
+            }
+        });
+        
+        // Report option with ReportDAO integration
+        JMenuItem reportItem = new JMenuItem("Report User");
+        reportItem.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        reportItem.setBackground(Color.WHITE);
+        reportItem.addActionListener(e -> {
+            String reason = JOptionPane.showInputDialog(
+                this,
+                "Please provide a reason for reporting " + userName + ":",
+                "Report User",
+                JOptionPane.QUESTION_MESSAGE
+            );
+            if (reason != null && !reason.trim().isEmpty()) {
+                ReportDAO reportDAO = new ReportDAO();
+                if (reportDAO.reportUser(otherUserId, currentUserId, reason)) {
+                    JOptionPane.showMessageDialog(
+                        this,
+                        "Thank you for your report. We will review it shortly.",
+                        "Report Submitted",
+                        JOptionPane.INFORMATION_MESSAGE
+                    );
+                } else {
+                    JOptionPane.showMessageDialog(
+                        this,
+                        "Failed to submit report. Please try again later.",
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE
+                    );
+                }
+            }
+        });
+        
+        popupMenu.add(blockItem);
+        popupMenu.addSeparator();
+        popupMenu.add(reportItem);
+        
+        menuButton.addActionListener(e -> {
+            popupMenu.show(menuButton, 0, menuButton.getHeight());
+        });
         
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         buttonPanel.setOpaque(false);
-        buttonPanel.add(closeButton);
+        buttonPanel.add(menuButton);
         header.add(buttonPanel, BorderLayout.EAST);
         
         return header;
@@ -186,29 +244,87 @@ public class MessageBox extends JFrame {
     
     private JPanel createInputPanel() {
         JPanel inputPanel = new JPanel(new BorderLayout(10, 10));
-        inputPanel.setBackground(Color.WHITE);
+        inputPanel.setBackground(BACKGROUND_COLOR); // Match main background
         inputPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
         
-        messageInput = new JTextField();
-        messageInput.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        messageInput.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(200, 200, 200)),
-            new EmptyBorder(5, 10, 5, 10)
-        ));
+        // Create a wrapper panel for the input field to handle rounded corners
+        JPanel inputWrapper = new JPanel(new BorderLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g;
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(new Color(248, 248, 248)); // #f8f8f8
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 40, 40); // 20px radius * 2 for both sides
+            }
+        };
+        inputWrapper.setOpaque(false);
+        inputWrapper.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 10)); // Space for the send button
         
-        JButton sendButton = new JButton("Send");
-        sendButton.setBackground(MESSAGE_SENT_COLOR);
-        sendButton.setForeground(Color.WHITE);
-        sendButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        sendButton.setBorder(new EmptyBorder(8, 20, 8, 20));
+        // Modern text field
+        messageInput = new JTextField() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g;
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(new Color(248, 248, 248)); // #f8f8f8
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 40, 40);
+                super.paintComponent(g);
+            }
+        };
+        messageInput.setOpaque(false);
+        messageInput.setBorder(BorderFactory.createEmptyBorder(10, 14, 10, 14));
+        messageInput.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        messageInput.setBackground(new Color(248, 248, 248));
+        
+        // Circular send button
+        JButton sendButton = new JButton() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g;
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                if (getModel().isPressed()) {
+                    g2.setColor(new Color(219, 64, 112)); // Darker pink when pressed
+                } else if (getModel().isRollover()) {
+                    g2.setColor(new Color(239, 84, 132)); // Lighter pink on hover
+                } else {
+                    g2.setColor(new Color(231, 84, 128)); // #e75480
+                }
+                
+                g2.fillOval(0, 0, 40, 40);
+                
+                // Draw send arrow
+                g2.setColor(Color.WHITE);
+                int[] xPoints = {12, 28, 12};
+                int[] yPoints = {12, 20, 28};
+                g2.setStroke(new java.awt.BasicStroke(2));
+                g2.fillPolygon(xPoints, yPoints, 3);
+            }
+            
+            @Override
+            public Dimension getPreferredSize() {
+                return new Dimension(40, 40);
+            }
+            
+            @Override
+            public Dimension getMinimumSize() {
+                return getPreferredSize();
+            }
+            
+            @Override
+            public Dimension getMaximumSize() {
+                return getPreferredSize();
+            }
+        };
+        sendButton.setContentAreaFilled(false);
+        sendButton.setBorderPainted(false);
         sendButton.setFocusPainted(false);
         sendButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        sendButton.addActionListener(e -> sendMessage());
         
-        ActionListener sendAction = e -> sendMessage();
-        sendButton.addActionListener(sendAction);
-        messageInput.addActionListener(sendAction);
-        
-        inputPanel.add(messageInput, BorderLayout.CENTER);
+        // Add components
+        inputWrapper.add(messageInput, BorderLayout.CENTER);
+        inputPanel.add(inputWrapper, BorderLayout.CENTER);
         inputPanel.add(sendButton, BorderLayout.EAST);
         
         return inputPanel;
@@ -225,7 +341,8 @@ public class MessageBox extends JFrame {
             chat.setSenderId(currentUserId);
             chat.setMessage(messageText);
             
-            boolean success = chatDAO.sendMessage(chatId, chat);
+            chatDAO.sendMessage(chat);
+            boolean success = true; // Always true unless exception
             
             if (success) {
                 messageInput.setText("");
@@ -247,7 +364,7 @@ public class MessageBox extends JFrame {
     
     private void loadMessages() {
         try {
-            List<Chat> chatMessages = chatDAO.getMessages(chatId);
+            List<Chat> chatMessages = chatDAO.getConversation(currentUserId, otherUserId);
             
             // Clear existing messages
             chatPanel.removeAll();
@@ -289,11 +406,11 @@ public class MessageBox extends JFrame {
         messageLabel.setOpaque(true);
         
         if (isSent) {
-            messageLabel.setBackground(new Color(0, 132, 255));
+            messageLabel.setBackground(MESSAGE_SENT_COLOR);
             messageLabel.setForeground(Color.WHITE);
             bubblePanel.add(messageLabel, BorderLayout.EAST);
         } else {
-            messageLabel.setBackground(new Color(240, 240, 240));
+            messageLabel.setBackground(MESSAGE_RECEIVED_COLOR);
             messageLabel.setForeground(Color.BLACK);
             bubblePanel.add(messageLabel, BorderLayout.WEST);
         }

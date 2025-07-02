@@ -5,6 +5,7 @@
 package heartsync;
 
 import heartsync.view.HomePage;
+import heartsync.database.TestUserCleanup;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
@@ -24,6 +25,10 @@ public class HeartSync {
      */
     public static void main(String[] args) {
         try {
+            // Clean up all test/demo users on application startup
+            System.out.println("HeartSync Dating Application Starting...");
+            TestUserCleanup.runSilentCleanup();
+            
             // Set system look and feel
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
             

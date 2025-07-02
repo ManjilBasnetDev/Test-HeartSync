@@ -114,17 +114,17 @@ public class ResetPasswordView extends JPanel {
         }
 
         try {
-            // Verify security answers
-            if (resetDAO.validateSecurityAnswer(username, firstSchool)) {
-                // Reset password
+            // Verify security questions using the corrected method
+            if (resetDAO.validateSecurityQuestions(username, favoriteColor, firstSchool)) {
+                // Reset password using the corrected method
                 if (resetDAO.resetPassword(username, newPassword)) {
                     showSuccess("Password reset successful");
                     clearFields();
                 } else {
-                    showError("Failed to reset password");
+                    showError("Failed to reset password. Please check your username.");
                 }
             } else {
-                showError("Invalid security answers");
+                showError("Invalid security answers. Please check your favorite color and first school name.");
             }
         } catch (Exception e) {
             showError("Error resetting password: " + e.getMessage());

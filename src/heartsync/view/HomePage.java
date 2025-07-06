@@ -378,12 +378,21 @@ public class HomePage extends JFrame {
                 coupleImageLabel = new JLabel(new ImageIcon(coupleImg));
                 coupleImageLabel.setBounds(720, 20, 400, 560);
             } else {
-                // Create a placeholder for missing couple image
-                coupleImageLabel = new JLabel("❤");
-                coupleImageLabel.setFont(new Font("SansSerif", Font.PLAIN, 48));
-                coupleImageLabel.setForeground(new Color(255, 89, 89));
-                coupleImageLabel.setHorizontalAlignment(SwingConstants.CENTER);
-                coupleImageLabel.setBounds(720, 20, 400, 560);
+                // Try alternative path
+                coupleUrl = getClass().getResource("../../ImagePicker/HomePageCoupleImg.png");
+                if (coupleUrl != null) {
+                    coupleIcon = new ImageIcon(coupleUrl);
+                    Image coupleImg = coupleIcon.getImage().getScaledInstance(400, 560, Image.SCALE_SMOOTH);
+                    coupleImageLabel = new JLabel(new ImageIcon(coupleImg));
+                    coupleImageLabel.setBounds(720, 20, 400, 560);
+                } else {
+                    // Create a placeholder for missing couple image
+                    coupleImageLabel = new JLabel("❤");
+                    coupleImageLabel.setFont(new Font("SansSerif", Font.PLAIN, 48));
+                    coupleImageLabel.setForeground(new Color(255, 89, 89));
+                    coupleImageLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                    coupleImageLabel.setBounds(720, 20, 400, 560);
+                }
             }
 
             // Load hand image
@@ -395,14 +404,24 @@ public class HomePage extends JFrame {
                 handImageLabel = new JLabel(new ImageIcon(handImg));
                 handImageLabel.setBounds(450, 60, 200, 280);
             } else {
-                // Create a placeholder for missing hand image
-                handImageLabel = new JLabel("♥");
-                handImageLabel.setFont(new Font("SansSerif", Font.PLAIN, 36));
-                handImageLabel.setForeground(new Color(255, 89, 89));
-                handImageLabel.setHorizontalAlignment(SwingConstants.CENTER);
-                handImageLabel.setBounds(450, 60, 200, 280);
+                // Try alternative path
+                handUrl = getClass().getResource("../../ImagePicker/HomePageHandImg.png");
+                if (handUrl != null) {
+                    handIcon = new ImageIcon(handUrl);
+                    Image handImg = handIcon.getImage().getScaledInstance(200, 280, Image.SCALE_SMOOTH);
+                    handImageLabel = new JLabel(new ImageIcon(handImg));
+                    handImageLabel.setBounds(450, 60, 200, 280);
+                } else {
+                    // Create a placeholder for missing hand image
+                    handImageLabel = new JLabel("♥");
+                    handImageLabel.setFont(new Font("SansSerif", Font.PLAIN, 36));
+                    handImageLabel.setForeground(new Color(255, 89, 89));
+                    handImageLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                    handImageLabel.setBounds(450, 60, 200, 280);
+                }
             }
         } catch (Exception e) {
+            System.err.println("Error loading images: " + e.getMessage());
             // Create default placeholders if image loading fails
             coupleImageLabel = new JLabel("❤");
             coupleImageLabel.setFont(new Font("SansSerif", Font.PLAIN, 48));

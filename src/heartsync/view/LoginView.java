@@ -31,8 +31,9 @@ public class LoginView extends javax.swing.JFrame {
         
         // Set application icon
         try {
-            ImageIcon icon = new ImageIcon(getClass().getResource("/heartsync/assets/logo.png"));
-            setIconImage(icon.getImage());
+            // Comment out the problematic icon loading for now
+            // ImageIcon icon = new ImageIcon(getClass().getResource("/heartsync/assets/logo.png"));
+            // setIconImage(icon.getImage());
         } catch (Exception e) {
             System.err.println("Could not load application icon: " + e.getMessage());
         }
